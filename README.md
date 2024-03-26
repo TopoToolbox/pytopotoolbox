@@ -9,7 +9,7 @@ Temporary guide for the functionality of the package. For Windows replace "pytho
 ### Generate distribution archives
 
 Generates a .whl and .tar.gz which then can be used to install package with pip.
-These Files can be distributet with PyPi or downloaded directly.
+These Files can be distributed with PyPi or downloaded directly.
 
 ```bash
 cd path/to/pytopotoolbox
@@ -27,7 +27,7 @@ pip install dist_name.whl
 
 ### Installing from repository
 
-If want to install the package direktly from the repository, without first generating a ".whl" file.
+If want to install the package directly from the repository without first generating a ".whl" file.
 
 ```bash
 cd path/to/pytopotoolbox
