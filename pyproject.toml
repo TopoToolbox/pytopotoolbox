@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "topotoolbox"
+version = "3.0.1"
+authors = [
+    {name="Wolfgang Schwanghart", email="w.schwanghart@geo.uni-potsdam.de"},
+    {name="Dirk Scherler", email="scherler@fz-potsdam.de"},
+    {name="Will Kearney", email="william.kearney@uni-potsdam.de"},
+    {name="Theo Bringezu", email="theophil.bringezu@uni-potsdam.de"}
+]
+description = "Python interface to TopoToolbox."
+readme = "README.md"
+license = { file = "LICENSE" }
+dependencies = [
+    "numpy",
+    "matplotlib"
+]
+requires-python = ">=3.8"
+keywords = ["TopoToolbox"]
+classifiers = []
+
+[project.urls]
+Homepage = "https://topotoolbox.github.io"
+Repository = "https://github.com/TopoToolbox/pytopotoolbox"
+Issues = "https://github.com/TopoToolbox/pytopotoolbox/issues"
