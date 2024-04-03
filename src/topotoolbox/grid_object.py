@@ -4,11 +4,13 @@ import rasterio
 from .gridmixins.imagesc import ImagescMixin
 from .gridmixins.imageschs import ImageschsMixin
 from .gridmixins.fillsinks import FillsinksMixin
+from .gridmixins.info import InfoMixin
 
 class GridObject(
         ImageschsMixin,
         ImagescMixin,
-        FillsinksMixin
+        FillsinksMixin,
+        InfoMixin
         ):
     
     def __init__(self, path=None) -> None:

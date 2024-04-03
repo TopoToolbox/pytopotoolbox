@@ -76,7 +76,7 @@ class ImageschsMixin:
         hillshade = ls.hillshade(self.z, vert_exag=exaggerate/self.cellsize)
 
         img = plt.imshow(self.z, cmap=colormap, interpolation='nearest')
-        img_overlay = plt.imshow(hillshade,  cmap="gray", alpha=0.5)
+        img_overlay = plt.imshow(hillshade,  cmap="gray", alpha=0.25)
         if colorbar:
             cbar = plt.colorbar(img)
             if not colorbarlabel == "":
