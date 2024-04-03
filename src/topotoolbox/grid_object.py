@@ -3,10 +3,14 @@ import rasterio
 
 from .gridmixins.imagesc import ImagescMixin
 from .gridmixins.imageschs import ImageschsMixin
+from .gridmixins.fillsinks import FillsinksMixin
 
 class GridObject(
         ImageschsMixin,
-        ImagescMixin):
+        ImagescMixin,
+        FillsinksMixin
+        ):
+    
     def __init__(self, path=None) -> None:
 
         # Try to open file with rasterio.
