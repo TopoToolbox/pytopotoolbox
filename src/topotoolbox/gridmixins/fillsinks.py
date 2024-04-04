@@ -4,8 +4,9 @@ import os
 import copy
 
 class FillsinksMixin():
-    # TODO: fillsinks needs (circular) GridObject import
-    def fillsinks(self, **kwargs): # -> GridObject:
+    def fillsinks(self, maxdepth=None, sinks=None):
+
+        #TODO: arguments need to be evaluated.
 
         basedir = os.path.dirname(__file__)
         parentdir = os.path.dirname(basedir)
@@ -26,8 +27,8 @@ class FillsinksMixin():
 
         dll.fillsinks(output, dem, self.rows, self.columns)
 
-        copy_self = copy.copy(self)
-        copy_self.z = output.copy()
+        result = copy.copy(self)
+        result.z = output.copy()
         
-        return copy_self
+        return result
     

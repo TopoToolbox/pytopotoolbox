@@ -27,6 +27,7 @@ class GridObject(
         except Exception as err:
             raise ValueError(err) from None
 
+        self.path = path
         self.z = dataset.read(1).astype(np.float32)
         self.rows = dataset.height 
         self.columns = dataset.width
