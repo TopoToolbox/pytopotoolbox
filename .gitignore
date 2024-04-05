@@ -1,0 +1,11 @@
+# ignore .vscode settings:
+.vscode/
+
+# ignore example directory
+examples/
+
+# ignore dist directory
+dist/
+
+# ignore C++/C library
+src/topotoolbox/libtopotoolbox.so
