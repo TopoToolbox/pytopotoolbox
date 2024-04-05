@@ -11,6 +11,7 @@ cp libtopotoolbox/build/src/libtopotoolbox.so pytopotoolbox/src/topotoolbox/libt
 
 # build .whl file
 cd pytopotoolbox/
+python3 -m pip install --upgrade build
 python3 -m build
 
 # Prompt if user wants to install .whl file

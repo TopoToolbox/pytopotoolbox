@@ -17,6 +17,7 @@ To automatically build distribution archives for the python version of TopoToolb
 ```bash
 cd .\path\to\pytopotoolbox\
 build.bat
+pip install .\dist\dist_name.whl
 ```
 
 ### for mac/Linux
