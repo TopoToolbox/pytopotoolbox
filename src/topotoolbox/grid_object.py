@@ -33,4 +33,11 @@ class GridObject(
         self.columns = dataset.width
         self.cellsize = dataset.res[0]
 
-               
+    @classmethod
+    def random(cls, size=30):
+        pass
+
+    @classmethod
+    def empty(cls):
+        pass
+

@@ -36,6 +36,7 @@ Temporary guide for the functionality of the package. For Windows replace "pytho
 
 ### Generate distribution archives
 
+Before building the archive, make sure the `libtopotoolbox.so` has been added to `/pytopotoolbox/src/topotoolbox/`.
 Generates a .whl and .tar.gz which then can be used to install package with pip.
 These Files can be distributed with PyPi or downloaded directly.
 

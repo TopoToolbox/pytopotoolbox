@@ -2,10 +2,13 @@
 .vscode/
 
 # ignore example directory
-examples/
+examples/perfectworld.tif
 
 # ignore dist directory
 dist/
 
 # ignore C++/C library
 src/topotoolbox/libtopotoolbox.so
+
+# ingnore tests pycache
+tests/__pycache__ 
