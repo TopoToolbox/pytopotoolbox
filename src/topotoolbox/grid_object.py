@@ -1,15 +1,9 @@
 import numpy as np
 import rasterio
 
-from .gridmixins.imagesc import ImagescMixin
-from .gridmixins.imageschs import ImageschsMixin
-from .gridmixins.fillsinks import FillsinksMixin
 from .gridmixins.info import InfoMixin
 
 class GridObject(
-        ImageschsMixin,
-        ImagescMixin,
-        FillsinksMixin,
         InfoMixin
         ):
     
@@ -33,6 +27,9 @@ class GridObject(
         self.columns = dataset.width
         self.cellsize = dataset.res[0]
 
+
+    # future implementation of init alternatives to generate
+    # random or empty Gridobject 
     @classmethod
     def random(cls, size=30):
         pass
