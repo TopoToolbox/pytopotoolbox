@@ -16,7 +16,9 @@ readme = "README.md"
 license = { file = "LICENSE" }
 dependencies = [
     "numpy",
-    "matplotlib"
+    "matplotlib",
+    "rasterio",
+    "pytest"
 ]
 requires-python = ">=3.8"
 keywords = ["TopoToolbox"]

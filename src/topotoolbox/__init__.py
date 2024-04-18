@@ -1,1 +1,1 @@
-from .placeholder import example
+from .grid_object import GridObject
