@@ -3,6 +3,7 @@ from .._grid import grid_fillsinks
 import numpy as np
 import copy
 
+
 class FillsinksMixin():
     def fillsinks(self):
 
@@ -13,6 +14,5 @@ class FillsinksMixin():
         grid_fillsinks(output, dem, self.rows, self.columns)
 
         result = copy.copy(self)
-        result.z = output.copy()
-        
+        result.z = output
         return result
