@@ -17,7 +17,10 @@ FetchContent_MakeAvailable(topotoolbox)
 set(PYBIND11_NEWPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(_lib src/lib.cpp)
-target_link_libraries(_lib PRIVATE topotoolbox)
+pybind11_add_module(_grid src/lib/grid.cpp)
+target_link_libraries(_grid PRIVATE topotoolbox)
 
-install(TARGETS _lib LIBRARY DESTINATION topotoolbox)
+pybind11_add_module(_flow src/lib/flow.cpp)
+target_link_libraries(_flow PRIVATE topotoolbox)
+
+install(TARGETS _grid _flow LIBRARY DESTINATION topotoolbox)

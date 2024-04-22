@@ -18,9 +18,9 @@ dependencies = [
     "numpy",
     "matplotlib",
     "rasterio",
-    "pytest"
+    "pybind11"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.7"
 keywords = ["TopoToolbox"]
 classifiers = []
 
@@ -28,3 +28,6 @@ classifiers = []
 Homepage = "https://topotoolbox.github.io"
 Repository = "https://github.com/TopoToolbox/pytopotoolbox"
 Issues = "https://github.com/TopoToolbox/pytopotoolbox/issues"
+
+[tool.scikit-build]
+wheel.expand-macos-universal-tags = true
