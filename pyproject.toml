@@ -17,12 +17,14 @@ license = { file = "LICENSE" }
 dependencies = [
     "numpy",
     "matplotlib",
-    "rasterio",
-    "pybind11"
+    "rasterio"
 ]
 requires-python = ">=3.7"
 keywords = ["TopoToolbox"]
 classifiers = []
+
+[project.optional-dependencies]
+opensimplex = ["opensimplex"]
 
 [project.urls]
 Homepage = "https://topotoolbox.github.io"
