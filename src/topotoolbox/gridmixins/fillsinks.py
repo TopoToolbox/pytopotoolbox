@@ -15,4 +15,5 @@ class FillsinksMixin():
 
         result = copy.copy(self)
         result.z = output
+
         return result

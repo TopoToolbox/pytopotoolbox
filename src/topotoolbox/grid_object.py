@@ -25,7 +25,6 @@ class GridObject(
             self.columns = dataset.width
             self.cellsize = dataset.res[0]
 
-
     @classmethod
     def gen_random(cls, hillsize=24, rows=128, columns=128, cellsize=10):
         
