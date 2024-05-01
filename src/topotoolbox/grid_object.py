@@ -1,13 +1,16 @@
 import numpy as np
 import rasterio
+import random
 
 from .gridmixins.info import InfoMixin
 from .gridmixins.fillsinks import FillsinksMixin
+from .gridmixins.magic import MagicMixin
 
 
 class GridObject(
         InfoMixin,
-        FillsinksMixin
+        FillsinksMixin,
+        MagicMixin
 ):
 
     def __init__(self, path=None):
@@ -57,3 +60,20 @@ class GridObject(
     @classmethod
     def gen_empty(cls):
         pass
+
+    @classmethod
+    def gen_random_bool(cls, rows=32, columns=32, cellsize=10):
+        bool_array = np.empty((rows, columns), dtype=np.float32)
+
+        for y in range(0, rows):
+            for x in range(0, columns):
+                bool_array[x][y] = random.choice([0, 1])
+
+        instance = cls(None)
+        instance.path = None
+        instance.z = bool_array
+        instance.rows = rows
+        instance.columns = columns
+        instance.cellsize = cellsize
+
+        return instance
