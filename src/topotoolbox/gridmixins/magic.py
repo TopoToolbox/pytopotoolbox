@@ -1,8 +1,6 @@
 import numpy as np
 import copy
 
-# TODO: decide
-
 
 class MagicMixin():
     def __eq__(self, other):
