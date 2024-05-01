@@ -7,6 +7,7 @@ from .gridmixins.fillsinks import FillsinksMixin
 from .gridmixins.magic import MagicMixin
 
 
+
 class GridObject(
         InfoMixin,
         FillsinksMixin,
@@ -77,3 +78,4 @@ class GridObject(
         instance.cellsize = cellsize
 
         return instance
+
