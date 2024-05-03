@@ -210,7 +210,6 @@ class MagicMixin():
         return dem
 
     def __len__(self):
-        # TODO: decide if len() should return len(np.array) or shape of np.array
         return len(self.z)
 
     def __iter__(self):
@@ -227,10 +226,6 @@ class MagicMixin():
                 value, " not can't be converted to float32.") from None
 
         self.z[index] = value
-
-    def __delitem__(self, index):
-        # TODO: do we even need this function?
-        self.z = np.delete(self.z, index, axis=0)
 
     def __array__(self):
         return self.z

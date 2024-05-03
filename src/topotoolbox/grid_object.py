@@ -7,7 +7,6 @@ from .gridmixins.fillsinks import FillsinksMixin
 from .gridmixins.magic import MagicMixin
 
 
-
 class GridObject(
         InfoMixin,
         FillsinksMixin,
@@ -28,6 +27,7 @@ class GridObject(
             self.z = dataset.read(1).astype(np.float32)
             self.rows = dataset.height
             self.columns = dataset.width
+            self.shape = self.z.shape
             self.cellsize = dataset.res[0]
 
     @classmethod
@@ -52,6 +52,7 @@ class GridObject(
         instance.z = noise_array
         instance.rows = rows
         instance.columns = columns
+        instance.shape = instance.z.shape
         instance.cellsize = cellsize
 
         return instance
@@ -75,7 +76,7 @@ class GridObject(
         instance.z = bool_array
         instance.rows = rows
         instance.columns = columns
+        instance.shape = instance.z.shape
         instance.cellsize = cellsize
 
         return instance
-
