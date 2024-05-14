@@ -229,3 +229,6 @@ class MagicMixin():
 
     def __array__(self):
         return self.z
+
+    def __str__(self):
+        return str(self.z)
