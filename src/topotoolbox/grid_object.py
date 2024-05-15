@@ -5,11 +5,13 @@ import random
 from .gridmixins.info import InfoMixin
 from .gridmixins.fillsinks import FillsinksMixin
 from .gridmixins.magic import MagicMixin
+from .gridmixins.identifyflats import IdentifyflatsMixin
 
 
 class GridObject(
         InfoMixin,
         FillsinksMixin,
+        IdentifyflatsMixin,
         MagicMixin
 ):
 
