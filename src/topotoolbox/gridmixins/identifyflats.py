@@ -1,19 +1,33 @@
-from .._grid import grid_identifyflats
+import copy
 
 import numpy as np
-import copy
+
+from .._grid import grid_identifyflats  # pylint: disable=import-error
 
 
 class IdentifyflatsMixin():
-    def identifyflats(self):
+
+    def identifyflats(self, raw=False, output=['sills', 'flats']):
 
         dem = self.z.astype(np.float32)
+        output_grid = np.zeros_like(dem).astype(np.int32)
 
-        output = np.zeros_like(dem).astype(np.int32)
+        grid_identifyflats(output_grid, dem, self.rows, self.columns)
 
-        grid_identifyflats(output, dem, self.rows, self.columns)
+        if raw:
+            return output_grid
 
-        result = copy.copy(self)
-        result.z = output
+        result = []
+        if 'flats' in output:
+            flats = copy.copy(self)
+            flats.z = np.zeros_like(flats.z)
+            flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
+            result.append(flats)
 
-        return result
+        if 'sills' in output:
+            sills = copy.copy(self)
+            sills.z = np.zeros_like(sills.z)
+            sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
+            result.append(sills)
+
+        return tuple(result)
