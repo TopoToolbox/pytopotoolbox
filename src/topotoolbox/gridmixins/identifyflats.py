@@ -7,7 +7,23 @@ from .._grid import grid_identifyflats  # pylint: disable=import-error
 
 class IdentifyflatsMixin():
 
-    def identifyflats(self, raw=False, output=['sills', 'flats']):
+    def identifyflats(self, raw=False, output=['sills', 'flats']) -> tuple:
+        """
+        Identifies flats and sills in a digital elevation model (DEM).
+
+        Args:
+            raw (bool): If True, returns the raw output grid as np.ndarray. 
+                Defaults to False.
+            output (list): List of strings indicating desired output types.
+                Possible values are 'sills', 'flats'. Defaults to ['sills', 'flats'].
+
+        Returns:
+            tuple: A tuple containing copies of the DEM with identified flats and/or sills.
+
+        Note:
+            Flats are identified as 1s, sills as 2s and presills as 3s in the output grid.
+                Only relevant when using raw=True.
+        """
 
         dem = self.z.astype(np.float32)
         output_grid = np.zeros_like(dem).astype(np.int32)
