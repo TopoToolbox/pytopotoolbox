@@ -1,8 +1,14 @@
-import numpy as np
+"""This module contains the Mixin class MagicMixin for the GridObject.
+"""
 import copy
+import numpy as np
 
 
 class MagicMixin():
+    """This class is a Mixin for the GridObject, that contains
+      Magic or Dunder methods for the GridObject.
+    """
+
     def __eq__(self, other):
         dem = copy.deepcopy(self)
 
@@ -106,9 +112,8 @@ class MagicMixin():
             dem.z = self.z + other.z
             return dem
 
-        else:
-            dem.z = self.z + other
-            return dem
+        dem.z = self.z + other
+        return dem
 
     def __sub__(self, other):
         dem = copy.copy(self)
@@ -117,9 +122,8 @@ class MagicMixin():
             dem.z = self.z - other.z
             return dem
 
-        else:
-            dem.z = self.z - other
-            return dem
+        dem.z = self.z - other
+        return dem
 
     def __mul__(self, other):
         dem = copy.copy(self)
@@ -128,9 +132,8 @@ class MagicMixin():
             dem.z = self.z * other.z
             return dem
 
-        else:
-            dem.z = self.z * other
-            return dem
+        dem.z = self.z * other
+        return dem
 
     def __div__(self, other):
         dem = copy.copy(self)
@@ -139,9 +142,8 @@ class MagicMixin():
             dem.z = self.z / other.z
             return dem
 
-        else:
-            dem.z = self.z / other
-            return dem
+        dem.z = self.z / other
+        return dem
 
     def __and__(self, other):
         dem = copy.deepcopy(self)
