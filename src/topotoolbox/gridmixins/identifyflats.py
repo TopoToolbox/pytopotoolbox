@@ -21,8 +21,8 @@ class IdentifyflatsMixin():
             tuple: A tuple containing copies of the DEM with identified flats and/or sills.
 
         Note:
-            Flats are identified as 1s, sills as 2s and presills as 3s in the output grid.
-                Only relevant when using raw=True.
+            Flats are identified as 1s, sills as 2s and presills as 5s (since they are also flats)
+              in the output grid. Only relevant when using raw=True.
         """
 
         dem = self.z.astype(np.float32)
