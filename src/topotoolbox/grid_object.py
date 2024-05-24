@@ -9,11 +9,13 @@ import rasterio
 from .gridmixins.fillsinks import FillsinksMixin
 from .gridmixins.info import InfoMixin
 from .gridmixins.magic import MagicMixin
+from .gridmixins.identifyflats import IdentifyflatsMixin
 
 
 class GridObject(
         InfoMixin,
         FillsinksMixin,
+        IdentifyflatsMixin,
         MagicMixin
 ):
     """A class containing all information of a Digital Elevation Model (DEM).
