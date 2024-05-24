@@ -1,9 +1,13 @@
+"""This module contains the GridObject class.
+"""
+import random
+from typing import Union
+
 import numpy as np
 import rasterio
-import random
 
-from .gridmixins.info import InfoMixin
 from .gridmixins.fillsinks import FillsinksMixin
+from .gridmixins.info import InfoMixin
 from .gridmixins.magic import MagicMixin
 from .gridmixins.identifyflats import IdentifyflatsMixin
 
@@ -14,8 +18,26 @@ class GridObject(
         IdentifyflatsMixin,
         MagicMixin
 ):
+    """A class containing all information of a Digital Elevation Model (DEM).
+    This class combines mixins to provide various functionalities for working with DEMs.
 
-    def __init__(self, path=None):
+    Args:
+        InfoMixin: A mixin class providing methods to retrieve information about the DEM.
+        FillsinksMixin: A mixin class providing a method to fill sinks in the DEM.
+        MagicMixin: A mixin class providing magical methods for the DEM.
+    """
+
+    def __init__(self, path: Union[str, None] = None) -> None:
+        """Initialize a GridObject instance.
+
+        Args:
+            path (str, optional): The path to the raster file. Defaults to None.
+
+        Raises:
+            TypeError: If an invalid type is passed as the `path`.
+            ValueError: If an error occurs while processing the `path` argument.
+        """
+
         if path is not None:
             try:
                 dataset = rasterio.open(path)
@@ -32,15 +54,42 @@ class GridObject(
             self.shape = self.z.shape
             self.cellsize = dataset.res[0]
 
+        else:
+            self.path = ''
+            self.z = np.empty(())
+            self.rows = 0
+            self.columns = 0
+            self.shape = self.z.shape
+            self.cellsize = 0
+
     @classmethod
-    def gen_random(cls, hillsize=24, rows=128, columns=128, cellsize=10):
+    def gen_random(
+            cls, hillsize: int = 24, rows: int = 128, columns: int = 128,
+            cellsize: float = 10.0) -> 'GridObject':
+        """Generate a GridObject instance that is generated with OpenSimplex noise.
+
+        Args:
+            hillsize (int, optional): Controls the "smoothness" of the 
+                                      generated terrain. Defaults to 24.
+            rows (int, optional): Number of rows. Defaults to 128.
+            columns (int, optional): Number of columns. Defaults to 128.
+            cellsize (float, optional): Size of each cell in the grid. 
+                                        Defaults to 10.0.
+
+        Raises:
+            ImportError: If OpenSimplex has not been installed.
+
+        Returns:
+            GridObject: An instance of GridObject with randomly generated values.
+        """
 
         try:
             import opensimplex as simplex
 
-        except ImportError as err:
+        except ImportError:
             raise ImportError(
-                "For gen_random to work, use \"pip install topotoolbox[opensimplex]\" or \"pip install .[opensimplex]\"") from None
+                """For gen_random to work, use \"pip install topotoolbox[opensimplex]\"
+                  or \"pip install .[opensimplex]\"""") from None
 
         noise_array = np.empty((rows, columns), dtype=np.float32)
         for y in range(0, rows):
@@ -50,7 +99,7 @@ class GridObject(
                 noise_array[y, x] = color
 
         instance = cls(None)
-        instance.path = None
+        instance.path = ''
         instance.z = noise_array
         instance.rows = rows
         instance.columns = columns
@@ -62,11 +111,23 @@ class GridObject(
     # TODO: implement gen_empty
 
     @classmethod
-    def gen_empty(cls):
+    def gen_empty(cls) -> None:
         pass
 
     @classmethod
-    def gen_random_bool(cls, rows=32, columns=32, cellsize=10):
+    def gen_random_bool(
+            cls, rows: int = 32, columns: int = 32, cellsize: float = 10.0) -> 'GridObject':
+        """Generate a GridObject instance that caontains only randomly
+        generated Boolean values. 
+
+        Args:
+            rows (int, optional): Number of rows. Defaults to 32.
+            columns (int, optional): Number of columns. Defaults to 32.
+            cellsize (float, optional): size of each cell in the grid. Defaults to 10.
+
+        Returns:
+            GridObject: _description_
+        """
         bool_array = np.empty((rows, columns), dtype=np.float32)
 
         for y in range(0, rows):
@@ -74,7 +135,7 @@ class GridObject(
                 bool_array[x][y] = random.choice([0, 1])
 
         instance = cls(None)
-        instance.path = None
+        instance.path = ''
         instance.z = bool_array
         instance.rows = rows
         instance.columns = columns
