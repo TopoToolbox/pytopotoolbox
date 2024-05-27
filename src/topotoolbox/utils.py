@@ -1,3 +1,5 @@
+"""Provide general utility functions for topotoolbox.
+"""
 import sys
 import os
 
@@ -5,11 +7,23 @@ from urllib.request import urlretrieve
 
 from .grid_object import GridObject
 
-__all__ = ["load_dem", "get_dem_names"]
+__all__ = ["load_dem", "get_dem_names", "read_tif"]
 
 DEM_SOURCE = "https://raw.githubusercontent.com/wschwanghart/DEMs/master"
 DEM_NAMES = ['kunashiri', 'perfectworld',
              'taalvolcano', 'taiwan', 'tibet', 'kedarnath']
+
+
+def read_tif(path: str):
+    """Generate a new GridObject from .tif file.
+
+    Args:
+        path (str): path to .tif file.
+
+    Returns:
+        GridObject: A new GridObject of the .tif file.
+    """
+    return GridObject(path)
 
 
 def get_dem_names():
@@ -26,7 +40,7 @@ def get_dem_names():
     return DEM_NAMES
 
 
-def load_dem(dem: str, cache=True, data_home=None):
+def load_dem(dem: str, cache=True):
     """Downloads DEM from wschwanghart/DEMs reposetory. 
     Find possible names by using 'get_dem_names()'
 
@@ -42,9 +56,8 @@ def load_dem(dem: str, cache=True, data_home=None):
     url = f"{DEM_SOURCE}/{dem}.tif"
 
     if cache:
-        cache_path = os.path.join(get_save_location(data_home), f"{dem}.tif")
+        cache_path = os.path.join(get_save_location(), f"{dem}.tif")
 
-        # only download if not already downloaded
         if not os.path.exists(cache_path):
             urlretrieve(url, cache_path)
 
@@ -57,8 +70,8 @@ def load_dem(dem: str, cache=True, data_home=None):
     return dem
 
 
-def get_save_location(data_home=None):
-    """Genrates filepath to file saved in cache
+def get_save_location():
+    """Generates filepath to file saved in cache.
 
     Args:
         data_home (str, optional): name of directory in cache. Defaults to None
@@ -67,43 +80,21 @@ def get_save_location(data_home=None):
     Returns:
         str: filepath to file saved in cache.
     """
-    if data_home is None:
-        data_home = cache_dir("topotoolbox")
-
-    # turn ~ shorthand to full path
-    data_home = os.path.expanduser(data_home)
-
-    # create path if it dosnt exsist already
-    if not os.path.exists(data_home):
-        os.makedirs(data_home)
-
-    return data_home
-
-
-def cache_dir(appname=None):
-    """Generates filepath for cache directory.
-
-    Args:
-        appname (str, optional): Optional name for cache reposetory. Defaults to None.
-
-    Returns:
-        str: Path to cache directory.
-    """
     system = sys.platform
 
     if system == "win32":
         path = os.getenv('LOCALAPPDATA')
-        if appname:
-            path = os.path.join(path, appname)
+        path = os.path.join(path, "topotoolbox")
 
     elif system == 'darwin':
         path = os.path.expanduser('~/Library/Caches')
-        if appname:
-            path = os.path.join(path, appname)
+        path = os.path.join(path, "topotoolbox")
 
     else:
-        path = os.getenv(os.path.expanduser('~/.cache'))
-        if appname:
-            path = os.path.join(path, appname)
+        path = os.path.expanduser('~/.cache')
+        path = os.path.join(path, "topotoolbox")
+
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     return path

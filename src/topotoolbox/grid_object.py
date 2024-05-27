@@ -1,15 +1,15 @@
 """This module contains the GridObject class.
 """
+
 import random
 from typing import Union
 
 import numpy as np
 import rasterio
 
-from .gridmixins.fillsinks import FillsinksMixin
-from .gridmixins.info import InfoMixin
-from .gridmixins.magic import MagicMixin
-from .gridmixins.identifyflats import IdentifyflatsMixin
+from .gridmixins import *  # pylint: disable=W0401
+
+__all__ = ['GridObject']
 
 
 class GridObject(
