@@ -4,6 +4,12 @@ Python interface to TopoToolbox.
 
 ## Generating/Installing distribution archives
 
+For any operating system, install the following:
+
+- **Python**
+- **pip**
+- **Git** (only when _building_ the package yourself)
+
 ### Linux
 
 - **Installing from .whl file**
@@ -33,7 +39,7 @@ Python interface to TopoToolbox.
 
 - **Installing from .whl file**
 
-    Make sure to choose the appropriate file for your OS. For Windows, the file name should contain something like: `win_amd64`. Python and pip should also be installed.
+    Make sure to choose the appropriate file for your OS. For Windows, the file name should contain something like: `win_amd64`.
 
     ```bash
     pip install dist_name.whl
@@ -43,14 +49,13 @@ Python interface to TopoToolbox.
 
     Since there are C/C++ files that need to be compiled in order to build the package, there are a few extra steps to take.
 
-    1. Install python and pip
-    2. Install the [Developer Command Prompt for VS 2022](https://visualstudio.microsoft.com/downloads/).
+    1. Install the [Developer Command Prompt for VS 2022](https://visualstudio.microsoft.com/downloads/).
         - Scroll down to '_All Downloads_'
         - open '_Tools for Visual Studio_'
         - download '_Build Tools for Visual Studio 2022_'
         - install it while including the '_Desktop development with C++_' workload
-    3. To ensure the compiler is working with 64-bit architecture, that is necessary for python, **open 'x64 Native Tools Command Prompt for VS 2022'** instead of the '_Developer Command Prompt_' that defaults to 32-bit architecture.
-    4. In the newly opened terminal, run:
+    2. To ensure the compiler is working with 64-bit architecture, that is necessary for python, **open 'x64 Native Tools Command Prompt for VS 2022'** instead of the '_Developer Command Prompt_' that defaults to 32-bit architecture.
+    3. In the newly opened terminal, run:
 
         ```bash
         cd path\to\pytopotoolbox
