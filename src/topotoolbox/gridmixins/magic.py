@@ -161,7 +161,8 @@ class MagicMixin():
                         or other.z[x][y] not in [0, 1]):
 
                     raise ValueError(
-                        "Invalid cell value. 'and' can only compare True (1) and False (0) values.")
+                        "Invalid cell value. 'and' can only compare " +
+                        "True (1) and False (0) values.")
 
                 dem.z[x][y] = (int(self.z[x][y]) & int(other.z[x][y]))
 
@@ -183,7 +184,8 @@ class MagicMixin():
                         or other.z[x][y] not in [0, 1]):
 
                     raise ValueError(
-                        "Invalid cell value. 'or' can only compare True (1) and False (0) values.")
+                        "Invalid cell value. 'or' can only compare True (1)" +
+                        " and False (0) values.")
 
                 dem.z[x][y] = (int(self.z[x][y]) | int(other.z[x][y]))
 
@@ -205,7 +207,8 @@ class MagicMixin():
                         or other.z[x][y] not in [0, 1]):
 
                     raise ValueError(
-                        "Invalid cell value. 'xor' can only compare True (1) and False (0) values.")
+                        "Invalid cell value. 'xor' can only compare True (1)" +
+                        " and False (0) values.")
 
                 dem.z[x][y] = (int(self.z[x][y]) ^ int(other.z[x][y]))
 

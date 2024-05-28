@@ -19,23 +19,21 @@ class GridObject(
         MagicMixin
 ):
     """A class containing all information of a Digital Elevation Model (DEM).
-    This class combines mixins to provide various functionalities for working with DEMs.
-
-    Args:
-        InfoMixin: A mixin class providing methods to retrieve information about the DEM.
-        FillsinksMixin: A mixin class providing a method to fill sinks in the DEM.
-        MagicMixin: A mixin class providing magical methods for the DEM.
+    This class combines mixins to provide various functionalities 
+    for working with DEMs.
     """
 
     def __init__(self, path: Union[str, None] = None) -> None:
         """Initialize a GridObject instance.
 
         Args:
-            path (str, optional): The path to the raster file. Defaults to None.
+            path (str, optional): The path to the raster file. 
+            Defaults to None.
 
         Raises:
             TypeError: If an invalid type is passed as the `path`.
-            ValueError: If an error occurs while processing the `path` argument.
+            ValueError: If an error occurs while processing 
+            the `path` argument.
         """
 
         if path is not None:
@@ -66,7 +64,8 @@ class GridObject(
     def gen_random(
             cls, hillsize: int = 24, rows: int = 128, columns: int = 128,
             cellsize: float = 10.0) -> 'GridObject':
-        """Generate a GridObject instance that is generated with OpenSimplex noise.
+        """Generate a GridObject instance that is generated with
+        OpenSimplex noise.
 
         Args:
             hillsize (int, optional): Controls the "smoothness" of the 
@@ -80,16 +79,17 @@ class GridObject(
             ImportError: If OpenSimplex has not been installed.
 
         Returns:
-            GridObject: An instance of GridObject with randomly generated values.
+            GridObject: An instance of GridObject with randomly
+            generated values.
         """
 
         try:
-            import opensimplex as simplex
+            import opensimplex as simplex  # pylint: disable=C0415
 
         except ImportError:
-            raise ImportError(
-                """For gen_random to work, use \"pip install topotoolbox[opensimplex]\"
-                  or \"pip install .[opensimplex]\"""") from None
+            err = ("For gen_random to work, use \"pip install topotool" +
+                   "box[opensimplex]\" or \"pip install .[opensimplex]\"")
+            raise ImportError(err) from None
 
         noise_array = np.empty((rows, columns), dtype=np.float32)
         for y in range(0, rows):
@@ -116,14 +116,16 @@ class GridObject(
 
     @classmethod
     def gen_random_bool(
-            cls, rows: int = 32, columns: int = 32, cellsize: float = 10.0) -> 'GridObject':
+            cls, rows: int = 32, columns: int = 32, cellsize: float = 10.0
+    ) -> 'GridObject':
         """Generate a GridObject instance that caontains only randomly
         generated Boolean values. 
 
         Args:
             rows (int, optional): Number of rows. Defaults to 32.
             columns (int, optional): Number of columns. Defaults to 32.
-            cellsize (float, optional): size of each cell in the grid. Defaults to 10.
+            cellsize (float, optional): size of each cell in the grid. 
+            Defaults to 10.
 
         Returns:
             GridObject: _description_

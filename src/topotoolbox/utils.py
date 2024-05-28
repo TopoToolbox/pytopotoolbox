@@ -14,8 +14,8 @@ DEM_NAMES = ['kunashiri', 'perfectworld',
              'taalvolcano', 'taiwan', 'tibet', 'kedarnath']
 
 
-def read_tif(path: str):
-    """Generate a new GridObject from .tif file.
+def read_tif(path: str) -> GridObject:
+    """Generate a new GridObject from a .tif file.
 
     Args:
         path (str): path to .tif file.
@@ -26,27 +26,29 @@ def read_tif(path: str):
     return GridObject(path)
 
 
-def get_dem_names():
+def get_dem_names() -> list[str]:
     """Returns a list of provided example Digital Elevation Models (DEMs).
 
     Returns:
         list: A list of strings, where each string is the name of a DEM.
 
     Note:
-        If a file with all names is added to the 'wschwanghart/DEMs' repository, 
-        the DEM_NAMES list could be generated dynamically from that file. This would 
-        ensure the list remains up-to-date if the files ever change.
+        If a file with all names is added to the 'wschwanghart/DEMs' 
+        repository, the DEM_NAMES list could be generated dynamically from 
+        that file. This would ensure the list remains up-to-date if the 
+        files ever change.
     """
     return DEM_NAMES
 
 
-def load_dem(dem: str, cache=True):
+def load_dem(dem: str, cache=True) -> GridObject:
     """Downloads DEM from wschwanghart/DEMs reposetory. 
     Find possible names by using 'get_dem_names()'
 
     Args:
         dem (str): Name of dem about to be downloaded
-        cache (bool, optional): If true the dem will be cached. Defaults to True.
+        cache (bool, optional): If true the dem will be cached. 
+        Defaults to True.
         data_home (str, optional): optional name of cache. Defaults to None.
 
     Returns:
@@ -70,7 +72,7 @@ def load_dem(dem: str, cache=True):
     return dem
 
 
-def get_save_location():
+def get_save_location() -> str:
     """Generates filepath to file saved in cache.
 
     Args:
