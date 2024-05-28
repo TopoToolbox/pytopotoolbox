@@ -46,15 +46,10 @@ def load_dem(dem: str, cache=True) -> GridObject:
         dem (str): Name of dem about to be downloaded
         cache (bool, optional): If true the dem will be cached. 
         Defaults to True.
-        data_home (str, optional): optional name of cache. Defaults to None.
 
     Returns:
         GridObject: A GridObject generated from the downloaded dem.
     """
-    if dem not in get_dem_names():
-        err = ("DEM has to be chosen from the list of available DEMs."
-               "Use 'get_dem_names()' to generate list of all available DEMs")
-        raise ValueError(err)
 
     url = f"{DEM_SOURCE}/{dem}.tif"
 
