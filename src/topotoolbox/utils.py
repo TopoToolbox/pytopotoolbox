@@ -3,15 +3,14 @@
 import sys
 import os
 
-from urllib.request import urlretrieve
+from urllib.request import urlopen, urlretrieve
 
 from .grid_object import GridObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif"]
 
-DEM_SOURCE = "https://raw.githubusercontent.com/wschwanghart/DEMs/master"
-DEM_NAMES = ['kunashiri', 'perfectworld',
-             'taalvolcano', 'taiwan', 'tibet', 'kedarnath']
+DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
+DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
 
 
 def read_tif(path: str) -> GridObject:
@@ -28,17 +27,15 @@ def read_tif(path: str) -> GridObject:
 
 def get_dem_names() -> list[str]:
     """Returns a list of provided example Digital Elevation Models (DEMs).
+    Requires internet connection to download available names.
 
     Returns:
-        list: A list of strings, where each string is the name of a DEM.
-
-    Note:
-        If a file with all names is added to the 'wschwanghart/DEMs' 
-        repository, the DEM_NAMES list could be generated dynamically from 
-        that file. This would ensure the list remains up-to-date if the 
-        files ever change.
+        list[str]: A list of strings, where each string is the name of a DEM.
     """
-    return DEM_NAMES
+    with urlopen(DEM_NAMES) as dem_names:
+        dem_names = dem_names.read().decode()
+
+    return dem_names.splitlines()
 
 
 def load_dem(dem: str, cache=True) -> GridObject:
@@ -54,6 +51,10 @@ def load_dem(dem: str, cache=True) -> GridObject:
     Returns:
         GridObject: A GridObject generated from the downloaded dem.
     """
+    if dem not in get_dem_names():
+        err = ("DEM has to be chosen from the list of available DEMs."
+               "Use 'get_dem_names()' to generate list of all available DEMs")
+        raise ValueError(err)
 
     url = f"{DEM_SOURCE}/{dem}.tif"
 
