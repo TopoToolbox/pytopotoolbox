@@ -8,7 +8,7 @@ from .._grid import grid_identifyflats  # pylint: disable=import-error
 
 
 class IdentifyflatsMixin():
-    """Mixin class containing Indentifyflats.
+    """Mixin class containing Identifyflats.
     """
 
     def identifyflats(

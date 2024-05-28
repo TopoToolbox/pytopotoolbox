@@ -42,7 +42,7 @@ def get_dem_names() -> list[str]:
 
 
 def load_dem(dem: str, cache=True) -> GridObject:
-    """Downloads DEM from wschwanghart/DEMs reposetory. 
+    """Downloads DEM from wschwanghart/DEMs repository. 
     Find possible names by using 'get_dem_names()'
 
     Args:

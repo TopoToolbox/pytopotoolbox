@@ -118,7 +118,7 @@ class GridObject(
     def gen_random_bool(
             cls, rows: int = 32, columns: int = 32, cellsize: float = 10.0
     ) -> 'GridObject':
-        """Generate a GridObject instance that caontains only randomly
+        """Generate a GridObject instance that contains only randomly
         generated Boolean values. 
 
         Args:
