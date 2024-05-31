@@ -12,3 +12,6 @@ src/topotoolbox/libtopotoolbox.so
 
 # ingnore tests pycache
 tests/__pycache__ 
+
+# ignore build docs
+docs/_build/*
