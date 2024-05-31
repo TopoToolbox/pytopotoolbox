@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'TopoToolbox'
-copyright = '2024, Theotest'
-author = 'Theotest'
+copyright = '2024, testname'
+author = 'testname'
 release = '3.0.1'
 
 # -- General configuration ---------------------------------------------------
@@ -17,7 +17,7 @@ release = '3.0.1'
 extensions = []
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = []
 
 
 
