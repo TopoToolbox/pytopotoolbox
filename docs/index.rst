@@ -6,6 +6,10 @@ Welcome to TopoToolbox's python documentation!
    :caption: Contents:
 
    api
+   installing
+   getting_started
+   examples
+
 
 Indices and tables
 ==================
