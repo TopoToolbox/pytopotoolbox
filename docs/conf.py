@@ -10,7 +10,7 @@ import os
 import sys
 
 import sphinx_book_theme
-import topotoolbox
+# import topotoolbox
 
 
 sys.path.insert(0, os.path.abspath('../src/topotoolbox'))
