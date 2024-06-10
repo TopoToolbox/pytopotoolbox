@@ -26,7 +26,7 @@ jobs:
       - name: Package artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ github.workspace }}/docs/_build/html
+          path: ${{ github.workspace }}/docs/_build/html/index.html
 
   deploy:
     needs: build
