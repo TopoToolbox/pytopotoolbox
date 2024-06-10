@@ -5,10 +5,11 @@ Welcome to TopoToolbox's python documentation!
    :maxdepth: 1
    :caption: Contents:
 
-   api
-   installing
-   getting_started
-   examples
+   Installing <installing>
+   Tutorial <tutorial>
+   Examples <example_list>
+   API <api>
+
 
 
 Indices and tables
