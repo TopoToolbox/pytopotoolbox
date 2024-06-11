@@ -10,16 +10,18 @@ import os
 import sys
 
 import sphinx_book_theme
-# import topotoolbox
+
+import topotoolbox
 
 
-sys.path.insert(0, os.path.abspath('../src/topotoolbox'))
+# sys.path.insert(0, os.path.abspath('../src/topotoolbox'))
 
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
+    'sphinx.ext.autosummary',
     'nbsphinx',
 ]
 
@@ -42,6 +44,22 @@ html_theme = 'sphinx_book_theme'
 html_static_path = ['_static']
 html_logo = 'logo.png'
 
+html_context = {
+    "default_mode": "light",
+}
+
 # -- Options for nbsphinx ----------------------------------------------------
 
 nbsphinx_allow_errors = True
+
+# -- Options for autodoc -----------------------------------------------------
+
+# autodoc_class_members_toctree = False
+autodoc_default_options = {
+    'members': True,
+    'undoc-members': True,
+    'private-members': False,
+    'special-members': '__init__',
+    'inherited-members': True,
+    'show-inheritance': True,
+}

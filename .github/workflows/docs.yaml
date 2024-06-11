@@ -22,7 +22,9 @@ jobs:
 
       - name: Build Sphinx documentation
         working-directory: ${{ github.workspace }}/docs
-        run: make html
+        run: |
+          make clean
+          make html
 
       - name: Package artifact
         uses: actions/upload-pages-artifact@v3
