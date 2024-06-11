@@ -9,7 +9,7 @@ Displaying DEM's
 .. toctree::
    :maxdepth: 1
 
-   examples/test_genGrid
+   /_examples/test_genGrid
 
 Loading examples
 ----------------
@@ -17,7 +17,7 @@ Loading examples
 .. toctree::
    :maxdepth: 1
 
-   examples/test_load_dem
+   /_examples/test_load_dem
 
 Generating Grid Objects from .tif files
 ---------------------------------------
@@ -25,5 +25,5 @@ Generating Grid Objects from .tif files
 .. toctree::
    :maxdepth: 1
 
-   examples/test_GridObject
+   /_examples/test_GridObject
 

@@ -4,6 +4,7 @@ To generate the Sphinx documentation HTML page, run the following commands:
 
 ```bash
 cd /path/to/topotoolbox/docs/
+make clean
 make html
 ```
 
