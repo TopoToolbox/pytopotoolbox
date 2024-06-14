@@ -1,6 +1,6 @@
 # Generation Sphinx Documentation
 
-To generate the Sphinx documentation HTML page, run the following commands:
+To generate the Sphinx documentation HTML page, run the following commands (Linux):
 
 ```bash
 cd /path/to/topotoolbox/docs/

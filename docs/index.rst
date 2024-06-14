@@ -7,7 +7,7 @@ Welcome to TopoToolbox's python documentation!
 
    Installing <installing>
    Tutorial <tutorial>
-   Examples <example_list>
+   Examples <examples>
    API <api>
 
 

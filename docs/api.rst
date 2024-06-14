@@ -1,8 +1,8 @@
 API Documentation
 =================
 
-.. autosummary:: topotoolbox
+.. autosummary::
    :toctree: _autosummary
+   :recursive:
 
-    topotoolbox.GridObject
-    topotoolbox.utils
+   topotoolbox

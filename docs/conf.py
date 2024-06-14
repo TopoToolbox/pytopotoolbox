@@ -14,14 +14,12 @@ import sphinx_book_theme
 import topotoolbox
 
 
-# sys.path.insert(0, os.path.abspath('../src/topotoolbox'))
-
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
-    'sphinx.ext.autosummary',
     'nbsphinx',
 ]
 
@@ -54,7 +52,6 @@ nbsphinx_allow_errors = True
 
 # -- Options for autodoc -----------------------------------------------------
 
-# autodoc_class_members_toctree = False
 autodoc_default_options = {
     'members': True,
     'undoc-members': True,
@@ -63,3 +60,5 @@ autodoc_default_options = {
     'inherited-members': True,
     'show-inheritance': True,
 }
+
+autosummary_generate = True  # Enable autosummary to generate stub files
