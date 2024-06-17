@@ -21,11 +21,15 @@ DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
 def read_tif(path: str) -> GridObject:
     """Generate a new GridObject from a .tif file.
 
-    Args:
-        path (str): path to .tif file.
+    Parameters
+    ----------
+    path : str
+        path to .tif file.
 
-    Returns:
-        GridObject: A new GridObject of the .tif file.
+    Returns
+    -------
+    GridObject
+        A new GridObject of the .tif file.
     """
 
     grid = GridObject()
@@ -51,25 +55,29 @@ def read_tif(path: str) -> GridObject:
 
 def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
                cellsize: float = 10.0) -> 'GridObject':
-    """Generate a GridObject instance that is generated with
-    OpenSimplex noise.
+    """Generate a GridObject instance that is generated with OpenSimplex noise.
 
-    Args:
-        hillsize (int, optional): Controls the "smoothness" of the 
-                                    generated terrain. Defaults to 24.
-        rows (int, optional): Number of rows. Defaults to 128.
-        columns (int, optional): Number of columns. Defaults to 128.
-        cellsize (float, optional): Size of each cell in the grid. 
-                                    Defaults to 10.0.
+    Parameters
+    ----------
+    hillsize : int, optional
+        Controls the "smoothness" of the generated terrain. Defaults to 24.
+    rows : int, optional
+        Number of rows. Defaults to 128.
+    columns : int, optional
+        Number of columns. Defaults to 128.
+    cellsize : float, optional
+        Size of each cell in the grid. Defaults to 10.0.
 
-    Raises:
-        ImportError: If OpenSimplex has not been installed.
+    Raises
+    ------
+    ImportError
+        If OpenSimplex has not been installed.
 
-    Returns:
-        GridObject: An instance of GridObject with randomly
-        generated values.
+    Returns
+    -------
+    GridObject
+        An instance of GridObject with randomly generated values.
     """
-
     try:
         import opensimplex as simplex  # pylint: disable=C0415
 
@@ -99,17 +107,22 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
 
 def gen_random_bool(rows: int = 32, columns: int = 32, cellsize: float = 10.0
                     ) -> 'GridObject':
-    """Generate a GridObject instance that contains only randomly
-    generated Boolean values. 
+    """Generate a GridObject instance that contains only randomly generated
+    Boolean values.
 
-    Args:
-        rows (int, optional): Number of rows. Defaults to 32.
-        columns (int, optional): Number of columns. Defaults to 32.
-        cellsize (float, optional): size of each cell in the grid. 
-        Defaults to 10.
+    Parameters
+    ----------
+    rows : int, optional
+        Number of rows. Defaults to 32.
+    columns : int, optional
+        Number of columns. Defaults to 32.
+    cellsize : float, optional
+        Size of each cell in the grid. Defaults to 10.0.
 
-    Returns:
-        GridObject: _description_
+    Returns
+    -------
+    GridObject
+        An instance of GridObject with randomly generated Boolean values.
     """
     bool_array = np.empty((rows, columns), dtype=np.float32)
 
@@ -133,8 +146,10 @@ def get_dem_names() -> list[str]:
     """Returns a list of provided example Digital Elevation Models (DEMs).
     Requires internet connection to download available names.
 
-    Returns:
-        list[str]: A list of strings, where each string is the name of a DEM.
+    Returns
+    -------
+    list[str]
+        A list of strings, where each string is the name of a DEM.
     """
     with urlopen(DEM_NAMES) as dem_names:
         dem_names = dem_names.read().decode()
@@ -143,16 +158,20 @@ def get_dem_names() -> list[str]:
 
 
 def load_dem(dem: str, cache: bool = True) -> GridObject:
-    """Downloads DEM from TopoToolbox/DEMs repository.
-    Find possible names by using 'get_dem_names()'
+    """Downloads a DEM from the TopoToolbox/DEMs repository.
+    Find possible names by using 'get_dem_names()'.
 
-    Args:
-        dem (str): Name of dem about to be downloaded
-        cache (bool, optional): If true the dem will be cached.
-        Defaults to True.
+    Parameters
+    ----------
+    dem : str
+        Name of the DEM to be downloaded.
+    cache : bool, optional
+        If true, the DEM will be cached. Defaults to True.
 
-    Returns:
-        GridObject: A GridObject generated from the downloaded dem.
+    Returns
+    -------
+    GridObject
+        A GridObject generated from the downloaded DEM.
     """
     if dem not in get_dem_names():
         err = ("Selected DEM has to be selected from the provided examples." +
@@ -179,8 +198,10 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
 def get_save_location() -> str:
     """Generates filepath to file saved in cache.
 
-    Returns:
-        str: filepath to file saved in cache.
+    Returns
+    -------
+    str
+        Filepath to file saved in cache.
     """
     system = sys.platform
 
@@ -203,13 +224,15 @@ def get_save_location() -> str:
 
 
 def clear_cache(filename: str = None) -> None:
-    """Deletes the cache directory and it's contents. Can also delete a single
+    """Deletes the cache directory and its contents. Can also delete a single
     file when using the argument filename. To get the contents of your cache,
-    use 'get_cache_contents()'
+    use 'get_cache_contents()'.
 
-    Args:
-        filename (str, optional): Add a filename if only one specific file is
-        to be deleted. Defaults to None.
+    Parameters
+    ----------
+    filename : str, optional
+        Add a filename if only one specific file is to be deleted. 
+        Defaults to None.
     """
     path = get_save_location()
 
@@ -229,8 +252,10 @@ def clear_cache(filename: str = None) -> None:
 def get_cache_contents() -> (list[str] | None):
     """Returns the contents of the cache directory.
 
-    Returns:
-        list[str]: List of all files in the topotoolbox cache. If cache does
+    Returns
+    -------
+    list[str]
+        List of all files in the TopoToolbox cache. If cache does
         not exist, None is returned.
     """
     path = get_save_location()

@@ -5,9 +5,9 @@ import copy
 
 import numpy as np
 
-# from _grid import * # pylint: disable=import-error
-from ._grid import grid_fillsinks  # pylint: disable=import-error
-from ._grid import grid_identifyflats  # pylint: disable=import-error
+# pylint: disable=import-error
+from ._grid import grid_fillsinks  # type: ignore
+from ._grid import grid_identifyflats  # type: ignore
 
 __all__ = ['GridObject']
 
@@ -32,7 +32,8 @@ class GridObject():
     def fillsinks(self):
         """Fill sinks in the digital elevation model (DEM).
 
-        Returns:
+        Returns
+        -------
             GridObject: The filled DEM.
         """
 
@@ -49,25 +50,30 @@ class GridObject():
 
     def identifyflats(
             self, raw: bool = False, output: list[str] = None) -> tuple:
-        """
-        Identifies flats and sills in a digital elevation model (DEM).
+        """Identifies flats and sills in a digital elevation model (DEM).
 
-        Args:
-            raw (bool): If True, returns the raw output grid as np.ndarray. 
+        Parameters
+        ----------
+        raw : bool, optional
+            If True, returns the raw output grid as np.ndarray. 
             Defaults to False.
-            output (list): List of strings indicating desired output types.
-            Possible values are 'sills', 'flats'. 
-            Defaults to ['sills', 'flats'].
+        output : list of str, optional
+            List of strings indicating desired output types. Possible values 
+            are 'sills', 'flats'. Defaults to ['sills', 'flats'].
 
-        Returns:
-            tuple: A tuple containing copies of the DEM with identified
+        Returns
+        -------
+        tuple
+            A tuple containing copies of the DEM with identified 
             flats and/or sills.
 
-        Note:
-            Flats are identified as 1s, sills as 2s and presills as 5s 
-            (since they are also flats) in the output grid.
-            Only relevant when using raw=True.
+        Notes
+        -----
+        Flats are identified as 1s, sills as 2s, and presills as 5s 
+        (since they are also flats) in the output grid. 
+        Only relevant when using raw=True.
         """
+
         if output is None:
             output = ['sills', 'flats']
 
