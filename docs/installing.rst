@@ -1,13 +1,6 @@
 How to install
 ==============
 
-Installing topotoolbox with pip
--------------------------------
-
-[not working jet!] ::
-
-   $ pip install topotoolbox
-
 Generating/Installing distribution archives
 -------------------------------------------
 
