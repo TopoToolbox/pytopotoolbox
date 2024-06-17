@@ -34,7 +34,8 @@ class GridObject():
 
         Returns
         -------
-            GridObject: The filled DEM.
+        GridObject
+            The filled DEM.
         """
 
         dem = self.z.astype(np.float32)
