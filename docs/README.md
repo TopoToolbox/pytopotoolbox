@@ -1,6 +1,6 @@
 # Generation Sphinx Documentation
 
-To generate the Sphinx documentation HTML page, run the following commands (Linux):
+Before being able to generate the Docs, make sure to install all the python dependencies: `pip install -r requirements.txt` and pandoc. However, they can be ignored since they don't lead to any actual issues. To generate the Sphinx documentation HTML page, run the following commands (Linux):
 
 ```bash
 cd /path/to/topotoolbox/docs/
