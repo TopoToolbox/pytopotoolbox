@@ -20,4 +20,4 @@ jobs:
       - name: Install package
         run: python -m pip install .[opensimplex]
       - name: Test package
-        run: python -c "import topotoolbox as topo; dem = topo.GridObject.gen_random(); assert (dem.fillsinks() >= dem).z.all()"
+        run: python -c "import topotoolbox as topo; dem = topo.gen_random(); assert (dem.fillsinks() >= dem).z.all()"
