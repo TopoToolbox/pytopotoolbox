@@ -2,13 +2,17 @@
 """
 import sys
 import os
+import random
 from shutil import rmtree
 from urllib.request import urlopen, urlretrieve
 
+import rasterio
+import numpy as np
+
 from .grid_object import GridObject
 
-__all__ = ["load_dem", "get_dem_names", "read_tif",
-           "get_cache_contents", "clear_cache"]
+__all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random",
+           "gen_random_bool", "get_cache_contents", "clear_cache"]
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
 DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
@@ -23,7 +27,106 @@ def read_tif(path: str) -> GridObject:
     Returns:
         GridObject: A new GridObject of the .tif file.
     """
-    return GridObject(path)
+
+    grid = GridObject()
+
+    if path is not None:
+        try:
+            dataset = rasterio.open(path)
+
+        except TypeError as err:
+            raise TypeError(err) from None
+        except Exception as err:
+            raise ValueError(err) from None
+
+        grid.path = path
+        grid.z = dataset.read(1).astype(np.float32)
+        grid.rows = dataset.height
+        grid.columns = dataset.width
+        grid.shape = grid.z.shape
+        grid.cellsize = dataset.res[0]
+
+    return grid
+
+
+def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
+               cellsize: float = 10.0) -> 'GridObject':
+    """Generate a GridObject instance that is generated with
+    OpenSimplex noise.
+
+    Args:
+        hillsize (int, optional): Controls the "smoothness" of the 
+                                    generated terrain. Defaults to 24.
+        rows (int, optional): Number of rows. Defaults to 128.
+        columns (int, optional): Number of columns. Defaults to 128.
+        cellsize (float, optional): Size of each cell in the grid. 
+                                    Defaults to 10.0.
+
+    Raises:
+        ImportError: If OpenSimplex has not been installed.
+
+    Returns:
+        GridObject: An instance of GridObject with randomly
+        generated values.
+    """
+
+    try:
+        import opensimplex as simplex  # pylint: disable=C0415
+
+    except ImportError:
+        err = ("For gen_random to work, use \"pip install topotool" +
+               "box[opensimplex]\" or \"pip install .[opensimplex]\"")
+        raise ImportError(err) from None
+
+    noise_array = np.empty((rows, columns), dtype=np.float32)
+    for y in range(0, rows):
+        for x in range(0, columns):
+            value = simplex.noise4(x / hillsize, y / hillsize, 0.0, 0.0)
+            color = int((value + 1) * 128)
+            noise_array[y, x] = color
+
+    grid = GridObject()
+
+    grid.path = ''
+    grid.z = noise_array
+    grid.rows = rows
+    grid.columns = columns
+    grid.shape = grid.z.shape
+    grid.cellsize = cellsize
+
+    return grid
+
+
+def gen_random_bool(rows: int = 32, columns: int = 32, cellsize: float = 10.0
+                    ) -> 'GridObject':
+    """Generate a GridObject instance that contains only randomly
+    generated Boolean values. 
+
+    Args:
+        rows (int, optional): Number of rows. Defaults to 32.
+        columns (int, optional): Number of columns. Defaults to 32.
+        cellsize (float, optional): size of each cell in the grid. 
+        Defaults to 10.
+
+    Returns:
+        GridObject: _description_
+    """
+    bool_array = np.empty((rows, columns), dtype=np.float32)
+
+    for y in range(0, rows):
+        for x in range(0, columns):
+            bool_array[x][y] = random.choice([0, 1])
+
+    grid = GridObject()
+
+    grid.path = ''
+    grid.z = bool_array
+    grid.rows = rows
+    grid.columns = columns
+    grid.shape = grid.z.shape
+    grid.cellsize = cellsize
+
+    return grid
 
 
 def get_dem_names() -> list[str]:
@@ -68,7 +171,7 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
     else:
         full_path = url
 
-    dem = GridObject(full_path)
+    dem = read_tif(full_path)
 
     return dem
 

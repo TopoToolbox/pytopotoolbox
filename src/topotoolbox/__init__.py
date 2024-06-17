@@ -1,2 +1,2 @@
-from .grid_object import GridObject
+from .grid_object import *
 from .utils import *
