@@ -14,8 +14,6 @@ __all__ = ['GridObject']
 
 class GridObject():
     """A class containing all information of a Digital Elevation Model (DEM).
-    This class combines mixins to provide various functionalities 
-    for working with DEMs.
     """
 
     def __init__(self) -> None:
