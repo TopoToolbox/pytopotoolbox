@@ -5,4 +5,11 @@ API Documentation
    :toctree: _autosummary
    :recursive:
 
-   topotoolbox
+   topotoolbox.GridObject
+   topotoolbox.read_tif
+   topotoolbox.load_dem
+   topotoolbox.get_dem_names
+   topotoolbox.get_cache_contents
+   topotoolbox.clear_cache
+   topotoolbox.gen_random
+   topotoolbox.gen_random_bool

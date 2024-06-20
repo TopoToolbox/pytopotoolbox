@@ -1,147 +1,339 @@
 """This module contains the GridObject class.
 """
 
-import random
-from typing import Union
+import copy
 
 import numpy as np
-import rasterio
 
-from .gridmixins import *  # pylint: disable=W0401
+# pylint: disable=import-error
+from ._grid import grid_fillsinks  # type: ignore
+from ._grid import grid_identifyflats  # type: ignore
 
 __all__ = ['GridObject']
 
 
-class GridObject(
-        InfoMixin,
-        FillsinksMixin,
-        IdentifyflatsMixin,
-        MagicMixin
-):
+class GridObject():
     """A class containing all information of a Digital Elevation Model (DEM).
-    This class combines mixins to provide various functionalities 
-    for working with DEMs.
     """
 
-    def __init__(self, path: Union[str, None] = None) -> None:
+    def __init__(self) -> None:
         """Initialize a GridObject instance.
-
-        Args:
-            path (str, optional): The path to the raster file. 
-            Defaults to None.
-
-        Raises:
-            TypeError: If an invalid type is passed as the `path`.
-            ValueError: If an error occurs while processing 
-            the `path` argument.
         """
 
-        if path is not None:
-            try:
-                dataset = rasterio.open(path)
+        self.path = ''
+        self.z = np.empty(())
+        self.rows = 0
+        self.columns = 0
+        self.shape = self.z.shape
+        self.cellsize = 0
 
-            except TypeError as err:
-                raise TypeError(err) from None
-            except Exception as err:
-                raise ValueError(err) from None
+    def fillsinks(self):
+        """Fill sinks in the digital elevation model (DEM).
 
-            self.path = path
-            self.z = dataset.read(1).astype(np.float32)
-            self.rows = dataset.height
-            self.columns = dataset.width
-            self.shape = self.z.shape
-            self.cellsize = dataset.res[0]
-
-        else:
-            self.path = ''
-            self.z = np.empty(())
-            self.rows = 0
-            self.columns = 0
-            self.shape = self.z.shape
-            self.cellsize = 0
-
-    @classmethod
-    def gen_random(
-            cls, hillsize: int = 24, rows: int = 128, columns: int = 128,
-            cellsize: float = 10.0) -> 'GridObject':
-        """Generate a GridObject instance that is generated with
-        OpenSimplex noise.
-
-        Args:
-            hillsize (int, optional): Controls the "smoothness" of the 
-                                      generated terrain. Defaults to 24.
-            rows (int, optional): Number of rows. Defaults to 128.
-            columns (int, optional): Number of columns. Defaults to 128.
-            cellsize (float, optional): Size of each cell in the grid. 
-                                        Defaults to 10.0.
-
-        Raises:
-            ImportError: If OpenSimplex has not been installed.
-
-        Returns:
-            GridObject: An instance of GridObject with randomly
-            generated values.
+        Returns
+        -------
+        GridObject
+            The filled DEM.
         """
 
+        dem = self.z.astype(np.float32)
+
+        output = np.zeros_like(dem)
+
+        grid_fillsinks(output, dem, self.rows, self.columns)
+
+        result = copy.copy(self)
+        result.z = output
+
+        return result
+
+    def identifyflats(
+            self, raw: bool = False, output: list[str] = None) -> tuple:
+        """Identifies flats and sills in a digital elevation model (DEM).
+
+        Parameters
+        ----------
+        raw : bool, optional
+            If True, returns the raw output grid as np.ndarray. 
+            Defaults to False.
+        output : list of str, optional
+            List of strings indicating desired output types. Possible values 
+            are 'sills', 'flats'. Defaults to ['sills', 'flats'].
+
+        Returns
+        -------
+        tuple
+            A tuple containing copies of the DEM with identified 
+            flats and/or sills.
+
+        Notes
+        -----
+        Flats are identified as 1s, sills as 2s, and presills as 5s 
+        (since they are also flats) in the output grid. 
+        Only relevant when using raw=True.
+        """
+
+        if output is None:
+            output = ['sills', 'flats']
+
+        dem = self.z.astype(np.float32)
+        output_grid = np.zeros_like(dem).astype(np.int32)
+
+        grid_identifyflats(output_grid, dem, self.rows, self.columns)
+
+        if raw:
+            return output_grid
+
+        result = []
+        if 'flats' in output:
+            flats = copy.copy(self)
+            flats.z = np.zeros_like(flats.z)
+            flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
+            result.append(flats)
+
+        if 'sills' in output:
+            sills = copy.copy(self)
+            sills.z = np.zeros_like(sills.z)
+            sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
+            result.append(sills)
+
+        return tuple(result)
+
+    def info(self):
+        """Prints all variables of a GridObject.
+        """
+        print("path: "+str(self.path))
+        print("rows: "+str(self.rows))
+        print("cols: "+str(self.columns))
+        print("cellsize: "+str(self.cellsize))
+
+    # 'Magic' functions:
+
+    def __eq__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                dem.z[x][y] = self.z[x][y] == other.z[x][y]
+
+        return dem
+
+    def __ne__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                dem.z[x][y] = self.z[x][y] != other.z[x][y]
+
+        return dem
+
+    def __gt__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                dem.z[x][y] = self.z[x][y] > other.z[x][y]
+
+        return dem
+
+    def __lt__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                dem.z[x][y] = self.z[x][y] < other.z[x][y]
+
+        return dem
+
+    def __ge__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                dem.z[x][y] = self.z[x][y] >= other.z[x][y]
+
+        return dem
+
+    def __le__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                dem.z[x][y] = self.z[x][y] <= other.z[x][y]
+
+        return dem
+
+    def __add__(self, other):
+        dem = copy.copy(self)
+
+        if isinstance(other, self.__class__):
+            dem.z = self.z + other.z
+            return dem
+
+        dem.z = self.z + other
+        return dem
+
+    def __sub__(self, other):
+        dem = copy.copy(self)
+
+        if isinstance(other, self.__class__):
+            dem.z = self.z - other.z
+            return dem
+
+        dem.z = self.z - other
+        return dem
+
+    def __mul__(self, other):
+        dem = copy.copy(self)
+
+        if isinstance(other, self.__class__):
+            dem.z = self.z * other.z
+            return dem
+
+        dem.z = self.z * other
+        return dem
+
+    def __div__(self, other):
+        dem = copy.copy(self)
+
+        if isinstance(other, self.__class__):
+            dem.z = self.z / other.z
+            return dem
+
+        dem.z = self.z / other
+        return dem
+
+    def __and__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                if (self.z[x][y] not in [0, 1]
+                        or other.z[x][y] not in [0, 1]):
+
+                    raise ValueError(
+                        "Invalid cell value. 'and' can only compare " +
+                        "True (1) and False (0) values.")
+
+                dem.z[x][y] = (int(self.z[x][y]) & int(other.z[x][y]))
+
+        return dem
+
+    def __or__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                if (self.z[x][y] not in [0, 1]
+                        or other.z[x][y] not in [0, 1]):
+
+                    raise ValueError(
+                        "Invalid cell value. 'or' can only compare True (1)" +
+                        " and False (0) values.")
+
+                dem.z[x][y] = (int(self.z[x][y]) | int(other.z[x][y]))
+
+        return dem
+
+    def __xor__(self, other):
+        dem = copy.deepcopy(self)
+
+        if not isinstance(other, self.__class__):
+            raise TypeError("Can only compare two GridObjects.")
+
+        if self.columns != other.columns or self.rows != other.rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        for x in range(0, self.columns):
+            for y in range(0, self.rows):
+
+                if (self.z[x][y] not in [0, 1]
+                        or other.z[x][y] not in [0, 1]):
+
+                    raise ValueError(
+                        "Invalid cell value. 'xor' can only compare True (1)" +
+                        " and False (0) values.")
+
+                dem.z[x][y] = (int(self.z[x][y]) ^ int(other.z[x][y]))
+
+        return dem
+
+    def __len__(self):
+        return len(self.z)
+
+    def __iter__(self):
+        return iter(self.z)
+
+    def __getitem__(self, index):
+        return self.z[index]
+
+    def __setitem__(self, index, value):
         try:
-            import opensimplex as simplex  # pylint: disable=C0415
+            value = np.float32(value)
+        except:
+            raise TypeError(
+                value, " not can't be converted to float32.") from None
 
-        except ImportError:
-            err = ("For gen_random to work, use \"pip install topotool" +
-                   "box[opensimplex]\" or \"pip install .[opensimplex]\"")
-            raise ImportError(err) from None
+        self.z[index] = value
 
-        noise_array = np.empty((rows, columns), dtype=np.float32)
-        for y in range(0, rows):
-            for x in range(0, columns):
-                value = simplex.noise4(x / hillsize, y / hillsize, 0.0, 0.0)
-                color = int((value + 1) * 128)
-                noise_array[y, x] = color
+    def __array__(self):
+        return self.z
 
-        instance = cls(None)
-        instance.path = ''
-        instance.z = noise_array
-        instance.rows = rows
-        instance.columns = columns
-        instance.shape = instance.z.shape
-        instance.cellsize = cellsize
-
-        return instance
-
-    # TODO: implement gen_empty
-
-    @classmethod
-    def gen_empty(cls) -> None:
-        pass
-
-    @classmethod
-    def gen_random_bool(
-            cls, rows: int = 32, columns: int = 32, cellsize: float = 10.0
-    ) -> 'GridObject':
-        """Generate a GridObject instance that contains only randomly
-        generated Boolean values. 
-
-        Args:
-            rows (int, optional): Number of rows. Defaults to 32.
-            columns (int, optional): Number of columns. Defaults to 32.
-            cellsize (float, optional): size of each cell in the grid. 
-            Defaults to 10.
-
-        Returns:
-            GridObject: _description_
-        """
-        bool_array = np.empty((rows, columns), dtype=np.float32)
-
-        for y in range(0, rows):
-            for x in range(0, columns):
-                bool_array[x][y] = random.choice([0, 1])
-
-        instance = cls(None)
-        instance.path = ''
-        instance.z = bool_array
-        instance.rows = rows
-        instance.columns = columns
-        instance.shape = instance.z.shape
-        instance.cellsize = cellsize
-
-        return instance
+    def __str__(self):
+        return str(self.z)
