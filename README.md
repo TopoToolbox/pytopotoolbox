@@ -1,6 +1,18 @@
+![GitHub Release](https://img.shields.io/github/v/release/topotoolbox/pytopotoolbox)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/topotoolbox/pytopotoolbox/CI)
+![GitHub License](https://img.shields.io/github/license/topotoolbox/pytopotoolbox)
+
 # pytopotoolbox
 
-Python interface to TopoToolbox.
+**TopoToolbox** is a Python library that provides a set of functions and classes that support the analysis of relief and flow pathways in digital elevation models (DEMs). The major aim of TopoToolbox is to offer helpful analytical GIS utilities in a non-GIS environment in order to support the simultaneous application of GIS-specific and other quantitative methods.
+
+The documentation is located at [https://topotoolbox.github.io/pytopotoolbox/](https://topotoolbox.github.io/pytopotoolbox/).
+
+This python library is originally based on the [Topotoolbox](https://topotoolbox.wordpress.com/) for Matlab and uses the API provided by [libtopotoolbox](https://topotoolbox.github.io/libtopotoolbox/) to compute efficiently.
+
+## Getting started
+
+To get started head to [pytopotoolbox/tutorial](https://topotoolbox.github.io/pytopotoolbox/tutorial.html). If you need more examples see [pytopotoolbox/examples](https://topotoolbox.github.io/pytopotoolbox/examples.html) or reference the API documentation [pytopotoolbox/api](https://topotoolbox.github.io/pytopotoolbox/api.html).
 
 ## Generating/Installing distribution archives
 
