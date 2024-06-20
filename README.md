@@ -103,4 +103,4 @@ If you would like to contribute to pytopotoolbox, check out the [Contribution Gu
 
 ## License
 
-This project is licensed under the GNU-3 License - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the GPL-3.0 (GNU) License - see the [LICENSE](./LICENSE) file for details.
