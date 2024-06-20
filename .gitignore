@@ -12,3 +12,6 @@ docs/_build/*
 
 # ignore _autosummary
 docs/_autosummary/*
+
+# ignore _temp
+docs/_temp
