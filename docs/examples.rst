@@ -2,7 +2,7 @@ Examples
 ========
 
 .. nbgallery::
-   /_examples/test_genGrid
-   /_examples/test_GridObject
-   /_examples/test_load_dem
-   /_examples/example_magic_funcs
+   /_temp/test_genGrid
+   /_temp/test_GridObject
+   /_temp/test_load_dem
+   /_temp/example_magic_funcs

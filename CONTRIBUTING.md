@@ -1,4 +1,4 @@
-# Contributing to TopoToolbox Python Library
+# Contribution Guidelines
 
 First off, thanks for taking the time to contribute!
 
