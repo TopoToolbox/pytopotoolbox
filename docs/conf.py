@@ -21,6 +21,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'nbsphinx',
+    'myst_parser',
 ]
 
 project = 'TopoToolbox'
@@ -32,7 +33,7 @@ release = '3.0.1'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'README.md']
 
 
 # -- Options for HTML output -------------------------------------------------
