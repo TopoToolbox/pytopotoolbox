@@ -6,7 +6,9 @@ API Documentation
    :recursive:
 
    topotoolbox.GridObject
+   topotoolbox.show
    topotoolbox.read_tif
+   topotoolbox.write_tif
    topotoolbox.load_dem
    topotoolbox.get_dem_names
    topotoolbox.get_cache_contents

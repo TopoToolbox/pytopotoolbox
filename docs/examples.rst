@@ -2,6 +2,7 @@ Examples
 ========
 
 .. nbgallery::
+   /_temp/plotting.ipynb
    /_temp/test_genGrid
    /_temp/test_GridObject
    /_temp/test_load_dem
