@@ -20,8 +20,10 @@ class GridObject():
     def __init__(self) -> None:
         """Initialize a GridObject instance.
         """
-        # path to tif file
+        # path to file
         self.path = ''
+        # name of dem
+        self.name = ''
 
         # raster metadata
         self.z = np.empty(())
@@ -31,7 +33,7 @@ class GridObject():
 
         self.cellsize = 0
 
-        # georeference:
+        # georeference
         self.bounds = None
         self.transform = None
         self.crs = None
@@ -111,6 +113,7 @@ class GridObject():
     def info(self):
         """Prints all variables of a GridObject.
         """
+        print(f"name: {self.name}")
         print(f"path: {self.path}")
         print(f"rows: {self.rows}")
         print(f"cols: {self.columns}")
@@ -120,7 +123,13 @@ class GridObject():
         print(f"crs: {self.crs}")
 
     def show(self):
+        """
+        Display the GridObject instance as an image using Matplotlib.
+        """
         plt.imshow(self, cmap='terrain')
+        plt.title(self.name)
+        plt.colorbar()
+        plt.tight_layout()
         plt.show()
 
     # 'Magic' functions:
