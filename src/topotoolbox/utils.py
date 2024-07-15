@@ -8,14 +8,93 @@ from urllib.request import urlopen, urlretrieve
 
 import rasterio
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .grid_object import GridObject
 
-__all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random",
-           "gen_random_bool", "get_cache_contents", "clear_cache"]
+__all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
+           "gen_random_bool", "get_cache_contents", "clear_cache", "show"]
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
 DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
+
+
+def write_tif(dem: GridObject, path: str) -> None:
+    """
+    Write a GridObject instance to a GeoTIFF file.
+
+    Parameters
+    ----------
+    dem : GridObject
+        The GridObject instance to be written to a GeoTIFF file.
+    path : str
+        The file path where the GeoTIFF will be saved.
+
+    Raises
+    ------
+    TypeError
+        If `dem` is not an instance of GridObject.
+
+    Examples
+    --------
+    >>> dem = topotoolbox.load_dem('taiwan')
+    >>> topotoolbox.write_tif(dem, 'dem.tif')
+    """
+
+    if not isinstance(dem, GridObject):
+        err = "The provided dem is not an instance of GridObject."
+        raise TypeError(err) from None
+
+    with rasterio.open(
+            fp=path,
+            mode='w',
+            count=1,
+            driver='GTiff',
+            height=dem.rows,
+            width=dem.columns,
+            dtype=np.float32,
+            crs=dem.crs,
+            transform=dem.transform
+    ) as dataset:
+        dataset.write(dem.z, 1)
+
+
+def show(*grid: GridObject, dpi: int = 100):
+    """
+    Display one or more GridObject instances using Matplotlib.
+
+    Parameters
+    ----------
+    *grid : GridObject
+        One or more GridObject instances to be displayed. Each GridObject
+        should have an attribute `name` and be suitable for use with `imshow`.
+    dpi : int, optional
+        The resolution of the plots in dots per inch. Default is 100.
+
+    Notes
+    -----
+    The function creates a subplot for each GridObject instance passed as
+    an argument. Each subplot displays the grid using the 'terrain' colormap. 
+    A colorbar is added to each subplot. The title of each subplot is set to 
+    the `name` attribute of the respective GridObject.
+
+    Examples
+    --------
+    >>> dem1 = topotoolbox.load_dem('taiwan')
+    >>> dem2 = topotoolbox.load_dem('perfectworld')
+    >>> topotoolbox.show(dem1, dem2)
+    """
+
+    num_grids = len(grid)
+    fig, axes = plt.subplots(1, num_grids, figsize=(5*num_grids, 5), dpi=dpi)
+    for i, dem in enumerate(grid):
+        ax = axes[i] if num_grids > 1 else axes
+        im = ax.imshow(dem, cmap="terrain")
+        ax.set_title(dem.name)
+        fig.colorbar(im, ax=ax, orientation='vertical')
+
+    plt.tight_layout()
+    plt.show()
 
 
 def read_tif(path: str) -> GridObject:
@@ -44,11 +123,17 @@ def read_tif(path: str) -> GridObject:
             raise ValueError(err) from None
 
         grid.path = path
+        grid.name = os.path.splitext(os.path.basename(grid.path))[0]
+
         grid.z = dataset.read(1).astype(np.float32)
         grid.rows = dataset.height
         grid.columns = dataset.width
         grid.shape = grid.z.shape
+
         grid.cellsize = dataset.res[0]
+        grid.bounds = dataset.bounds
+        grid.transform = dataset.transform
+        grid.crs = dataset.crs
 
     return grid
 
@@ -231,7 +316,7 @@ def clear_cache(filename: str = None) -> None:
     Parameters
     ----------
     filename : str, optional
-        Add a filename if only one specific file is to be deleted. 
+        Add a filename if only one specific file is to be deleted.
         Defaults to None.
     """
     path = get_save_location()

@@ -4,6 +4,7 @@
 import copy
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 # pylint: disable=import-error
 from ._grid import grid_fillsinks  # type: ignore
@@ -19,13 +20,23 @@ class GridObject():
     def __init__(self) -> None:
         """Initialize a GridObject instance.
         """
-
+        # path to file
         self.path = ''
+        # name of dem
+        self.name = ''
+
+        # raster metadata
         self.z = np.empty(())
         self.rows = 0
         self.columns = 0
         self.shape = self.z.shape
+
         self.cellsize = 0
+
+        # georeference
+        self.bounds = None
+        self.transform = None
+        self.crs = None
 
     def fillsinks(self):
         """Fill sinks in the digital elevation model (DEM).
@@ -102,12 +113,27 @@ class GridObject():
     def info(self):
         """Prints all variables of a GridObject.
         """
-        print("path: "+str(self.path))
-        print("rows: "+str(self.rows))
-        print("cols: "+str(self.columns))
-        print("cellsize: "+str(self.cellsize))
+        print(f"name: {self.name}")
+        print(f"path: {self.path}")
+        print(f"rows: {self.rows}")
+        print(f"cols: {self.columns}")
+        print(f"cellsize: {self.cellsize}")
+        print(f"bounds: {self.bounds}")
+        print(f"transform: {self.transform}")
+        print(f"crs: {self.crs}")
+
+    def show(self):
+        """
+        Display the GridObject instance as an image using Matplotlib.
+        """
+        plt.imshow(self, cmap='terrain')
+        plt.title(self.name)
+        plt.colorbar()
+        plt.tight_layout()
+        plt.show()
 
     # 'Magic' functions:
+    # ------------------------------------------------------------------------
 
     def __eq__(self, other):
         dem = copy.deepcopy(self)
@@ -328,7 +354,7 @@ class GridObject():
             value = np.float32(value)
         except:
             raise TypeError(
-                value, " not can't be converted to float32.") from None
+                f"{value} can't be converted to float32.") from None
 
         self.z[index] = value
 
