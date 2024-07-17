@@ -47,8 +47,7 @@ class GridObject():
             The filled DEM.
         """
 
-        dem = self.z.astype(np.float32)
-
+        dem = self.z.astype(np.float32, order='F')
         output = np.zeros_like(dem)
 
         grid_fillsinks(output, dem, self.rows, self.columns)
@@ -87,8 +86,8 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = self.z.astype(np.float32)
-        output_grid = np.zeros_like(dem).astype(np.int32)
+        dem = self.z.astype(np.float32, order='F')
+        output_grid = np.zeros_like(dem, dtype=np.int32)
 
         grid_identifyflats(output_grid, dem, self.rows, self.columns)
 
@@ -122,11 +121,16 @@ class GridObject():
         print(f"transform: {self.transform}")
         print(f"crs: {self.crs}")
 
-    def show(self):
+    def show(self, cmap='terrain'):
         """
         Display the GridObject instance as an image using Matplotlib.
+
+        Parameters
+        ----------
+        cmap : str, optional
+            Matplotlib colormap that will be used in the plot. 
         """
-        plt.imshow(self, cmap='terrain')
+        plt.imshow(self, cmap=cmap)
         plt.title(self.name)
         plt.colorbar()
         plt.tight_layout()

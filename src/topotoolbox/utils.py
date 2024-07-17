@@ -59,7 +59,7 @@ def write_tif(dem: GridObject, path: str) -> None:
         dataset.write(dem.z, 1)
 
 
-def show(*grid: GridObject, dpi: int = 100):
+def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
     """
     Display one or more GridObject instances using Matplotlib.
 
@@ -70,6 +70,8 @@ def show(*grid: GridObject, dpi: int = 100):
         should have an attribute `name` and be suitable for use with `imshow`.
     dpi : int, optional
         The resolution of the plots in dots per inch. Default is 100.
+    cmap : str, optional
+        Matplotlib colormap that will be used in the plot. 
 
     Notes
     -----
@@ -89,7 +91,7 @@ def show(*grid: GridObject, dpi: int = 100):
     fig, axes = plt.subplots(1, num_grids, figsize=(5*num_grids, 5), dpi=dpi)
     for i, dem in enumerate(grid):
         ax = axes[i] if num_grids > 1 else axes
-        im = ax.imshow(dem, cmap="terrain")
+        im = ax.imshow(dem, cmap=cmap)
         ax.set_title(dem.name)
         fig.colorbar(im, ax=ax, orientation='vertical')
 
@@ -126,6 +128,7 @@ def read_tif(path: str) -> GridObject:
         grid.name = os.path.splitext(os.path.basename(grid.path))[0]
 
         grid.z = dataset.read(1).astype(np.float32)
+        # TODO: possible nrows, ncols mixup here?
         grid.rows = dataset.height
         grid.columns = dataset.width
         grid.shape = grid.z.shape
