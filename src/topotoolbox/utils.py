@@ -128,7 +128,6 @@ def read_tif(path: str) -> GridObject:
         grid.name = os.path.splitext(os.path.basename(grid.path))[0]
 
         grid.z = dataset.read(1).astype(np.float32)
-        # TODO: possible nrows, ncols mixup here?
         grid.rows = dataset.height
         grid.columns = dataset.width
         grid.shape = grid.z.shape
@@ -142,7 +141,7 @@ def read_tif(path: str) -> GridObject:
 
 
 def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
-               cellsize: float = 10.0) -> 'GridObject':
+               cellsize: float = 10.0, seed: int = 3) -> 'GridObject':
     """Generate a GridObject instance that is generated with OpenSimplex noise.
 
     Parameters
@@ -155,6 +154,8 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
         Number of columns. Defaults to 128.
     cellsize : float, optional
         Size of each cell in the grid. Defaults to 10.0.
+    seed : int, optional
+        Seed for the terrain generation. Defaults to 3
 
     Raises
     ------
@@ -174,7 +175,9 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
                "box[opensimplex]\" or \"pip install .[opensimplex]\"")
         raise ImportError(err) from None
 
-    noise_array = np.empty((rows, columns), dtype=np.float32)
+    noise_array = np.empty((rows, columns), dtype=np.float32, order='F')
+
+    simplex.seed(seed)
     for y in range(0, rows):
         for x in range(0, columns):
             value = simplex.noise4(x / hillsize, y / hillsize, 0.0, 0.0)
@@ -183,7 +186,6 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
 
     grid = GridObject()
 
-    grid.path = ''
     grid.z = noise_array
     grid.rows = rows
     grid.columns = columns
