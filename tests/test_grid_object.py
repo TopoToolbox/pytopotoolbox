@@ -1,57 +1,59 @@
 import numpy as np
 import pytest
 
-import topotoolbox.grid_object as topo
+import topotoolbox as topo
 
 
 @pytest.fixture
-def squareGridObject():
-    grid = topo.GridObject()
-    grid.z = np.array([
-        [1, 1, 1, 1, 1],
-        [1, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 1],
-        [1, 1, 1, 1, 1]
-    ])
-    grid.rows, grid.columns = grid.z.shape
-    grid.shape = grid.z.shape
-    return grid
+def square_dem():
+    return topo.gen_random(rows=128, columns=128, seed=12)
 
 
 @pytest.fixture
-def tallGridObject():
-    grid = topo.GridObject()
-    grid.z = np.array([
-        [1, 1, 1],
-        [1, 0, 0],
-        [1, 0, 1],
-        [1, 0, 0],
-        [1, 1, 1],
-        [1, 0, 1],
-        [1, 0, 1],
-        [1, 1, 1]
-    ])
-    grid.rows, grid.columns = grid.z.shape
-    grid.shape = grid.z.shape
-    return grid
+def wide_dem():
+    return topo.gen_random(rows=64, columns=128, seed=12)
 
 
 @pytest.fixture
-def wideGridObject():
-    grid = topo.GridObject()
-    grid.z = np.array([
-        [1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 0, 0, 1, 1, 0],
-        [1, 0, 1, 0, 1, 0, 1],
-    ])
-    grid.rows, grid.columns = grid.z.shape
-    grid.shape = grid.z.shape
-    return grid
+def tall_dem():
+    return topo.gen_random(rows=128, columns=64, seed=12)
 
 
-def test_fillsinks():
-    assert True
+def test_fillsinks(square_dem, wide_dem, tall_dem):
+    for grid in [square_dem, wide_dem, tall_dem]:
+        dem = grid
+        filled_dem = dem.fillsinks()
+
+        # Loop over all cells of the DEM
+        for i in range(dem.shape[0]):
+            for j in range(dem.shape[1]):
+
+                # Test: no filled cell lower than before calling fillsinks
+                assert dem[i, j] <= filled_dem[i, j]
+
+                # Test: cell isn't a sink
+                sink = 0
+                for i_offset, j_offset in [
+                        (-1, -1),
+                        (-1, 0),
+                        (-1, 1),
+                        (0, -1),
+                        (0, 1),
+                        (1, -1),
+                        (1, 0),
+                        (1, 1)]:
+
+                    i_neighbor = i + i_offset
+                    j_neighbor = j + j_offset
+
+                    if (i_neighbor < 0 or i_neighbor >= dem.z.shape[0]
+                            or j_neighbor < 0 or j_neighbor >= dem.z.shape[1]):
+                        continue
+
+                    if filled_dem[i_neighbor, j_neighbor] > filled_dem[i, j]:
+                        sink += 1
+
+                assert sink < 8
 
 
 def test_identifyflats():
