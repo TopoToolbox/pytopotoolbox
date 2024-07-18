@@ -21,6 +21,7 @@ def tall_dem():
 
 def test_fillsinks(square_dem, wide_dem, tall_dem):
     for grid in [square_dem, wide_dem, tall_dem]:
+        # since grid is a fixture, it has to be assigned first
         dem = grid
         filled_dem = dem.fillsinks()
 
