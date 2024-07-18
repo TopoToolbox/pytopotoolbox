@@ -22,11 +22,11 @@ class GridObject():
         """
         # path to file
         self.path = ''
-        # name of dem
+        # name of DEM
         self.name = ''
 
         # raster metadata
-        self.z = np.empty(())
+        self.z = np.empty((), order='F')
         self.rows = 0
         self.columns = 0
         self.shape = self.z.shape
