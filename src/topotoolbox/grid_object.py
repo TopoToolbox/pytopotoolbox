@@ -66,7 +66,8 @@ class GridObject():
         raw : bool, optional
             If True, returns the raw output grid as np.ndarray. 
             Defaults to False.
-        output : list of str, optional
+        output : list of str,
+                flat_neighbors = 0 optional
             List of strings indicating desired output types. Possible values 
             are 'sills', 'flats'. Defaults to ['sills', 'flats'].
 
@@ -97,13 +98,13 @@ class GridObject():
         result = []
         if 'flats' in output:
             flats = copy.copy(self)
-            flats.z = np.zeros_like(flats.z)
+            flats.z = np.zeros_like(flats.z, order='F')
             flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
             result.append(flats)
 
         if 'sills' in output:
             sills = copy.copy(self)
-            sills.z = np.zeros_like(sills.z)
+            sills.z = np.zeros_like(sills.z, order='F')
             sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
             result.append(sills)
 

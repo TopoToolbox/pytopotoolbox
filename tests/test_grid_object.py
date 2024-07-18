@@ -21,7 +21,7 @@ def tall_dem():
 
 def test_fillsinks(square_dem, wide_dem, tall_dem):
     for grid in [square_dem, wide_dem, tall_dem]:
-        # since grid is a fixture, it has to be assigned first
+        # since grid is a fixture, it has to be assigned/called first
         dem = grid
         filled_dem = dem.fillsinks()
 
@@ -57,5 +57,29 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
                 assert sink < 8
 
 
-def test_identifyflats():
-    pass
+def test_identifyflats(square_dem, wide_dem, tall_dem):
+    for dem in [square_dem, wide_dem, tall_dem]:
+        sills, flats = dem.identifyflats()
+
+        for i in range(dem.shape[0]):
+            for j in range(dem.shape[1]):
+
+                for i_offset, j_offset in [
+                        (-1, -1),
+                        (-1, 0),
+                        (-1, 1),
+                        (0, -1),
+                        (0, 1),
+                        (1, -1),
+                        (1, 0),
+                        (1, 1)]:
+
+                    i_neighbor = i + i_offset
+                    j_neighbor = j + j_offset
+
+                    if (i_neighbor < 0 or i_neighbor >= dem.z.shape[0]
+                            or j_neighbor < 0 or j_neighbor >= dem.z.shape[1]):
+                        continue
+
+                    if flats[i_neighbor, j_neighbor] < flats[i, j]:
+                        assert flats[i, j] == 1.0
