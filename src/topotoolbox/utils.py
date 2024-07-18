@@ -127,7 +127,7 @@ def read_tif(path: str) -> GridObject:
         grid.path = path
         grid.name = os.path.splitext(os.path.basename(grid.path))[0]
 
-        grid.z = dataset.read(1).astype(np.float32)
+        grid.z = dataset.read(1).astype(np.float32, order='F')
         grid.rows = dataset.height
         grid.columns = dataset.width
         grid.shape = grid.z.shape
