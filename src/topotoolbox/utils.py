@@ -59,7 +59,7 @@ def write_tif(dem: GridObject, path: str) -> None:
         dataset.write(dem.z, 1)
 
 
-def show(*grid: GridObject, dpi: int = 100):
+def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
     """
     Display one or more GridObject instances using Matplotlib.
 
@@ -70,6 +70,8 @@ def show(*grid: GridObject, dpi: int = 100):
         should have an attribute `name` and be suitable for use with `imshow`.
     dpi : int, optional
         The resolution of the plots in dots per inch. Default is 100.
+    cmap : str, optional
+        Matplotlib colormap that will be used in the plot. 
 
     Notes
     -----
@@ -89,7 +91,7 @@ def show(*grid: GridObject, dpi: int = 100):
     fig, axes = plt.subplots(1, num_grids, figsize=(5*num_grids, 5), dpi=dpi)
     for i, dem in enumerate(grid):
         ax = axes[i] if num_grids > 1 else axes
-        im = ax.imshow(dem, cmap="terrain")
+        im = ax.imshow(dem, cmap=cmap)
         ax.set_title(dem.name)
         fig.colorbar(im, ax=ax, orientation='vertical')
 
@@ -125,7 +127,7 @@ def read_tif(path: str) -> GridObject:
         grid.path = path
         grid.name = os.path.splitext(os.path.basename(grid.path))[0]
 
-        grid.z = dataset.read(1).astype(np.float32)
+        grid.z = dataset.read(1).astype(np.float32, order='F')
         grid.rows = dataset.height
         grid.columns = dataset.width
         grid.shape = grid.z.shape
@@ -139,7 +141,7 @@ def read_tif(path: str) -> GridObject:
 
 
 def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
-               cellsize: float = 10.0) -> 'GridObject':
+               cellsize: float = 10.0, seed: int = 3) -> 'GridObject':
     """Generate a GridObject instance that is generated with OpenSimplex noise.
 
     Parameters
@@ -152,6 +154,8 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
         Number of columns. Defaults to 128.
     cellsize : float, optional
         Size of each cell in the grid. Defaults to 10.0.
+    seed : int, optional
+        Seed for the terrain generation. Defaults to 3
 
     Raises
     ------
@@ -171,7 +175,9 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
                "box[opensimplex]\" or \"pip install .[opensimplex]\"")
         raise ImportError(err) from None
 
-    noise_array = np.empty((rows, columns), dtype=np.float32)
+    noise_array = np.empty((rows, columns), dtype=np.float32, order='F')
+
+    simplex.seed(seed)
     for y in range(0, rows):
         for x in range(0, columns):
             value = simplex.noise4(x / hillsize, y / hillsize, 0.0, 0.0)
@@ -180,7 +186,6 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
 
     grid = GridObject()
 
-    grid.path = ''
     grid.z = noise_array
     grid.rows = rows
     grid.columns = columns

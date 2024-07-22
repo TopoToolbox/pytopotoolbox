@@ -15,3 +15,6 @@ docs/_autosummary/*
 
 # ignore _temp
 docs/_temp
+
+# ignore pytest_cache
+.pytest_cache/

@@ -22,11 +22,11 @@ class GridObject():
         """
         # path to file
         self.path = ''
-        # name of dem
+        # name of DEM
         self.name = ''
 
         # raster metadata
-        self.z = np.empty(())
+        self.z = np.empty((), order='F')
         self.rows = 0
         self.columns = 0
         self.shape = self.z.shape
@@ -47,8 +47,7 @@ class GridObject():
             The filled DEM.
         """
 
-        dem = self.z.astype(np.float32)
-
+        dem = self.z.astype(np.float32, order='F')
         output = np.zeros_like(dem)
 
         grid_fillsinks(output, dem, self.rows, self.columns)
@@ -67,7 +66,8 @@ class GridObject():
         raw : bool, optional
             If True, returns the raw output grid as np.ndarray. 
             Defaults to False.
-        output : list of str, optional
+        output : list of str,
+                flat_neighbors = 0 optional
             List of strings indicating desired output types. Possible values 
             are 'sills', 'flats'. Defaults to ['sills', 'flats'].
 
@@ -87,8 +87,8 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = self.z.astype(np.float32)
-        output_grid = np.zeros_like(dem).astype(np.int32)
+        dem = self.z.astype(np.float32, order='F')
+        output_grid = np.zeros_like(dem, dtype=np.int32)
 
         grid_identifyflats(output_grid, dem, self.rows, self.columns)
 
@@ -98,13 +98,13 @@ class GridObject():
         result = []
         if 'flats' in output:
             flats = copy.copy(self)
-            flats.z = np.zeros_like(flats.z)
+            flats.z = np.zeros_like(flats.z, order='F')
             flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
             result.append(flats)
 
         if 'sills' in output:
             sills = copy.copy(self)
-            sills.z = np.zeros_like(sills.z)
+            sills.z = np.zeros_like(sills.z, order='F')
             sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
             result.append(sills)
 
@@ -122,11 +122,16 @@ class GridObject():
         print(f"transform: {self.transform}")
         print(f"crs: {self.crs}")
 
-    def show(self):
+    def show(self, cmap='terrain'):
         """
         Display the GridObject instance as an image using Matplotlib.
+
+        Parameters
+        ----------
+        cmap : str, optional
+            Matplotlib colormap that will be used in the plot. 
         """
-        plt.imshow(self, cmap='terrain')
+        plt.imshow(self, cmap=cmap)
         plt.title(self.name)
         plt.colorbar()
         plt.tight_layout()

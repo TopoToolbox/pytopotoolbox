@@ -4,13 +4,13 @@ project(${SKBUILD_PROJECT_NAME}
   VERSION ${SKBUILD_PROJECT_VERSION}
   LANGUAGES CXX)
 
-# Find TopoToolbox somewhere
+# include libtopotoolbox
 include(FetchContent)
 FetchContent_Declare(
   topotoolbox
   GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG main # In the future, we should track a specific tag/commit
-	       # and bump it as we release versions
+  # GIT_TAG main
+  GIT_TAG 2024-W27
 )
 FetchContent_MakeAvailable(topotoolbox)
 
