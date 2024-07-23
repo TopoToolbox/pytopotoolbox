@@ -115,17 +115,40 @@ class GridObject():
 
         return tuple(result)
 
-    def excesstopography(self):
+    def excesstopography(self, threshold=0.2, method='fsm2d'):
+
+        if method not in ['fsm2d', 'fmm2d', 'fmm3d']:
+            err = ''
+            raise ValueError(err) from None
+
         dem = self.z
+
+        if isinstance(threshold, (float, int)):
+            threshold_slopes = np.full(dem.shape, float(threshold), order='F')
+        elif isinstance(threshold, GridObject):
+            threshold_slopes = threshold.z
+        elif isinstance(threshold, np.ndarray):
+            # TODO: make sure it is in 'F' order
+            threshold_slopes = threshold
+        else:
+            err = ''
+            raise TypeError(err) from None
+
         excess = np.zeros_like(dem)
-        threshold_slopes = np.full(dem.shape, 0.25)
         cellsize = self.cellsize
         nrows, ncols = self.shape
 
-        grid_excesstopography_fsm2d(
-            excess, dem, threshold_slopes, cellsize, nrows, ncols)
-        # grid_excesstopography_fmm2d()
-        # grid_excesstopography_fmm3d()
+        if method == 'fsm2d':
+            grid_excesstopography_fsm2d(
+                excess, dem, threshold_slopes, cellsize, nrows, ncols)
+
+        elif method == 'fmm2d':
+            pass
+            # grid_excesstopography_fmm2d()
+
+        elif method == 'fmm3d':
+            pass
+            # grid_excesstopography_fmm3d()
 
         result = copy.copy(self)
         result.z = excess
