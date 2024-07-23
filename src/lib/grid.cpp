@@ -39,10 +39,33 @@ void wrap_identifyflats(py::array_t<int32_t> output, py::array_t<float> dem, ptr
     identifyflats(output_ptr, dem_ptr, nrows, ncols);
 }
 
+void wrap_excesstopography_fsm2d(py::array_t<float> excess, py::array_t<float> dem, py::array_t<float> threshold_slopes, float cellsize, ptrdiff_t nrows, ptrdiff_t ncols){
+    float *excess_ptr = excess.mutable_data();
+    float *dem_ptr = dem.mutable_data();
+    float *threshold_slopes_ptr = threshold_slopes.mutable_data();
+
+    excesstopography_fsm2d(excess_ptr, dem_ptr, threshold_slopes_ptr, cellsize, nrows, ncols);
+}
+/*
+void wrap_excesstopography_fmm2d(py::array_t<float> excess, ptrdiff_t heap, ptrdiff_t back, py::array_t<float> dem, py::array_t<float> threshold_slopes, float cellsize, ptrdiff_t nrows, ptrdiff ncols){
+    float *excess_ptr = excess.mutable_data();
+    float *dem_ptr = dem.mutable_data();
+    float *threshold_slopes_ptr = threshold_slopes.mutable_data();
+
+    excesstopography_fmm2d(excess, heap, back, dem, threshold_slopes, cellsize, nrows, ncols)
+}
+
+void wrap_excesstopography_fmm3d(){
+    excesstopography_fmm3d(excess, heap, back, dem, lithstack, threshold_slopes, cellsize, nrows, ncols, nlayers)
+}*/
+
 // Make wrap_funcname() function available as grid_funcname() to be used by
 // by functions in the pytopotoolbox package
 
 PYBIND11_MODULE(_grid, m) {
     m.def("grid_fillsinks", &wrap_fillsinks);
     m.def("grid_identifyflats", &wrap_identifyflats);
+    m.def("grid_excesstopography_fsm2d", &wrap_excesstopography_fsm2d);
+    //m.def("grid_excesstopography_fmm2d", &wrap_excesstopography_fmm2d);
+    //m.def("grid_excesstopography_fmm3d", &wrap_excesstopography_fmm3d);
 }

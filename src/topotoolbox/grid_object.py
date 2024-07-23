@@ -7,8 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # pylint: disable=import-error
-from ._grid import grid_fillsinks  # type: ignore
-from ._grid import grid_identifyflats  # type: ignore
+from ._grid import (  # type: ignore
+    grid_fillsinks,
+    grid_identifyflats,
+    grid_excesstopography_fsm2d
+    # grid_excesstopography_fmm2d,
+    # grid_excesstopography_fmm3d
+)
 
 __all__ = ['GridObject']
 
@@ -109,6 +114,23 @@ class GridObject():
             result.append(sills)
 
         return tuple(result)
+
+    def excesstopography(self):
+        dem = self.z
+        excess = np.zeros_like(dem)
+        threshold_slopes = np.full(dem.shape, 0.25)
+        cellsize = self.cellsize
+        nrows, ncols = self.shape
+
+        grid_excesstopography_fsm2d(
+            excess, dem, threshold_slopes, cellsize, nrows, ncols)
+        # grid_excesstopography_fmm2d()
+        # grid_excesstopography_fmm3d()
+
+        result = copy.copy(self)
+        result.z = excess
+
+        return result
 
     def info(self):
         """Prints all variables of a GridObject.
