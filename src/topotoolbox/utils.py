@@ -141,7 +141,8 @@ def read_tif(path: str) -> GridObject:
 
 
 def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
-               cellsize: float = 10.0, seed: int = 3) -> 'GridObject':
+               cellsize: float = 10.0, seed: int = 3,
+               name: str = 'random grid') -> 'GridObject':
     """Generate a GridObject instance that is generated with OpenSimplex noise.
 
     Parameters
@@ -156,6 +157,8 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
         Size of each cell in the grid. Defaults to 10.0.
     seed : int, optional
         Seed for the terrain generation. Defaults to 3
+    name : str, optional
+        Name for the generated GridObject. Defaults to 'random grid'
 
     Raises
     ------
@@ -191,7 +194,7 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
     grid.columns = columns
     grid.shape = grid.z.shape
     grid.cellsize = cellsize
-
+    grid.name = name
     return grid
 
 

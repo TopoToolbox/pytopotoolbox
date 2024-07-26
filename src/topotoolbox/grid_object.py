@@ -116,8 +116,8 @@ class GridObject():
         return tuple(result)
 
     def excesstopography(
-            self, threshold: float | int | np.ndarray | 'GridObject' = 0.2,
-            method='fsm2d') -> 'GridObject':
+            self, threshold: "float | int | np.ndarray | GridObject" = 0.2,
+            method: str = 'fsm2d',) -> 'GridObject':
         """
     Compute the two-dimensional excess topography using the specified method.
 
@@ -145,7 +145,7 @@ class GridObject():
         If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
     TypeError
         If `threshold` is not a float, int, GridObject, or np.ndarray.
-    """
+        """
 
         if method not in ['fsm2d', 'fmm2d']:
             err = (f"Invalid method '{method}'. Supported methods are" +
@@ -155,7 +155,8 @@ class GridObject():
         dem = self.z
 
         if isinstance(threshold, (float, int)):
-            threshold_slopes = np.full(dem.shape, float(threshold), order='F')
+            threshold_slopes = np.full(
+                dem.shape, threshold, order='F', dtype=np.float32)
         elif isinstance(threshold, GridObject):
             threshold_slopes = threshold.z
         elif isinstance(threshold, np.ndarray):
@@ -164,11 +165,13 @@ class GridObject():
             err = "Threshold must be a float, int, GridObject, or np.ndarray."
             raise TypeError(err) from None
 
-        if not dem.shape == threshold.shape:
+        if not dem.shape == threshold_slopes.shape:
             err = "Threshold array must have the same shape as the DEM."
             raise ValueError(err) from None
-        if not threshold.ord == 'F':
-            threshold = np.asfortranarray(threshold)
+        if not threshold_slopes.flags['F_CONTIGUOUS']:
+            threshold_slopes = np.asfortranarray(threshold)
+        if not np.issubdtype(threshold_slopes.dtype, np.float32):
+            threshold_slopes = threshold_slopes.astype(np.float32)
 
         excess = np.zeros_like(dem)
         cellsize = self.cellsize
