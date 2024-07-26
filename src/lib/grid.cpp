@@ -46,18 +46,16 @@ void wrap_excesstopography_fsm2d(py::array_t<float> excess, py::array_t<float> d
 
     excesstopography_fsm2d(excess_ptr, dem_ptr, threshold_slopes_ptr, cellsize, nrows, ncols);
 }
-/*
-void wrap_excesstopography_fmm2d(py::array_t<float> excess, ptrdiff_t heap, ptrdiff_t back, py::array_t<float> dem, py::array_t<float> threshold_slopes, float cellsize, ptrdiff_t nrows, ptrdiff ncols){
+
+void wrap_excesstopography_fmm2d(py::array_t<float> excess, py::array_t<ptrdiff_t> heap, py::array_t<ptrdiff_t> back, py::array_t<float> dem, py::array_t<float> threshold_slopes, float cellsize, ptrdiff_t nrows, ptrdiff_t ncols){
     float *excess_ptr = excess.mutable_data();
+    ptrdiff_t *heap_ptr = heap.mutable_data();
+    ptrdiff_t *back_ptr = back.mutable_data();
     float *dem_ptr = dem.mutable_data();
     float *threshold_slopes_ptr = threshold_slopes.mutable_data();
 
-    excesstopography_fmm2d(excess, heap, back, dem, threshold_slopes, cellsize, nrows, ncols)
+    excesstopography_fmm2d(excess_ptr, heap_ptr, back_ptr, dem_ptr, threshold_slopes_ptr, cellsize, nrows, ncols);
 }
-
-void wrap_excesstopography_fmm3d(){
-    excesstopography_fmm3d(excess, heap, back, dem, lithstack, threshold_slopes, cellsize, nrows, ncols, nlayers)
-}*/
 
 // Make wrap_funcname() function available as grid_funcname() to be used by
 // by functions in the pytopotoolbox package
@@ -66,6 +64,6 @@ PYBIND11_MODULE(_grid, m) {
     m.def("grid_fillsinks", &wrap_fillsinks);
     m.def("grid_identifyflats", &wrap_identifyflats);
     m.def("grid_excesstopography_fsm2d", &wrap_excesstopography_fsm2d);
-    //m.def("grid_excesstopography_fmm2d", &wrap_excesstopography_fmm2d);
+    m.def("grid_excesstopography_fmm2d", &wrap_excesstopography_fmm2d);
     //m.def("grid_excesstopography_fmm3d", &wrap_excesstopography_fmm3d);
 }
