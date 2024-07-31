@@ -130,6 +130,7 @@ class GridObject():
     method : str, optional
         Method to compute the excess topography, by default 'fsm2d'.
         Options are:
+        
         - 'fsm2d': Uses the fast sweeping method.
         - 'fmm2d': Uses the fast marching method.
 
