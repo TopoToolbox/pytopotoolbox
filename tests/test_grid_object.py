@@ -20,6 +20,7 @@ def tall_dem():
 
 
 def test_fillsinks(square_dem, wide_dem, tall_dem):
+    # TODO: add more tests
     for grid in [square_dem, wide_dem, tall_dem]:
         # since grid is a fixture, it has to be assigned/called first
         dem = grid
@@ -58,6 +59,7 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
 
 
 def test_identifyflats(square_dem, wide_dem, tall_dem):
+    # TODO: add more tests
     for dem in [square_dem, wide_dem, tall_dem]:
         sills, flats = dem.identifyflats()
 
@@ -83,3 +85,7 @@ def test_identifyflats(square_dem, wide_dem, tall_dem):
 
                     if flats[i_neighbor, j_neighbor] < flats[i, j]:
                         assert flats[i, j] == 1.0
+
+    def test_excesstopography(square_dem):
+        # TODO: add more tests
+        assert square_dem.excesstopography(threshold='0.1') == TypeError()

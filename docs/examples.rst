@@ -2,6 +2,7 @@ Examples
 ========
 
 .. nbgallery::
+   /_temp/excesstopography.ipynb
    /_temp/plotting.ipynb
    /_temp/test_genGrid
    /_temp/test_GridObject
