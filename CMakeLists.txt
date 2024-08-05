@@ -8,9 +8,10 @@ project(${SKBUILD_PROJECT_NAME}
 include(FetchContent)
 FetchContent_Declare(
   topotoolbox
-  GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  # GIT_TAG main
-  GIT_TAG 2024-W27
+  # GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
+  GIT_REPOSITORY /home/bgailleton/code/libtopotoolbox
+  GIT_TAG graphflood
+  # GIT_TAG 2024-W27
 )
 FetchContent_MakeAvailable(topotoolbox)
 
@@ -23,4 +24,7 @@ target_link_libraries(_grid PRIVATE topotoolbox)
 pybind11_add_module(_flow src/lib/flow.cpp)
 target_link_libraries(_flow PRIVATE topotoolbox)
 
-install(TARGETS _grid _flow LIBRARY DESTINATION topotoolbox)
+pybind11_add_module(_graphflood src/lib/graphflood.cpp)
+target_link_libraries(_graphflood PRIVATE topotoolbox)
+
+install(TARGETS _grid _flow _graphflood LIBRARY DESTINATION topotoolbox)
