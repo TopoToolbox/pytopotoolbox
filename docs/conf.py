@@ -1,11 +1,3 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
 import os
 import sys
 
@@ -21,7 +13,6 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'nbsphinx',
-    'myst_parser',
 ]
 
 project = 'TopoToolbox'
@@ -30,14 +21,11 @@ author = 'TopoToolbox Team'
 release = '3.0.1'
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'README.md']
 
-
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_book_theme'
 html_static_path = ['_static']
@@ -57,9 +45,17 @@ autodoc_default_options = {
     'members': True,
     'undoc-members': True,
     'private-members': False,
-    'special-members': '__init__',
     'inherited-members': True,
     'show-inheritance': True,
 }
 
 autosummary_generate = True  # Enable autosummary to generate stub files
+
+# -- Options for nbgallery ---------------------------------------------------
+
+nbsphinx_thumbnails = {
+    '_temp/excesstopography': '_static/thumbnails/placeholder.png',
+    '_temp/magicfunctions': '_static/thumbnails/placeholder.png',
+    '_temp/plotting': '_static/thumbnails/placeholder.png',
+    '_temp/downloading': '_static/thumbnails/placeholder.png',
+}
