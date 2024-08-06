@@ -198,8 +198,9 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
     return grid
 
 
-def gen_random_bool(rows: int = 32, columns: int = 32, cellsize: float = 10.0
-                    ) -> 'GridObject':
+def gen_random_bool(
+        rows: int = 32, columns: int = 32, cellsize: float = 10.0,
+        name: str = 'random grid') -> 'GridObject':
     """Generate a GridObject instance that contains only randomly generated
     Boolean values.
 
@@ -231,6 +232,7 @@ def gen_random_bool(rows: int = 32, columns: int = 32, cellsize: float = 10.0
     grid.columns = columns
     grid.shape = grid.z.shape
     grid.cellsize = cellsize
+    grid.name = name
 
     return grid
 
