@@ -101,7 +101,7 @@ class GridObject():
         grid_identifyflats(output_grid, dem, self.rows, self.columns)
 
         if raw:
-            return output_grid
+            return tuple(output_grid)
 
         result = []
         if 'flats' in output:
