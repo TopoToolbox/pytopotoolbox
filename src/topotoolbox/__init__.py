@@ -1,2 +1,2 @@
-from .grid_object import *
-from .utils import *
+from .grid_object import *  # noqa
+from .utils import *  # noqa
