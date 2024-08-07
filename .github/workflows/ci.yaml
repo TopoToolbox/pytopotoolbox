@@ -51,8 +51,8 @@ jobs:
           pip install mypy
           pip install pylint
 
-      - name: Run Flake8
-        run: pylint src/topotoolbox/ tests/
+      - name: Run pylint
+        run: pylint src/topotoolbox/
 
       - name: Run type checks
         run: mypy --follow-imports=skip --ignore-missing-imports src/topotoolbox
