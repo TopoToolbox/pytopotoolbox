@@ -62,4 +62,4 @@ jobs:
       #  run: pylint src/topotoolbox/
 
       - name: Run type checks
-        run: mypy --follow-imports=skip --ignore-missing-imports src/topotoolbox
+        run: mypy --ignore-missing-imports src/topotoolbox
