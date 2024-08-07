@@ -71,13 +71,13 @@ def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
     dpi : int, optional
         The resolution of the plots in dots per inch. Default is 100.
     cmap : str, optional
-        Matplotlib colormap that will be used in the plot. 
+        Matplotlib colormap that will be used in the plot.
 
     Notes
     -----
     The function creates a subplot for each GridObject instance passed as
-    an argument. Each subplot displays the grid using the 'terrain' colormap. 
-    A colorbar is added to each subplot. The title of each subplot is set to 
+    an argument. Each subplot displays the grid using the 'terrain' colormap.
+    A colorbar is added to each subplot. The title of each subplot is set to
     the `name` attribute of the respective GridObject.
 
     Examples
@@ -285,9 +285,9 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
     else:
         full_path = url
 
-    dem = read_tif(full_path)
+    grid_object = read_tif(full_path)
 
-    return dem
+    return grid_object
 
 
 def get_save_location() -> str:
@@ -302,6 +302,10 @@ def get_save_location() -> str:
 
     if system == "win32":
         path = os.getenv('LOCALAPPDATA')
+        if path is None:
+            raise EnvironmentError(
+                "LOCALAPPDATA environment variable is not set." +
+                " Unable to generate path to cache.") from None
         path = os.path.join(path, "topotoolbox")
 
     elif system == 'darwin':
@@ -318,7 +322,7 @@ def get_save_location() -> str:
     return path
 
 
-def clear_cache(filename: str = None) -> None:
+def clear_cache(filename: str | None = None) -> None:
     """Deletes the cache directory and its contents. Can also delete a single
     file when using the argument filename. To get the contents of your cache,
     use 'get_cache_contents()'.

@@ -35,7 +35,7 @@ class GridObject():
         self.columns = 0
         self.shape = self.z.shape
 
-        self.cellsize = 0
+        self.cellsize = 0.0
 
         # georeference
         self.bounds = None
@@ -62,33 +62,36 @@ class GridObject():
         return result
 
     def identifyflats(
-            self, raw: bool = False, output: list[str] = None) -> tuple:
+            self, raw: bool = False, output: list[str] | None = None) -> tuple:
         """Identifies flats and sills in a digital elevation model (DEM).
 
         Parameters
         ----------
         raw : bool, optional
-            If True, returns the raw output grid as np.ndarray. 
+            If True, returns the raw output grid as np.ndarray.
             Defaults to False.
         output : list of str, optional
-            List of strings indicating desired output types. Possible values 
+            List of strings indicating desired output types. Possible values
             are 'sills', 'flats'. Order of inputs in list are irrelevant,
-            first entry in output will always be sills. 
+            first entry in output will always be sills.
             Defaults to ['sills', 'flats'].
 
         Returns
         -------
         tuple
-            A tuple containing copies of the DEM with identified 
+            A tuple containing copies of the DEM with identified
             flats and/or sills.
 
         Notes
         -----
-        Flats are identified as 1s, sills as 2s, and presills as 5s 
-        (since they are also flats) in the output grid. 
+        Flats are identified as 1s, sills as 2s, and presills as 5s
+        (since they are also flats) in the output grid.
         Only relevant when using raw=True.
         """
 
+        # Since having lists as default arguments can lead to problems, output
+        # is initialized with None by default and only converted to a list
+        # containing default output here:
         if output is None:
             output = ['sills', 'flats']
 
@@ -130,7 +133,7 @@ class GridObject():
     method : str, optional
         Method to compute the excess topography, by default 'fsm2d'.
         Options are:
-        
+
         - 'fsm2d': Uses the fast sweeping method.
         - 'fmm2d': Uses the fast marching method.
 
@@ -186,8 +189,9 @@ class GridObject():
             heap = np.zeros_like(dem, dtype=np.int64)
             back = np.zeros_like(dem, dtype=np.int64)
 
-            grid_excesstopography_fmm2d(
-                excess, heap, back, dem, threshold_slopes, cellsize, nrows, ncols)
+            grid_excesstopography_fmm2d(excess, heap, back, dem,
+                                        threshold_slopes, cellsize,
+                                        nrows, ncols)
 
         result = copy.copy(self)
         result.z = excess
@@ -213,7 +217,7 @@ class GridObject():
         Parameters
         ----------
         cmap : str, optional
-            Matplotlib colormap that will be used in the plot. 
+            Matplotlib colormap that will be used in the plot.
         """
         plt.imshow(self, cmap=cmap)
         plt.title(self.name)
@@ -441,7 +445,7 @@ class GridObject():
     def __setitem__(self, index, value):
         try:
             value = np.float32(value)
-        except:
+        except (ValueError, TypeError):
             raise TypeError(
                 f"{value} can't be converted to float32.") from None
 
