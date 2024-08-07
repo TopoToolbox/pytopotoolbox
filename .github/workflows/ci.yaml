@@ -50,6 +50,7 @@ jobs:
         run: | 
           pip install mypy
           pip install pylint
+          pip install flake8
           pip install numpy
           pip install matplotlib
           pip install rasterio
