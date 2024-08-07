@@ -88,9 +88,11 @@ def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
     """
 
     num_grids = len(grid)
-    fig, axes = plt.subplots(1, num_grids, figsize=(5*num_grids, 5), dpi=dpi)
+    fig, axes = plt.subplots(1, num_grids,
+                             figsize=(5*num_grids, 5), dpi=dpi, squeeze=False)
+
     for i, dem in enumerate(grid):
-        ax = axes[i] if num_grids > 1 else axes
+        ax = axes[i]
         im = ax.imshow(dem, cmap=cmap)
         ax.set_title(dem.name)
         fig.colorbar(im, ax=ax, orientation='vertical')
