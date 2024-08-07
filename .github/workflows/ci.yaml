@@ -50,6 +50,9 @@ jobs:
         run: | 
           pip install mypy
           pip install pylint
+          pip install numpy
+          pip install matplotlib
+          pip install rasterio
 
       - name: Run pylint
         run: pylint src/topotoolbox/
