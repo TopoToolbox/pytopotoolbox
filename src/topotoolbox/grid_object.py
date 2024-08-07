@@ -30,7 +30,7 @@ class GridObject():
         self.name = ''
 
         # raster metadata
-        self.z = np.empty((), order='F')
+        self.z = np.empty((), order='F', dtype=np.float32)
         self.rows = 0
         self.columns = 0
         self.shape = self.z.shape
