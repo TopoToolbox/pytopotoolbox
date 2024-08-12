@@ -18,3 +18,6 @@ docs/_temp
 
 # ignore pytest_cache
 .pytest_cache/
+
+# ignore mypy_cache
+.mypy_cache/
