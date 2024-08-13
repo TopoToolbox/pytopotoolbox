@@ -71,13 +71,13 @@ def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
     dpi : int, optional
         The resolution of the plots in dots per inch. Default is 100.
     cmap : str, optional
-        Matplotlib colormap that will be used in the plot. 
+        Matplotlib colormap that will be used in the plot.
 
     Notes
     -----
     The function creates a subplot for each GridObject instance passed as
-    an argument. Each subplot displays the grid using the 'terrain' colormap. 
-    A colorbar is added to each subplot. The title of each subplot is set to 
+    an argument. Each subplot displays the grid using the 'terrain' colormap.
+    A colorbar is added to each subplot. The title of each subplot is set to
     the `name` attribute of the respective GridObject.
 
     Examples
@@ -88,9 +88,11 @@ def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
     """
 
     num_grids = len(grid)
-    fig, axes = plt.subplots(1, num_grids, figsize=(5*num_grids, 5), dpi=dpi)
+    fig, axes = plt.subplots(1, num_grids,
+                             figsize=(5*num_grids, 5), dpi=dpi, squeeze=False)
+
     for i, dem in enumerate(grid):
-        ax = axes[i] if num_grids > 1 else axes
+        ax = axes[i]
         im = ax.imshow(dem, cmap=cmap)
         ax.set_title(dem.name)
         fig.colorbar(im, ax=ax, orientation='vertical')
@@ -141,7 +143,8 @@ def read_tif(path: str) -> GridObject:
 
 
 def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
-               cellsize: float = 10.0, seed: int = 3) -> 'GridObject':
+               cellsize: float = 10.0, seed: int = 3,
+               name: str = 'random grid') -> 'GridObject':
     """Generate a GridObject instance that is generated with OpenSimplex noise.
 
     Parameters
@@ -156,6 +159,8 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
         Size of each cell in the grid. Defaults to 10.0.
     seed : int, optional
         Seed for the terrain generation. Defaults to 3
+    name : str, optional
+        Name for the generated GridObject. Defaults to 'random grid'
 
     Raises
     ------
@@ -191,12 +196,13 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
     grid.columns = columns
     grid.shape = grid.z.shape
     grid.cellsize = cellsize
-
+    grid.name = name
     return grid
 
 
-def gen_random_bool(rows: int = 32, columns: int = 32, cellsize: float = 10.0
-                    ) -> 'GridObject':
+def gen_random_bool(
+        rows: int = 32, columns: int = 32, cellsize: float = 10.0,
+        name: str = 'random grid') -> 'GridObject':
     """Generate a GridObject instance that contains only randomly generated
     Boolean values.
 
@@ -228,6 +234,7 @@ def gen_random_bool(rows: int = 32, columns: int = 32, cellsize: float = 10.0
     grid.columns = columns
     grid.shape = grid.z.shape
     grid.cellsize = cellsize
+    grid.name = name
 
     return grid
 
@@ -280,9 +287,9 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
     else:
         full_path = url
 
-    dem = read_tif(full_path)
+    grid_object = read_tif(full_path)
 
-    return dem
+    return grid_object
 
 
 def get_save_location() -> str:
@@ -297,6 +304,10 @@ def get_save_location() -> str:
 
     if system == "win32":
         path = os.getenv('LOCALAPPDATA')
+        if path is None:
+            raise EnvironmentError(
+                "LOCALAPPDATA environment variable is not set." +
+                " Unable to generate path to cache.") from None
         path = os.path.join(path, "topotoolbox")
 
     elif system == 'darwin':
@@ -313,7 +324,7 @@ def get_save_location() -> str:
     return path
 
 
-def clear_cache(filename: str = None) -> None:
+def clear_cache(filename: str | None = None) -> None:
     """Deletes the cache directory and its contents. Can also delete a single
     file when using the argument filename. To get the contents of your cache,
     use 'get_cache_contents()'.

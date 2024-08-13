@@ -97,6 +97,10 @@ For any operating system, install the following:
 
 [work in progress]
 
+## Testing
+
+To find out how to run the tests of the pytopotoolbox, refer to the dedicated [readme](./test/README.md) in the /tests directory.
+
 ## Contributing
 
 If you would like to contribute to pytopotoolbox, check out the [Contribution Guidelines](./CONTRIBUTING.md).

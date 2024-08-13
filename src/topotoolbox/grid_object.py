@@ -7,8 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # pylint: disable=import-error
-from ._grid import grid_fillsinks  # type: ignore
-from ._grid import grid_identifyflats  # type: ignore
+from ._grid import (  # type: ignore
+    grid_fillsinks,
+    grid_identifyflats,
+    grid_excesstopography_fsm2d,
+    grid_excesstopography_fmm2d
+)
 
 __all__ = ['GridObject']
 
@@ -26,19 +30,19 @@ class GridObject():
         self.name = ''
 
         # raster metadata
-        self.z = np.empty((), order='F')
+        self.z = np.empty((), order='F', dtype=np.float32)
         self.rows = 0
         self.columns = 0
         self.shape = self.z.shape
 
-        self.cellsize = 0
+        self.cellsize = 0.0
 
         # georeference
         self.bounds = None
         self.transform = None
         self.crs = None
 
-    def fillsinks(self):
+    def fillsinks(self) -> 'GridObject':
         """Fill sinks in the digital elevation model (DEM).
 
         Returns
@@ -58,32 +62,36 @@ class GridObject():
         return result
 
     def identifyflats(
-            self, raw: bool = False, output: list[str] = None) -> tuple:
+            self, raw: bool = False, output: list[str] | None = None) -> tuple:
         """Identifies flats and sills in a digital elevation model (DEM).
 
         Parameters
         ----------
         raw : bool, optional
-            If True, returns the raw output grid as np.ndarray. 
+            If True, returns the raw output grid as np.ndarray.
             Defaults to False.
-        output : list of str,
-                flat_neighbors = 0 optional
-            List of strings indicating desired output types. Possible values 
-            are 'sills', 'flats'. Defaults to ['sills', 'flats'].
+        output : list of str, optional
+            List of strings indicating desired output types. Possible values
+            are 'sills', 'flats'. Order of inputs in list are irrelevant,
+            first entry in output will always be sills.
+            Defaults to ['sills', 'flats'].
 
         Returns
         -------
         tuple
-            A tuple containing copies of the DEM with identified 
+            A tuple containing copies of the DEM with identified
             flats and/or sills.
 
         Notes
         -----
-        Flats are identified as 1s, sills as 2s, and presills as 5s 
-        (since they are also flats) in the output grid. 
+        Flats are identified as 1s, sills as 2s, and presills as 5s
+        (since they are also flats) in the output grid.
         Only relevant when using raw=True.
         """
 
+        # Since having lists as default arguments can lead to problems, output
+        # is initialized with None by default and only converted to a list
+        # containing default output here:
         if output is None:
             output = ['sills', 'flats']
 
@@ -93,7 +101,7 @@ class GridObject():
         grid_identifyflats(output_grid, dem, self.rows, self.columns)
 
         if raw:
-            return output_grid
+            return tuple(output_grid)
 
         result = []
         if 'flats' in output:
@@ -110,7 +118,87 @@ class GridObject():
 
         return tuple(result)
 
-    def info(self):
+    def excesstopography(
+            self, threshold: "float | int | np.ndarray | GridObject" = 0.2,
+            method: str = 'fsm2d',) -> 'GridObject':
+        """
+    Compute the two-dimensional excess topography using the specified method.
+
+    Parameters
+    ----------
+    threshold : float, int, GridObject, or np.ndarray, optional
+        Threshold value or array to determine slope limits, by default 0.2.
+        If a float or int, the same threshold is applied to the entire DEM.
+        If a GridObject or np.ndarray, it must match the shape of the DEM.
+    method : str, optional
+        Method to compute the excess topography, by default 'fsm2d'.
+        Options are:
+
+        - 'fsm2d': Uses the fast sweeping method.
+        - 'fmm2d': Uses the fast marching method.
+
+    Returns
+    -------
+    GridObject
+        A new GridObject with the computed excess topography.
+
+    Raises
+    ------
+    ValueError
+        If `method` is not one of ['fsm2d', 'fmm2d'].
+        If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
+    TypeError
+        If `threshold` is not a float, int, GridObject, or np.ndarray.
+        """
+
+        if method not in ['fsm2d', 'fmm2d']:
+            err = (f"Invalid method '{method}'. Supported methods are" +
+                   " 'fsm2d' and 'fmm2d'.")
+            raise ValueError(err) from None
+
+        dem = self.z
+
+        if isinstance(threshold, (float, int)):
+            threshold_slopes = np.full(
+                dem.shape, threshold, order='F', dtype=np.float32)
+        elif isinstance(threshold, GridObject):
+            threshold_slopes = threshold.z
+        elif isinstance(threshold, np.ndarray):
+            threshold_slopes = threshold
+        else:
+            err = "Threshold must be a float, int, GridObject, or np.ndarray."
+            raise TypeError(err) from None
+
+        if not dem.shape == threshold_slopes.shape:
+            err = "Threshold array must have the same shape as the DEM."
+            raise ValueError(err) from None
+        if not threshold_slopes.flags['F_CONTIGUOUS']:
+            threshold_slopes = np.asfortranarray(threshold)
+        if not np.issubdtype(threshold_slopes.dtype, np.float32):
+            threshold_slopes = threshold_slopes.astype(np.float32)
+
+        excess = np.zeros_like(dem)
+        cellsize = self.cellsize
+        nrows, ncols = self.shape
+
+        if method == 'fsm2d':
+            grid_excesstopography_fsm2d(
+                excess, dem, threshold_slopes, cellsize, nrows, ncols)
+
+        elif method == 'fmm2d':
+            heap = np.zeros_like(dem, dtype=np.int64)
+            back = np.zeros_like(dem, dtype=np.int64)
+
+            grid_excesstopography_fmm2d(excess, heap, back, dem,
+                                        threshold_slopes, cellsize,
+                                        nrows, ncols)
+
+        result = copy.copy(self)
+        result.z = excess
+
+        return result
+
+    def info(self) -> None:
         """Prints all variables of a GridObject.
         """
         print(f"name: {self.name}")
@@ -122,14 +210,14 @@ class GridObject():
         print(f"transform: {self.transform}")
         print(f"crs: {self.crs}")
 
-    def show(self, cmap='terrain'):
+    def show(self, cmap='terrain') -> None:
         """
         Display the GridObject instance as an image using Matplotlib.
 
         Parameters
         ----------
         cmap : str, optional
-            Matplotlib colormap that will be used in the plot. 
+            Matplotlib colormap that will be used in the plot.
         """
         plt.imshow(self, cmap=cmap)
         plt.title(self.name)
@@ -357,7 +445,7 @@ class GridObject():
     def __setitem__(self, index, value):
         try:
             value = np.float32(value)
-        except:
+        except (ValueError, TypeError):
             raise TypeError(
                 f"{value} can't be converted to float32.") from None
 
