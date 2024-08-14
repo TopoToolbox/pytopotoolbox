@@ -97,9 +97,22 @@ For any operating system, install the following:
 
 [work in progress]
 
-## Testing
+## Testing and Linting
 
-To find out how to run the tests of the pytopotoolbox, refer to the dedicated [readme](./test/README.md) in the /tests directory.
+To run the tests for this package, run:
+
+```bash
+cd path/to/pytopotoolbox
+pytest
+```
+
+To run the linting locally, use:
+
+```bash
+cd path/to/pytopotoolbox
+flake8 src/topotoolbox
+mypy --ignoremissing-imports src/topotoolbox
+```
 
 ## Contributing
 
