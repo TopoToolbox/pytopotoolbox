@@ -129,7 +129,7 @@ void wrap_gwdt(
 //  dims: A tuple containing the number of rows and columns.
 
 void wrap_gwdt_computecosts(
-        py::array_t<float> costs,py::array_t<prtdiff_t> conncomps,
+        py::array_t<float> costs,py::array_t<ptrdiff_t> conncomps,
         py::array_t<int32_t> flats, py::array_t<float> original_dem,
         py::array_t<float>filled_dem, std::tuple<ptrdiff_t, ptrdiff_t>dims){
 
@@ -165,16 +165,16 @@ void wrap_flow_routing_d8_carve(
 }
 
 void wrap_flow_routing_targets(
-        py::array_t<ptrdiff_t> target, py::array_t<ptrdiff_t> source
-        py::array_t<unit8_t> direction, std::tuple<ptrdiff_t,ptrdiff_t> dims){
+        py::array_t<ptrdiff_t> target, py::array_t<ptrdiff_t> source,
+        py::array_t<uint8_t> direction, std::tuple<ptrdiff_t,ptrdiff_t> dims){
 
     ptrdiff_t *target_ptr = target.mutable_data();
     ptrdiff_t *source_ptr = source.mutable_data();
-    uint8_t *direction = source.mutable_data(); 
+    uint8_t *direction_ptr = direction.mutable_data(); 
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-    flow_routing_targets(target_ptr, source_ptr, direction_ptr, dims_ptr)
+    flow_routing_targets(target_ptr, source_ptr, direction_ptr, dims_ptr);
 }
 
 // Make wrap_funcname() function available as grid_funcname() to be used by
@@ -188,5 +188,5 @@ PYBIND11_MODULE(_grid, m) {
     m.def("grid_gwdt", &wrap_gwdt);
     m.def("grid_gwdt_computecosts", &wrap_gwdt_computecosts);
     m.def("grid_flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
-    m.def("grid_flow_routing_targets", &wrap_flow_routing_targets)
+    m.def("grid_flow_routing_targets", &wrap_flow_routing_targets);
 }

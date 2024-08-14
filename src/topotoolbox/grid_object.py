@@ -12,7 +12,8 @@ from ._grid import (  # type: ignore
     grid_identifyflats,
     grid_excesstopography_fsm2d,
     grid_excesstopography_fmm2d,
-    grid_gwdt
+    grid_gwdt,
+    grid_gwdt_computecosts
 )
 
 __all__ = ['GridObject']
@@ -194,7 +195,7 @@ class GridObject():
 
         return result
 
-    def gwdt(self, flats: "GridObject | np.ndarray | None" = None) -> 'GridObject':
+    def _gwdt(self, flats: "GridObject | np.ndarray | None" = None) -> 'GridObject':
 
         if flats is None:
             flats = self.fillsinks().z
@@ -214,6 +215,14 @@ class GridObject():
 
         result = copy.copy(self)
         result.z = dist
+        return result
+
+    def _gwdt_computecosts(self):
+
+        grid_gwdt_computecosts()
+
+        result = copy.copy()
+        result.z = 0
         return result
 
     def info(self) -> None:
