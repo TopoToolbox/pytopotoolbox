@@ -25,8 +25,41 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest
+
+      - name: Build and install TopoToolbox
+        run: |
           pip install .[opensimplex]
 
       - name: Run tests
         run: |
           python -m pytest
+
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+
+      - name: Install tools
+        run: | 
+          pip install mypy
+          pip install pylint
+          pip install flake8
+          pip install numpy
+          pip install matplotlib
+          pip install rasterio
+
+      - name: Run flake8
+        run: flake8 src/topotoolbox
+
+      #- name: Run pylint
+      #  run: pylint src/topotoolbox/
+
+      - name: Run type checks
+        run: mypy --ignore-missing-imports src/topotoolbox

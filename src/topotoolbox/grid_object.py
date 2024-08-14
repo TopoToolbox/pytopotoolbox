@@ -32,12 +32,12 @@ class GridObject():
         self.name = ''
 
         # raster metadata
-        self.z = np.empty((), order='F')
+        self.z = np.empty((), order='F', dtype=np.float32)
         self.rows = 0
         self.columns = 0
         self.shape = self.z.shape
 
-        self.cellsize = 0
+        self.cellsize = 0.0
 
         # georeference
         self.bounds = None
@@ -64,33 +64,36 @@ class GridObject():
         return result
 
     def identifyflats(
-            self, raw: bool = False, output: list[str] = None) -> tuple:
+            self, raw: bool = False, output: list[str] | None = None) -> tuple:
         """Identifies flats and sills in a digital elevation model (DEM).
 
         Parameters
         ----------
         raw : bool, optional
-            If True, returns the raw output grid as np.ndarray. 
+            If True, returns the raw output grid as np.ndarray.
             Defaults to False.
         output : list of str, optional
-            List of strings indicating desired output types. Possible values 
+            List of strings indicating desired output types. Possible values
             are 'sills', 'flats'. Order of inputs in list are irrelevant,
-            first entry in output will always be sills. 
+            first entry in output will always be sills.
             Defaults to ['sills', 'flats'].
 
         Returns
         -------
         tuple
-            A tuple containing copies of the DEM with identified 
+            A tuple containing copies of the DEM with identified
             flats and/or sills.
 
         Notes
         -----
-        Flats are identified as 1s, sills as 2s, and presills as 5s 
-        (since they are also flats) in the output grid. 
+        Flats are identified as 1s, sills as 2s, and presills as 5s
+        (since they are also flats) in the output grid.
         Only relevant when using raw=True.
         """
 
+        # Since having lists as default arguments can lead to problems, output
+        # is initialized with None by default and only converted to a list
+        # containing default output here:
         if output is None:
             output = ['sills', 'flats']
 
@@ -100,7 +103,7 @@ class GridObject():
         grid_identifyflats(output_grid, dem, self.shape)
 
         if raw:
-            return output_grid
+            return tuple(output_grid)
 
         result = []
         if 'flats' in output:
@@ -244,7 +247,7 @@ class GridObject():
         Parameters
         ----------
         cmap : str, optional
-            Matplotlib colormap that will be used in the plot. 
+            Matplotlib colormap that will be used in the plot.
         """
         plt.imshow(self, cmap=cmap)
         plt.title(self.name)
@@ -472,7 +475,7 @@ class GridObject():
     def __setitem__(self, index, value):
         try:
             value = np.float32(value)
-        except:
+        except (ValueError, TypeError):
             raise TypeError(
                 f"{value} can't be converted to float32.") from None
 
