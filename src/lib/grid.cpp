@@ -164,6 +164,19 @@ void wrap_flow_routing_d8_carve(
     flow_routing_d8_carve(source_ptr, direction_ptr, dem_ptr, dist_ptr, flats_ptr, dims_ptr);
 }
 
+void wrap_flow_routing_targets(
+        py::array_t<ptrdiff_t> target, py::array_t<ptrdiff_t> source
+        py::array_t<unit8_t> direction, std::tuple<ptrdiff_t,ptrdiff_t> dims){
+
+    ptrdiff_t *target_ptr = target.mutable_data();
+    ptrdiff_t *source_ptr = source.mutable_data();
+    uint8_t *direction = source.mutable_data(); 
+
+    std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
+    ptrdiff_t *dims_ptr = dims_array.data();
+    flow_routing_targets(target_ptr, source_ptr, direction_ptr, dims_ptr)
+}
+
 // Make wrap_funcname() function available as grid_funcname() to be used by
 // by functions in the pytopotoolbox package
 
@@ -174,5 +187,6 @@ PYBIND11_MODULE(_grid, m) {
     m.def("grid_excesstopography_fmm2d", &wrap_excesstopography_fmm2d);
     m.def("grid_gwdt", &wrap_gwdt);
     m.def("grid_gwdt_computecosts", &wrap_gwdt_computecosts);
-    m.def("grid_flow_routing_d8_carve", &wrap_flow_routing_d8_carve)
+    m.def("grid_flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
+    m.def("grid_flow_routing_targets", &wrap_flow_routing_targets)
 }
