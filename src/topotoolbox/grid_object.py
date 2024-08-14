@@ -11,7 +11,9 @@ from ._grid import (  # type: ignore
     grid_fillsinks,
     grid_identifyflats,
     grid_excesstopography_fsm2d,
-    grid_excesstopography_fmm2d
+    grid_excesstopography_fmm2d,
+    grid_gwdt,
+    grid_gwdt_computecosts
 )
 
 __all__ = ['GridObject']
@@ -54,7 +56,7 @@ class GridObject():
         dem = self.z.astype(np.float32, order='F')
         output = np.zeros_like(dem)
 
-        grid_fillsinks(output, dem, self.rows, self.columns)
+        grid_fillsinks(output, dem, self.shape)
 
         result = copy.copy(self)
         result.z = output
@@ -98,7 +100,7 @@ class GridObject():
         dem = self.z.astype(np.float32, order='F')
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
-        grid_identifyflats(output_grid, dem, self.rows, self.columns)
+        grid_identifyflats(output_grid, dem, self.shape)
 
         if raw:
             return tuple(output_grid)
@@ -179,23 +181,51 @@ class GridObject():
 
         excess = np.zeros_like(dem)
         cellsize = self.cellsize
-        nrows, ncols = self.shape
 
         if method == 'fsm2d':
             grid_excesstopography_fsm2d(
-                excess, dem, threshold_slopes, cellsize, nrows, ncols)
+                excess, dem, threshold_slopes, cellsize, self.shape)
 
         elif method == 'fmm2d':
             heap = np.zeros_like(dem, dtype=np.int64)
             back = np.zeros_like(dem, dtype=np.int64)
 
-            grid_excesstopography_fmm2d(excess, heap, back, dem,
-                                        threshold_slopes, cellsize,
-                                        nrows, ncols)
+            grid_excesstopography_fmm2d(
+                excess, heap, back, dem, threshold_slopes, cellsize, self.shape)
 
         result = copy.copy(self)
         result.z = excess
 
+        return result
+
+    def _gwdt(self, flats: "GridObject | np.ndarray | None" = None) -> 'GridObject':
+
+        if flats is None:
+            flats = self.fillsinks().z
+        elif isinstance(flats, GridObject):
+            flats = flats.z
+        elif isinstance(flats, np.ndarray):
+            flats = flats(dtype='int64', order='F')
+            # make sure other and stuff is correct (int32 etc)
+
+        dist = np.zeros_like(flats, dtype=np.float64)
+        prev = np.zeros_like(flats, dtype=np.int64)
+        costs = np.zeros_like(flats, dtype=np.float64)
+        heap = np.zeros_like(flats, dtype=np.int64)
+        back = np.zeros_like(flats, dtype=np.int64)
+
+        grid_gwdt(dist, prev, costs, flats, heap, back, self.shape)
+
+        result = copy.copy(self)
+        result.z = dist
+        return result
+
+    def _gwdt_computecosts(self):
+
+        grid_gwdt_computecosts()
+
+        result = copy.copy()
+        result.z = 0
         return result
 
     def info(self) -> None:

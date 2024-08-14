@@ -1,2 +1,3 @@
-from .grid_object import *  # noqa
-from .utils import *  # noqa
+from .grid_object import *
+from .flow_object import *
+from .utils import *
