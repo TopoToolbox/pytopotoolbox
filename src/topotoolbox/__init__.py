@@ -1,3 +1,3 @@
-from .grid_object import *
-from .flow_object import *
+from .grid_object import GridObject
+from .flow_object import FlowObject
 from .utils import *

@@ -12,8 +12,10 @@ from ._grid import (  # type: ignore
     grid_identifyflats,
     grid_excesstopography_fsm2d,
     grid_excesstopography_fmm2d,
+    grid_gwdt_computecosts,
     grid_gwdt,
-    grid_gwdt_computecosts
+    grid_flow_routing_d8_carve,
+    grid_flow_routing_targets
 )
 
 __all__ = ['GridObject']
@@ -190,43 +192,98 @@ class GridObject():
             heap = np.zeros_like(dem, dtype=np.int64)
             back = np.zeros_like(dem, dtype=np.int64)
 
-            grid_excesstopography_fmm2d(
-                excess, heap, back, dem, threshold_slopes, cellsize, self.shape)
+            grid_excesstopography_fmm2d(excess, heap, back, dem,
+                                        threshold_slopes, cellsize, self.shape)
 
         result = copy.copy(self)
         result.z = excess
 
         return result
 
-    def _gwdt(self, flats: "GridObject | np.ndarray | None" = None) -> 'GridObject':
+    def _gwdt_computecosts(self) -> np.ndarray:
+        """
+        Compute the cost array used in the gradient-weighted distance
+        transform (GWDT) algorithm.
 
-        if flats is None:
-            flats = self.fillsinks().z
-        elif isinstance(flats, GridObject):
-            flats = flats.z
-        elif isinstance(flats, np.ndarray):
-            flats = flats(dtype='int64', order='F')
-            # make sure other and stuff is correct (int32 etc)
 
-        dist = np.zeros_like(flats, dtype=np.float64)
-        prev = np.zeros_like(flats, dtype=np.int64)
-        costs = np.zeros_like(flats, dtype=np.float64)
-        heap = np.zeros_like(flats, dtype=np.int64)
-        back = np.zeros_like(flats, dtype=np.int64)
+        Returns
+        -------
+        np.ndarray
+            A 2D array of costs corresponding to each grid cell in the DEM.
+        """
+        dem = self.z
+        flats = self.identifyflats(raw=True)
+        filled_dem = self.fillsinks().z
+        dims = self.shape
+        costs = np.zeros_like(dem, dtype=np.float32, order='F')
+        conncomps = np.zeros_like(dem, dtype=np.int64, order='F')
 
-        grid_gwdt(dist, prev, costs, flats, heap, back, self.shape)
+        grid_gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
+        del conncomps, flats, filled_dem
+        return costs
 
-        result = copy.copy(self)
-        result.z = dist
-        return result
+    def _gwdt(self) -> np.ndarray:
+        """
+        Perform the grey-weighted distance transform (GWDT) on the DEM.
 
-    def _gwdt_computecosts(self):
+        Returns
+        -------
+        np.ndarray
+            A 2D array representing the GWDT distances for each grid cell.
+        """
+        costs = self._gwdt_computecosts()
+        flats = self.identifyflats(raw=True)
+        dims = self.shape
+        dist = np.zeros_like(flats, dtype=np.float32, order='F')
+        prev = np.zeros_like(flats, dtype=np.int64, order='F')
+        heap = np.zeros_like(flats, dtype=np.int64, order='F')
+        back = np.zeros_like(flats, dtype=np.int64, order='F')
 
-        grid_gwdt_computecosts()
+        grid_gwdt(dist, prev, costs, flats, heap, back, dims)
+        del costs, prev, heap, back
+        return dist
 
-        result = copy.copy()
-        result.z = 0
-        return result
+    def _flow_routing_d8_carve(self) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Compute the flow routing using the D8 algorithm with carving
+        for flat areas.
+
+        Returns
+        -------
+        np.ndarray
+            array indicating the source cells for flow routing. (source)
+        np.ndarray
+            array indicating the flow direction for each grid cell. (direction)
+        """
+        filled_dem = self.fillsinks().z
+        dist = self._gwdt()
+        flats = self.identifyflats(raw=True)
+        dims = self.shape
+        source = np.zeros_like(flats, dtype=np.int64, order='F')
+        direction = np.zeros_like(flats, dtype=np.uint8, order='F')
+
+        grid_flow_routing_d8_carve(
+            source, direction, filled_dem, dist, flats, dims)
+        del filled_dem, dist, flats
+        return source, direction
+
+    def _flow_routing_targets(self) -> np.ndarray:
+        """
+        Identify the target cells for flow routing.
+
+        Returns
+        -------
+        np.ndarray
+            A 2D array where each cell points to its downstream target cell.
+        """
+
+        source, direction = self._flow_routing_d8_carve()
+        dims = self.shape
+        target = np.zeros_like(source, dtype=np.int64, order='F')
+
+        grid_flow_routing_targets(target, source, direction, dims)
+        del source, direction
+        return target
 
     def info(self) -> None:
         """Prints all variables of a GridObject.
