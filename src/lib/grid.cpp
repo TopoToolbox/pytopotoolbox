@@ -101,7 +101,12 @@ void wrap_excesstopography_fmm2d(
 
 // wrap_gwdt:
 // Parameters:
-//
+//   dist: A NumPy array to store the geodesic distance values.
+//   prev: A NumPy array to store the indices of previous nodes in the optimal path.
+//   costs: A NumPy array representing the cost surface for the GWDT calculation.
+//   flats: A NumPy array representing flat regions in the DEM.
+//   heap: A NumPy array representing the heap used in the GWDT algorithm.
+//   back: A NumPy array representing the backtracking information used in the GWDT algorithm.
 //   dims: A tuple containing the number of rows and columns.
 
 void wrap_gwdt(
@@ -125,8 +130,12 @@ void wrap_gwdt(
 
 // wrap_gwdt_computecosts:
 // Parameters:
-//
-//  dims: A tuple containing the number of rows and columns.
+//   costs: A NumPy array to store the computed cost values.
+//   conncomps: A NumPy array representing connected components in the DEM.
+//   flats: A NumPy array representing flat regions in the DEM.
+//   original_dem: A NumPy array representing the original digital elevation model (DEM).
+//   filled_dem: A NumPy array representing the filled digital elevation model (DEM).
+//   dims: A tuple containing the number of rows and columns.
 
 void wrap_gwdt_computecosts(
         py::array_t<float> costs,py::array_t<ptrdiff_t> conncomps,
@@ -145,7 +154,14 @@ void wrap_gwdt_computecosts(
     gwdt_computecosts(costs_ptr,conncomps_ptr,flats_ptr,original_dem_ptr,filled_dem_ptr, dims_ptr);
 }
 
-//TODO: add comment
+// wrap_flow_routing_d8_carve:
+// Parameters:
+//   source: A NumPy array representing the source cells for flow routing.
+//   direction: A NumPy array to store the computed flow directions.
+//   dem: A NumPy array representing the digital elevation model (DEM).
+//   dist: A NumPy array to store the computed flow distances.
+//   flats: A NumPy array representing flat regions in the DEM.
+//   dims: A tuple containing the number of rows and columns.
 
 void wrap_flow_routing_d8_carve(
         py::array_t<ptrdiff_t> source, py::array_t<uint8_t> direction, 
@@ -163,6 +179,13 @@ void wrap_flow_routing_d8_carve(
 
     flow_routing_d8_carve(source_ptr, direction_ptr, dem_ptr, dist_ptr, flats_ptr, dims_ptr);
 }
+
+// wrap_flow_routing_targets:
+// Parameters:
+//   target: A NumPy array to store the computed target cells for flow routing.
+//   source: A NumPy array representing the source cells for flow routing.
+//   direction: A NumPy array representing the computed flow directions.
+//   dims: A tuple containing the number of rows and columns.
 
 void wrap_flow_routing_targets(
         py::array_t<ptrdiff_t> target, py::array_t<ptrdiff_t> source,
