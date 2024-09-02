@@ -6,3 +6,5 @@ Examples
    /_temp/magicfunctions
    /_temp/plotting
    /_temp/downloading
+   /_temp/flowobject
+   

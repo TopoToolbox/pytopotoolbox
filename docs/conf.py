@@ -58,4 +58,5 @@ nbsphinx_thumbnails = {
     '_temp/magicfunctions': '_static/thumbnails/placeholder.png',
     '_temp/plotting': '_static/thumbnails/placeholder.png',
     '_temp/downloading': '_static/thumbnails/placeholder.png',
+    '_temp/flowobject': '_static/thumbnails/placeholder.png',
 }
