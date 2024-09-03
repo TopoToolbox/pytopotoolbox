@@ -15,7 +15,8 @@ from ._grid import (  # type: ignore
     grid_gwdt_computecosts,
     grid_gwdt,
     grid_flow_routing_d8_carve,
-    grid_flow_routing_targets
+    grid_flow_routing_targets,
+    grid_gradient8,
 )
 
 __all__ = ['GridObject']
@@ -197,6 +198,53 @@ class GridObject():
 
         result = copy.copy(self)
         result.z = excess
+
+        return result
+
+    def gradient8(self, unit: str = 'tangent', multiprocessing: bool = True):
+        """
+    Compute the gradient of a digital elevation model (DEM) using an
+    8-direction algorithm.
+
+    Parameters
+    ----------
+    unit : str, optional
+        The unit of the gradient to be calculated. Options are:
+        - 'tangent' : Calculate the gradient as a tangent (default).
+        - 'radian'  : Calculate the gradient in radians.
+        - 'degree'  : Calculate the gradient in degrees.
+        - 'sine'    : Calculate the gradient as the sine of the angle.
+        - 'percent' : Calculate the gradient as a percentage.
+    multiprocessing : bool, optional
+        If True, use multiprocessing for computation. Default is True.
+
+    Returns
+    -------
+    GridObject
+        A new GridObject with the calculated gradient.
+        """
+
+        if multiprocessing:
+            use_mp = 1
+        else:
+            use_mp = 0
+
+        dem = self.z.astype(np.float32, order='F')
+        output = np.zeros_like(dem)
+
+        grid_gradient8(output, dem, self.cellsize, use_mp, self.shape)
+        result = copy.copy(self)
+
+        if unit == 'radian':
+            output = np.arctan(output)
+        elif unit == 'degree':
+            output = np.arctan(output) * (180.0 / np.pi)
+        elif unit == 'sine':
+            output = np.sin(np.arctan(output))
+        elif unit == 'percent':
+            output = output * 100.0
+
+        result.z = output
 
         return result
 
