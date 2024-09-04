@@ -10,7 +10,7 @@ FetchContent_Declare(
   topotoolbox
   GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
   #GIT_TAG main
-  GIT_TAG 2024-W34
+  GIT_TAG 2024-W36
 )
 FetchContent_MakeAvailable(topotoolbox)
 
