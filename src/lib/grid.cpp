@@ -1,4 +1,4 @@
-// This file contains bindings for the fillsinks function using PyBind11.
+// This file contains bindings for the grid functions
 
 // It is expected, that the #include statemnts can raise errors in your IDE.
 // The needed files for those imports are only provided during the build process.

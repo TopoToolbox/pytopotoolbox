@@ -1,25 +1,14 @@
 """This module contains the FlowObject class.
 """
-from .grid_object import GridObject
-
-import numpy as np
 import matplotlib.pyplot as plt
-
-# Add future flow functions here
-# pylint: disable=import-error
-# from ._flow import (  # type: ignore
-#    flow_somefuncname
-# )
+import numpy as np
 
 # pylint: disable=import-error
-from ._grid import (  # type: ignore
-    grid_fillsinks,
-    grid_identifyflats,
-    grid_gwdt,
-    grid_gwdt_computecosts,
-    grid_flow_routing_d8_carve,
-    grid_flow_routing_targets
-)
+from ._grid import (grid_fillsinks, grid_flow_routing_d8_carve,  # type: ignore
+                    grid_flow_routing_targets, grid_gwdt,
+                    grid_gwdt_computecosts, grid_identifyflats)
+
+from .grid_object import GridObject
 
 __all__ = ['FlowObject']
 
@@ -76,9 +65,11 @@ class FlowObject():
         self.name = grid.name
 
         # raster metadata
-        self.z = dem
+
+        self.z = filled_dem
         self.target = target
         self.source = source
+        self.direction = direction
         self.shape = grid.shape
 
         # georeference
