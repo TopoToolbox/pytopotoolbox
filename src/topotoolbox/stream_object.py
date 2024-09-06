@@ -5,10 +5,9 @@ import matplotlib.pyplot as plt
 
 from .flow_object import FlowObject
 
-# pylint: disable=import-error
-from ._flow import (  # type: ignore
-    flow_flow_accumulation,
-)
+# pylint: disable=no-name-in-module
+from . import _flow  # type: ignore
+
 
 _all_ = ['StreamObject']
 
@@ -19,7 +18,7 @@ class StreamObject():
         acc = np.zeros_like(flow.z, order='F', dtype=np.float32)
         weights = np.ones_like(flow.z, order='F', dtype=np.float32)
 
-        flow_flow_accumulation(
+        _flow.flow_accumulation(
             acc, flow.source, flow.direction, weights, flow.shape)
 
         self.path = flow.path

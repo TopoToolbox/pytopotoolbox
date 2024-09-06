@@ -39,5 +39,5 @@ void wrap_flow_accumulation(
 // by functions in the pytopotoolbox package
 
 PYBIND11_MODULE(_flow, m) {
-    m.def("flow_flow_accumulation", &wrap_flow_accumulation);
+    m.def("flow_accumulation", &wrap_flow_accumulation);
 }

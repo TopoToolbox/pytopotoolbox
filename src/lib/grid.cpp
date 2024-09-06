@@ -204,12 +204,12 @@ void wrap_flow_routing_targets(
 // by functions in the pytopotoolbox package
 
 PYBIND11_MODULE(_grid, m) {
-    m.def("grid_fillsinks", &wrap_fillsinks);
-    m.def("grid_identifyflats", &wrap_identifyflats);
-    m.def("grid_excesstopography_fsm2d", &wrap_excesstopography_fsm2d);
-    m.def("grid_excesstopography_fmm2d", &wrap_excesstopography_fmm2d);
-    m.def("grid_gwdt", &wrap_gwdt);
-    m.def("grid_gwdt_computecosts", &wrap_gwdt_computecosts);
-    m.def("grid_flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
-    m.def("grid_flow_routing_targets", &wrap_flow_routing_targets);
+    m.def("fillsinks", &wrap_fillsinks);
+    m.def("identifyflats", &wrap_identifyflats);
+    m.def("excesstopography_fsm2d", &wrap_excesstopography_fsm2d);
+    m.def("excesstopography_fmm2d", &wrap_excesstopography_fmm2d);
+    m.def("gwdt", &wrap_gwdt);
+    m.def("gwdt_computecosts", &wrap_gwdt_computecosts);
+    m.def("flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
+    m.def("flow_routing_targets", &wrap_flow_routing_targets);
 }

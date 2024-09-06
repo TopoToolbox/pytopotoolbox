@@ -3,11 +3,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# pylint: disable=import-error
-from ._grid import (grid_fillsinks, grid_flow_routing_d8_carve,  # type: ignore
-                    grid_flow_routing_targets, grid_gwdt,
-                    grid_gwdt_computecosts, grid_identifyflats)
-
+# pylint: disable=no-name-in-module
+from . import _grid  # type: ignore
 from .grid_object import GridObject
 
 __all__ = ['FlowObject']
@@ -36,30 +33,28 @@ class FlowObject():
         dem = grid.z
 
         filled_dem = np.zeros_like(dem, dtype=np.float32, order='F')
-        grid_fillsinks(filled_dem, dem, dims)
+        _grid.fillsinks(filled_dem, dem, dims)
 
         flats = np.zeros_like(dem, dtype=np.int32, order='F')
-        grid_identifyflats(flats, filled_dem, dims)
+        _grid.identifyflats(flats, filled_dem, dims)
 
         costs = np.zeros_like(dem, dtype=np.float32, order='F')
         conncomps = np.zeros_like(dem, dtype=np.int64, order='F')
-        grid_gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
+        _grid.gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
 
         dist = np.zeros_like(flats, dtype=np.float32, order='F')
         prev = conncomps  # prev: dtype=np.int64
         heap = np.zeros_like(flats, dtype=np.int64, order='F')
         back = np.zeros_like(flats, dtype=np.int64, order='F')
-        grid_gwdt(dist, prev, costs, flats, heap, back, dims)
+        _grid.gwdt(dist, prev, costs, flats, heap, back, dims)
 
         source = heap  # source: dtype=np.int64
         direction = np.zeros_like(dem, dtype=np.uint8, order='F')
-        grid_flow_routing_d8_carve(
+        _grid.flow_routing_d8_carve(
             source, direction, filled_dem, dist, flats, dims)
 
         target = back  # target: dtype=int64
-        grid_flow_routing_targets(target, source, direction, dims)
-
-        # TODO: use 'del' to immediately delete unused large arrays?
+        _grid.flow_routing_targets(target, source, direction, dims)
 
         self.path = grid.path
         self.name = grid.name
