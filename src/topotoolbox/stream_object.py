@@ -8,11 +8,13 @@ from .flow_object import FlowObject
 # pylint: disable=no-name-in-module
 from . import _flow  # type: ignore
 
-
 _all_ = ['StreamObject']
 
 
 class StreamObject():
+    """A class to represent stream flow accumulation based on a FlowObject.
+    """
+
     def __init__(self, flow: FlowObject) -> None:
 
         acc = np.zeros_like(flow.z, order='F', dtype=np.float32)
