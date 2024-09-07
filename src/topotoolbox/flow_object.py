@@ -74,26 +74,42 @@ class FlowObject():
 
     def show(self, cmap: str = 'terrain'):
         """
-        Display the FlowObject instance as an image using Matplotlib.
+        Display the StreamObject instance as an image using Matplotlib.
 
         Parameters
         ----------
         cmap : str, optional
             Matplotlib colormap that will be used in the plot.
         """
-
-        fig, axs = plt.subplots(1, 3, figsize=(15, 5))
-
-        axs[0].imshow(self.z, cmap=cmap)
-        axs[0].set_title('dem')
-
-        axs[1].imshow(self.target, cmap=cmap)
-        axs[1].set_title('target')
-
-        axs[2].imshow(self.source, cmap=cmap)
-        axs[2].set_title('source')
-
+        plt.imshow(self.z, cmap=cmap)
+        plt.title(self.name)
+        plt.colorbar()
         plt.tight_layout()
         plt.show()
 
-    # TODO: Add magic functions, maybe use mixins to reuse GridObject functions
+    # 'Magic' functions:
+    # ------------------------------------------------------------------------
+
+    def __len__(self):
+        return len(self.z)
+
+    def __iter__(self):
+        return iter(self.z)
+
+    def __getitem__(self, index):
+        return self.z[index]
+
+    def __setitem__(self, index, value):
+        try:
+            value = np.float32(value)
+        except (ValueError, TypeError):
+            raise TypeError(
+                f"{value} can't be converted to float32.") from None
+
+        self.z[index] = value
+
+    def __array__(self):
+        return self.z
+
+    def __str__(self):
+        return str(self.z)
