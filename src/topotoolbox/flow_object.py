@@ -74,7 +74,7 @@ class FlowObject():
 
     def show(self, cmap: str = 'terrain'):
         """
-        Display the StreamObject instance as an image using Matplotlib.
+        Display the FlowObject instance as an image using Matplotlib.
 
         Parameters
         ----------
