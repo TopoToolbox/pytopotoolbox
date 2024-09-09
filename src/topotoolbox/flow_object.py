@@ -61,10 +61,9 @@ class FlowObject():
 
         # raster metadata
 
-        self.z = filled_dem
-        self.target = target
-        self.source = source
-        self.direction = direction
+        self.target = target  # dtype=np.int64
+        self.source = source  # dtype=np.int64
+        self.direction = direction  # dtype=np.unit8
         self.shape = grid.shape
 
         # georeference
@@ -72,44 +71,52 @@ class FlowObject():
         self.transform = grid.transform
         self.crs = grid.crs
 
-    def show(self, cmap: str = 'terrain'):
-        """
-        Display the FlowObject instance as an image using Matplotlib.
-
-        Parameters
-        ----------
-        cmap : str, optional
-            Matplotlib colormap that will be used in the plot.
-        """
-        plt.imshow(self.z, cmap=cmap)
-        plt.title(self.name)
-        plt.colorbar()
-        plt.tight_layout()
-        plt.show()
-
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
     def __len__(self):
-        return len(self.z)
+        return len(self.target)
 
     def __iter__(self):
-        return iter(self.z)
+        return iter(self.target)
 
     def __getitem__(self, index):
-        return self.z[index]
+        if isinstance(index, tuple):
+            array_name, idx = index
+
+            if array_name == 'target':
+                return self.target[idx]
+            elif array_name == 'source':
+                return self.source[idx]
+            elif array_name == 'direction':
+                return self.direction[idx]
+            else:
+                raise ValueError(
+                    "Invalid raster name.('target', 'source', or 'direction')")
+        else:
+            raise ValueError(
+                "Index must be a tuple with (raster_name, index).")
 
     def __setitem__(self, index, value):
-        try:
-            value = np.float32(value)
-        except (ValueError, TypeError):
-            raise TypeError(
-                f"{value} can't be converted to float32.") from None
+        # Check if the index is a tuple
+        if isinstance(index, tuple):
+            array_name, idx = index
 
-        self.z[index] = value
+            if array_name == 'target':
+                self.target[idx] = value
+            elif array_name == 'source':
+                self.source[idx] = value
+            elif array_name == 'direction':
+                self.direction[idx] = value
+            else:
+                raise ValueError(
+                    "Invalid raster name.('target', 'source', or 'direction')")
+        else:
+            raise ValueError(
+                "Index must be a tuple with (raster_name, index).")
 
     def __array__(self):
-        return self.z
-
-    def __str__(self):
-        return str(self.z)
+        # Concatenate the arrays along their first axis.
+        # Not practical to compute with, but if there is a need to manually
+        # plot a FlowObject it'll show the logic nicely.
+        return np.concatenate((self.target, self.source, self.direction))
