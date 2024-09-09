@@ -17,8 +17,8 @@ class StreamObject():
 
     def __init__(self, flow: FlowObject) -> None:
 
-        acc = np.zeros_like(flow.z, order='F', dtype=np.float32)
-        weights = np.ones_like(flow.z, order='F', dtype=np.float32)
+        acc = np.zeros_like(flow.target, order='F', dtype=np.float32)
+        weights = np.ones_like(flow.target, order='F', dtype=np.float32)
 
         _flow.flow_accumulation(
             acc, flow.source, flow.direction, weights, flow.shape)

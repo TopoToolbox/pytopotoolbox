@@ -1,6 +1,5 @@
 """This module contains the FlowObject class.
 """
-import matplotlib.pyplot as plt
 import numpy as np
 
 # pylint: disable=no-name-in-module
