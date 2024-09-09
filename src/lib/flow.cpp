@@ -14,11 +14,25 @@ namespace py = pybind11;
 
 // wrap_flow_accumulation:
 // Parameters:
-//   acc:
-//   source:
-//   direction:
-//   weights:
-//   dims:
+//   acc: A 2D NumPy array (float) representing the accumulation matrix. 
+//        This matrix will be modified in-place to store the accumulated flow
+//        values based on the given flow directions and weights.
+//
+//   source: A 2D NumPy array (ptrdiff_t) representing the source cell indices.
+//           This array contains the cell indices (or indices) from which the 
+//           flow originates or accumulates.
+//
+//   direction: A 2D NumPy array (uint8_t) representing the flow direction for 
+//              each cell in the grid. This array contains encoded flow 
+//              direction values (e.g., D8 flow directions) to specify how 
+//              flow moves between cells in the grid.
+//
+//   weights: A 2D NumPy array (float) representing the weights or flow values
+//            assigned to each cell. These values are used to weight the
+//            accumulation of flow from one cell to its neighbors.
+//
+//   dims: A tuple values representing the dimensions of the grid (number of 
+//         rows and  columns) where flow accumulation is performed.
 
 void wrap_flow_accumulation(
         py::array_t<float> acc, py::array_t<ptrdiff_t> source, 
