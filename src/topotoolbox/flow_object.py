@@ -4,6 +4,7 @@ import numpy as np
 
 # pylint: disable=no-name-in-module
 from . import _grid  # type: ignore
+from . import _flow  # type: ignore
 from .grid_object import GridObject
 
 __all__ = ['FlowObject']
@@ -64,11 +65,59 @@ class FlowObject():
         self.source = source  # dtype=np.int64
         self.direction = direction  # dtype=np.unit8
         self.shape = grid.shape
+        self.cellsize = grid.cellsize
 
         # georeference
         self.bounds = grid.bounds
         self.transform = grid.transform
         self.crs = grid.crs
+
+    def flow_accumulation(self, weights: np.ndarray | float = 1.0):
+        """Computes the flow accumulation for a given flow network using 
+        optional weights. The flow accumulation represents the amount of flow
+        each cell receives from its upstream neighbors.
+
+        Parameters
+        ----------
+        weights : np.ndarray | float, optional
+            An array of the same shape as the flow grid representing weights
+            for each cell, or a constant float value used as the weight for all
+            cells. If `weights=1.0` (default), the flow accumulation is 
+            unweighted. If an ndarray is provided, it must match the shape of
+            the flow grid., by default 1.0
+
+        Raises
+        ------
+        ValueError
+            If the shape of the `weights` array does not match the shape of the
+            flow network grid.
+        """
+        acc = np.zeros_like(self.source, dtype=np.float32, order='F')
+
+        if weights == 1.0:
+            weights = np.ones_like(self.source, dtype=np.float32, order='F')
+        elif isinstance(weights, np.ndarray):
+            if weights.shape != acc.shape:
+                err = ("The shape of the provided weights ndarray does not " +
+                       f"match the shape of the FlowObject. {self.shape}")
+                raise ValueError(err)from None
+        else:
+            weights = np.full(self.shape, weights, dtype=np.float32, order='F')
+
+        _flow.flow_accumulation(
+            acc, self.source, self.direction, weights, self.shape)
+
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
+
+        result.z = acc
+        result.shape = self.shape
+        result.cellsize = self.cellsize
+
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.crs = self.crs
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
