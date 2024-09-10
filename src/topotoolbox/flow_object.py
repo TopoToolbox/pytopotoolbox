@@ -86,6 +86,11 @@ class FlowObject():
             unweighted. If an ndarray is provided, it must match the shape of
             the flow grid., by default 1.0
 
+        Returns
+        -------
+        GridObject
+            A new GridObject containing the flow accumulation grid.
+
         Raises
         ------
         ValueError
@@ -118,6 +123,8 @@ class FlowObject():
         result.bounds = self.bounds
         result.transform = self.transform
         result.crs = self.crs
+
+        return result
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
