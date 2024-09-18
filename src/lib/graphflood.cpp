@@ -40,7 +40,7 @@ void wrap_graphflood_full(
     GF_FLOAT              dx,
     bool                  SFD,
     bool                  D8,
-    int                   N_iterations
+    GF_UINT               N_iterations
     ){
 
     // numpy arrays to pointers
@@ -120,6 +120,23 @@ void wrap_compute_drainage_area_single_flow(
     compute_drainage_area_single_flow(output_ptr, Sreceivers_ptr, Stack_ptr, dim_ptr, dx);
 }
 
+void wrap_compute_priority_flood_plus_stack(
+	py::array_t<GF_FLOAT>    topo, 
+	py::array_t<GF_UINT>     Stack,
+	py::array_t<uint8_t>     BCs,
+	py::array_t<GF_UINT>     dim,
+	bool D8 
+	){
+	
+    GF_FLOAT* topo_ptr = topo.mutable_data();
+    GF_UINT* Stack_ptr = Stack.mutable_data();
+    uint8_t* BCs_ptr = BCs.mutable_data();
+	GF_UINT* dim_ptr = dim.mutable_data();
+	
+	// First priority flooding and calculating stack
+    compute_priority_flood_plus_topological_ordering(topo_ptr, Stack_ptr, BCs_ptr, dim_ptr, D8);
+}
+
 
 // Make wrap_funcname() function available as grid_funcname() to be used by
 // by functions in the pytopotoolbox package
@@ -127,6 +144,8 @@ void wrap_compute_drainage_area_single_flow(
 PYBIND11_MODULE(_graphflood, m) {
     m.def("graphflood_run_full", &wrap_graphflood_full);
     m.def("graphflood_sfgraph", &wrap_compute_sfgraph);
+    m.def("compute_priority_flood_plus_topological_ordering", &wrap_compute_priority_flood_plus_stack);
     m.def("compute_drainage_area_single_flow", &wrap_compute_drainage_area_single_flow);
+    
 
 }
