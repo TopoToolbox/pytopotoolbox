@@ -6,6 +6,7 @@ API Documentation
    :recursive:
 
    topotoolbox.GridObject
+   topotoolbox.FlowObject
    topotoolbox.show
    topotoolbox.read_tif
    topotoolbox.write_tif

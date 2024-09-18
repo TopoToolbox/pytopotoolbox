@@ -9,9 +9,6 @@ include(FetchContent)
 FetchContent_Declare(
   topotoolbox
   GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  # GIT_REPOSITORY /home/bgailleton/code/libtopotoolbox
-  # GIT_TAG graphflood
-  GIT_TAG main
 )
 FetchContent_MakeAvailable(topotoolbox)
 
