@@ -73,7 +73,7 @@ class FlowObject():
         self.crs = grid.crs
 
     def flow_accumulation(self, weights: np.ndarray | float = 1.0):
-        """Computes the flow accumulation for a given flow network using 
+        """Computes the flow accumulation for a given flow network using
         optional weights. The flow accumulation represents the amount of flow
         each cell receives from its upstream neighbors.
 
@@ -82,7 +82,7 @@ class FlowObject():
         weights : np.ndarray | float, optional
             An array of the same shape as the flow grid representing weights
             for each cell, or a constant float value used as the weight for all
-            cells. If `weights=1.0` (default), the flow accumulation is 
+            cells. If `weights=1.0` (default), the flow accumulation is
             unweighted. If an ndarray is provided, it must match the shape of
             the flow grid., by default 1.0
 
