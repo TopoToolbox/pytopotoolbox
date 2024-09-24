@@ -18,6 +18,29 @@ class StreamObject():
 
     def __init__(self, flow: FlowObject, units: str = 'pixels',
                  threshold: int | float | GridObject | np.ndarray = 1) -> None:
+        """
+    Initializes the StreamObject by processing flow accumulation.
+
+    Parameters
+    ----------
+    flow : FlowObject
+        The input flow object containing source, target, direction, and other
+        properties related to flow data.
+    units : str, optional
+        Units of measurement for the flow data. Can be 'pixels', 'mapunits', 
+        'm2', or 'km2'. Default is 'pixels'.
+    threshold : int | float | GridObject | np.ndarray, optional
+        The threshold for flow accumulation. This can be an integer, float, 
+        GridObject, or a NumPy array. All values above the threshold will 
+        be considered. Default is 1.
+
+    Raises
+    ------
+    ValueError
+        If the `units` parameter is not 'pixels', 'mapunits', 'm2', or 'km2'.
+    ValueError
+        If the shape of the threshold does not match the flow object shape.
+        """
 
         if units not in ['pixels', 'mapunits', 'm2', 'km2']:
             err = (f"Invalid unit '{units}' provided. Expected one of "
