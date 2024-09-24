@@ -8,8 +8,10 @@ project(${SKBUILD_PROJECT_NAME}
 include(FetchContent)
 FetchContent_Declare(
   topotoolbox
-  GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG 2024-W34
+  # GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
+  # GIT_TAG 2024-W34
+  GIT_REPOSITORY https://github.com/bgailleton/libtopotoolbox.git
+  GIT_TAG graphflood_patch
 )
 FetchContent_MakeAvailable(topotoolbox)
 

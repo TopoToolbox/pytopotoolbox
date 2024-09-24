@@ -40,7 +40,8 @@ void wrap_graphflood_full(
     GF_FLOAT              dx,
     bool                  SFD,
     bool                  D8,
-    GF_UINT               N_iterations
+    GF_UINT               N_iterations,
+    GF_FLOAT              step
     ){
 
     // numpy arrays to pointers
@@ -52,7 +53,7 @@ void wrap_graphflood_full(
     GF_UINT*  dim_ptr            = dim.mutable_data()            ;
 
     // calling the C function
-    graphflood_full(Z_ptr, hw_ptr, BCs_ptr, Precipitations_ptr, manning_ptr, dim_ptr, dt, dx, SFD, D8, N_iterations);
+    graphflood_full(Z_ptr, hw_ptr, BCs_ptr, Precipitations_ptr, manning_ptr, dim_ptr, dt, dx, SFD, D8, N_iterations, step);
 }
 
 
@@ -84,7 +85,8 @@ void wrap_compute_sfgraph(
     py::array_t<GF_UINT>     dim,
     GF_FLOAT                 dx,
     bool                     D8,
-    bool                     PF
+    bool                     PF,
+    GF_FLOAT                 step
     ){
 
     GF_FLOAT *topo_ptr             =   topo.mutable_data()            ;
@@ -97,7 +99,7 @@ void wrap_compute_sfgraph(
     GF_UINT  *dim_ptr              =   dim.mutable_data()             ;
     
     if(PF)
-        compute_sfgraph_priority_flood(topo_ptr, Sreceivers_ptr, distToReceivers_ptr, Sdonors_ptr, NSdonors_ptr, Stack_ptr, BCs_ptr, dim_ptr,  dx,  D8);
+        compute_sfgraph_priority_flood(topo_ptr, Sreceivers_ptr, distToReceivers_ptr, Sdonors_ptr, NSdonors_ptr, Stack_ptr, BCs_ptr, dim_ptr,  dx,  D8, step);
     else
         compute_sfgraph(topo_ptr, Sreceivers_ptr, distToReceivers_ptr, Sdonors_ptr, NSdonors_ptr, Stack_ptr, BCs_ptr, dim_ptr,  dx,  D8);
 
@@ -125,7 +127,8 @@ void wrap_compute_priority_flood_plus_stack(
 	py::array_t<GF_UINT>     Stack,
 	py::array_t<uint8_t>     BCs,
 	py::array_t<GF_UINT>     dim,
-	bool D8 
+	bool D8 ,
+    GF_FLOAT step
 	){
 	
     GF_FLOAT* topo_ptr = topo.mutable_data();
@@ -134,7 +137,23 @@ void wrap_compute_priority_flood_plus_stack(
 	GF_UINT* dim_ptr = dim.mutable_data();
 	
 	// First priority flooding and calculating stack
-    compute_priority_flood_plus_topological_ordering(topo_ptr, Stack_ptr, BCs_ptr, dim_ptr, D8);
+    compute_priority_flood_plus_topological_ordering(topo_ptr, Stack_ptr, BCs_ptr, dim_ptr, D8,step);
+}
+
+void wrap_compute_priority_flood(
+    py::array_t<GF_FLOAT>    topo, 
+    py::array_t<uint8_t>     BCs,
+    py::array_t<GF_UINT>     dim,
+    bool D8 ,
+    GF_FLOAT step
+    ){
+    
+    GF_FLOAT* topo_ptr = topo.mutable_data();
+    uint8_t* BCs_ptr = BCs.mutable_data();
+    GF_UINT* dim_ptr = dim.mutable_data();
+    
+    // First priority flooding and calculating stack
+    compute_priority_flood(topo_ptr, BCs_ptr, dim_ptr, D8,step);
 }
 
 
@@ -145,6 +164,7 @@ PYBIND11_MODULE(_graphflood, m) {
     m.def("graphflood_run_full", &wrap_graphflood_full);
     m.def("graphflood_sfgraph", &wrap_compute_sfgraph);
     m.def("compute_priority_flood_plus_topological_ordering", &wrap_compute_priority_flood_plus_stack);
+    m.def("compute_priority_flood", &wrap_compute_priority_flood);
     m.def("compute_drainage_area_single_flow", &wrap_compute_drainage_area_single_flow);
     
 
