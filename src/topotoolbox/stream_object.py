@@ -1,5 +1,7 @@
 """This module contains the StreamObject class.
 """
+import math
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -17,7 +19,7 @@ class StreamObject():
     """
 
     def __init__(self, flow: FlowObject, units: str = 'pixels',
-                 threshold: int | float | GridObject | np.ndarray = 1) -> None:
+                 threshold: int | float | GridObject | np.ndarray = 0) -> None:
         """
     Initializes the StreamObject by processing flow accumulation.
 
@@ -27,12 +29,15 @@ class StreamObject():
         The input flow object containing source, target, direction, and other
         properties related to flow data.
     units : str, optional
-        Units of measurement for the flow data. Can be 'pixels', 'mapunits', 
+        Units of measurement for the flow data. Can be 'pixels', 'mapunits',
         'm2', or 'km2'. Default is 'pixels'.
     threshold : int | float | GridObject | np.ndarray, optional
-        The threshold for flow accumulation. This can be an integer, float, 
-        GridObject, or a NumPy array. All values above the threshold will 
-        be considered. Default is 1.
+        The threshold for flow accumulation. This can be an integer, float,
+        GridObject, or a NumPy array. If more water than in the threshold has
+        accumulated in a cell, it is part of the stream.
+        Default is 0, which will result in the threshold being generated
+        based on this formula: threshold = (avg(n,m) * sqrt(avg(n,m))/2 + 1
+        where shape = (n,m).
 
     Raises
     ------
@@ -48,13 +53,19 @@ class StreamObject():
             raise ValueError(err) from None
 
         if isinstance(threshold, int) or isinstance(threshold, float):
-            threshold = np.full(flow.shape, threshold)
+            if threshold == 0:
+                avg = (flow.shape[0]*flow.shape[1])//2
+                threshold = np.full(flow.shape, (avg*math.sqrt(avg))//2 + 1)
+            else:
+                threshold = np.full(flow.shape, threshold)
+
         elif isinstance(threshold, np.ndarray):
             if threshold.shape != flow.shape:
                 err = (f"Threshold array shape {threshold.shape} does not "
                        f"match flow shape {flow.shape}.")
                 raise ValueError(err) from None
             threshold = threshold.astype(np.float32, order='F')
+
         else:
             if threshold.shape != flow.shape:
                 err = (f"Threshold GridObject shape {threshold.shape} does "
