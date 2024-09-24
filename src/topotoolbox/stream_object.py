@@ -54,7 +54,7 @@ class StreamObject():
 
         if isinstance(threshold, int) or isinstance(threshold, float):
             if threshold == 0:
-                avg = (flow.shape[0]*flow.shape[1])//2
+                avg = (flow.shape[0] + flow.shape[1])//2
                 threshold = np.full(flow.shape, (avg*math.sqrt(avg))//2 + 1)
             else:
                 threshold = np.full(flow.shape, threshold)
