@@ -31,7 +31,7 @@ class GridObject():
         self.columns = 0
         self.shape = self.z.shape
 
-        self.cellsize = 0.0
+        self.cellsize = 0.0  # in meters if crs.is_projected == True
 
         # georeference
         self.bounds = None
