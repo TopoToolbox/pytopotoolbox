@@ -78,9 +78,9 @@ def run_graphflood(
             )
 
         if isinstance(BCs, GridObject):
-            tBCs = BCs.z.ravel(order="C")
+            tBCs = BCs.z.ravel(order="C").astype(np.uint8)
         else:
-            tBCs = BCs.ravel(order="C")
+            tBCs = BCs.ravel(order="C").astype(np.uint8)
 
     # Ingesting Precipitations
     if isinstance(P, np.ndarray):
