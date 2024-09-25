@@ -62,12 +62,13 @@ class StreamObject():
         elif units == 'km2':
             cell_area = ((self.cellsize*0.001)**2)
         elif units == 'mapunits':
-            if self.crs.is_projected:
-                # True so cellsize is in meters
-                cell_area = self.cellsize**2
-            else:
-                # False so cellsize is in degrees
-                pass
+            if self.crs is not None:
+                if self.crs.is_projected:
+                    # True so cellsize is in meters
+                    cell_area = self.cellsize**2
+                else:
+                    # False so cellsize is in degrees
+                    pass
         else:
             err = (f"Invalid unit '{units}' provided. Expected one of "
                    f"'pixels', 'mapunits', 'm2', 'km2'.")
