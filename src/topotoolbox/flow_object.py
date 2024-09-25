@@ -103,7 +103,7 @@ class FlowObject():
             weights = np.ones_like(self.source, dtype=np.float32, order='F')
         elif isinstance(weights, np.ndarray):
             if weights.shape != acc.shape:
-                err = ("The shape of the provided weights ndarray does not " +
+                err = ("The shape of the provided weights ndarray does not "
                        f"match the shape of the FlowObject. {self.shape}")
                 raise ValueError(err)from None
         else:
