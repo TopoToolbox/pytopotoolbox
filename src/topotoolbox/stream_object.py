@@ -32,9 +32,9 @@ class StreamObject():
         Units of measurement for the flow data. Can be 'pixels', 'mapunits',
         'm2', or 'km2'. Default is 'pixels'.
     threshold : int | float | GridObject | np.ndarray, optional
-        The threshold for flow accumulation. This can be an integer, float,
-        GridObject, or a NumPy array. If more water than in the threshold has
-        accumulated in a cell, it is part of the stream.
+        The upslope area threshold for flow accumulation. This can be an
+        integer, float, GridObject, or a NumPy array. If more water than in
+        the threshold has accumulated in a cell, it is part of the stream.
         Default is 0, which will result in the threshold being generated
         based on this formula: threshold = (avg(n,m) * sqrt(avg(n,m))/2 + 1
         where shape = (n,m).
@@ -60,7 +60,7 @@ class StreamObject():
         elif units == 'm2':
             cell_area = self.cellsize**2
         elif units == 'km2':
-            cell_area = (self.cellsize**2)*0.001
+            cell_area = ((self.cellsize*0.001)**2)
         elif units == 'mapunits':
             if self.crs.is_projected:
                 # True so cellsize is in meters
@@ -77,25 +77,26 @@ class StreamObject():
         if isinstance(threshold, (int, float)):
             if threshold == 0:
                 avg = (flow.shape[0] + flow.shape[1])//2
-                threshold = np.full(self.shape, (avg*math.sqrt(avg))//2 + 1)
+                threshold = np.full(
+                    self.shape, (avg*math.sqrt(avg))//2 + 1, dtype=np.float32)
             else:
-                threshold = np.full(self.shape, threshold)
+                threshold = np.full(self.shape, threshold, dtype=np.float32)
         elif isinstance(threshold, np.ndarray):
             if threshold.shape != self.shape:
                 err = (f"Threshold array shape {threshold.shape} does not "
-                       f"match flow shape {self.shape}.")
+                       f"match FlowObject shape: {self.shape}.")
                 raise ValueError(err) from None
             threshold = threshold.astype(np.float32, order='F')
         else:
             if threshold.shape != self.shape:
                 err = (f"Threshold GridObject shape {threshold.shape} does "
-                       f"not match flow shape {self.shape}.")
+                       f"not match FlowObject shape: {self.shape}.")
                 raise ValueError(err) from None
 
             threshold = threshold.z.astype(np.float32, order='F')
 
-        # Divide each cell by the cell_area so the threshold is converted
-        # to cells based on the units input.
+        # Divide the threshold by how many m^2 or km^2 are in a cell to convert
+        # the user input to pixels for further computation.
         threshold /= cell_area
 
         # Generate the flow accumulation matrix (acc)
