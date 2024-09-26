@@ -1,5 +1,7 @@
 """This module contains the StreamObject class.
 """
+import math
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -77,7 +79,7 @@ class StreamObject():
             if threshold == 0:
                 avg = (flow.shape[0] + flow.shape[1])//2
                 threshold = np.full(
-                    self.shape, ((avg)**2)*0.01, dtype=np.float32)
+                    self.shape, math.floor((avg**2)*0.01), dtype=np.float32)
             else:
                 threshold = np.full(self.shape, threshold, dtype=np.float32)
         elif isinstance(threshold, np.ndarray):
