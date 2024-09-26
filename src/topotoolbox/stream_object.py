@@ -1,7 +1,5 @@
 """This module contains the StreamObject class.
 """
-import math
-
 import numpy as np
 import matplotlib.pyplot as plt
 
