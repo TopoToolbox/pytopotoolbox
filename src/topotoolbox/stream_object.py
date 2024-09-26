@@ -36,7 +36,7 @@ class StreamObject():
         integer, float, GridObject, or a NumPy array. If more water than in
         the threshold has accumulated in a cell, it is part of the stream.
         Default is 0, which will result in the threshold being generated
-        based on this formula: threshold = (avg(n,m) * sqrt(avg(n,m))/2 + 1
+        based on this formula: threshold = (avg^2)*0.01
         where shape = (n,m).
 
     Raises
@@ -79,7 +79,7 @@ class StreamObject():
             if threshold == 0:
                 avg = (flow.shape[0] + flow.shape[1])//2
                 threshold = np.full(
-                    self.shape, (avg*math.sqrt(avg))//2 + 1, dtype=np.float32)
+                    self.shape, ((avg)**2)*0.01, dtype=np.float32)
             else:
                 threshold = np.full(self.shape, threshold, dtype=np.float32)
         elif isinstance(threshold, np.ndarray):
