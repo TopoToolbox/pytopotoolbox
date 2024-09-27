@@ -46,6 +46,10 @@ class StreamObject():
     ValueError
         If the shape of the threshold does not match the flow object shape.
         """
+        if not isinstance(flow, FlowObject):
+            err = f"{flow} is not a topotoolbox.FlowObject."
+            raise TypeError(err)
+
         self.cellsize = flow.cellsize
         self.shape = flow.shape
 
@@ -60,7 +64,7 @@ class StreamObject():
         elif units == 'm2':
             cell_area = self.cellsize**2
         elif units == 'km2':
-            cell_area = ((self.cellsize*0.001)**2)
+            cell_area = (self.cellsize*0.001)**2
         elif units == 'mapunits':
             if self.crs is not None:
                 if self.crs.is_projected:
