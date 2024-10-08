@@ -1,6 +1,7 @@
 """This module contains the StreamObject class.
 """
 import math
+import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +20,8 @@ class StreamObject():
     """
 
     def __init__(self, flow: FlowObject, units: str = 'pixels',
-                 threshold: int | float | GridObject | np.ndarray = 0) -> None:
+                 threshold: int | float | GridObject | np.ndarray = 0,
+                 stream_pixels: np.ndarray | None = None) -> None:
         """
     Initializes the StreamObject by processing flow accumulation.
 
@@ -78,48 +80,63 @@ class StreamObject():
                    f"'pixels', 'mapunits', 'm2', 'km2'.")
             raise ValueError(err) from None
 
+        # If stream_pixels are provided, the stream can be generated based
+        # on stream_pixels without the need for a threshold
+        if stream_pixels is not None:
+            if stream_pixels.shape != self.shape:
+                raise ValueError(
+                    f"Stream pixels array shape {stream_pixels.shape} does "
+                    f"not match FlowObject shape {self.shape}.")
+            self.stream = np.nonzero(
+                stream_pixels.flatten(order='F'))[0].astype(
+                np.int64)
+            print(self.stream)
+
+            if threshold != 0:
+                warnings.warn("Since stream_pixels have been provided, the"
+                              "input for threshold will be ignored.")
+
         # Create the appropriate threshold matrix based on the threshold input.
-        if isinstance(threshold, (int, float)):
-            if threshold == 0:
-                avg = (flow.shape[0] + flow.shape[1])//2
-                threshold = np.full(
-                    self.shape, math.floor((avg**2)*0.01), dtype=np.float32)
-            else:
-                threshold = np.full(self.shape, threshold, dtype=np.float32)
-        elif isinstance(threshold, np.ndarray):
-            if threshold.shape != self.shape:
-                err = (f"Threshold array shape {threshold.shape} does not "
-                       f"match FlowObject shape: {self.shape}.")
-                raise ValueError(err) from None
-            threshold = threshold.astype(np.float32, order='F')
         else:
-            if threshold.shape != self.shape:
-                err = (f"Threshold GridObject shape {threshold.shape} does "
-                       f"not match FlowObject shape: {self.shape}.")
-                raise ValueError(err) from None
+            if isinstance(threshold, (int, float)):
+                if threshold == 0:
+                    avg = (flow.shape[0] + flow.shape[1])//2
+                    threshold = np.full(
+                        self.shape, math.floor((avg ** 2) * 0.01),
+                        dtype=np.float32)
+                else:
+                    threshold = np.full(
+                        self.shape, threshold, dtype=np.float32)
+            elif isinstance(threshold, np.ndarray):
+                if threshold.shape != self.shape:
+                    err = (f"Threshold array shape {threshold.shape} does not "
+                           f"match FlowObject shape: {self.shape}.")
+                    raise ValueError(err) from None
+                threshold = threshold.astype(np.float32, order='F')
+            else:
+                if threshold.shape != self.shape:
+                    err = (
+                        f"Threshold GridObject shape {threshold.shape} does "
+                        f"not match FlowObject shape: {self.shape}.")
+                    raise ValueError(err) from None
 
-            threshold = threshold.z.astype(np.float32, order='F')
+                threshold = threshold.z.astype(np.float32, order='F')
 
-        # Divide the threshold by how many m^2 or km^2 are in a cell to convert
-        # the user input to pixels for further computation.
-        threshold /= cell_area
+            # Divide the threshold by how many m^2 or km^2 are in a cell to
+            # convert the user input to pixels for further computation.
+            threshold /= cell_area
 
-        # Generate the flow accumulation matrix (acc)
-        acc = np.zeros_like(flow.target, order='F', dtype=np.float32)
-        weights = np.ones_like(flow.target, order='F', dtype=np.float32)
-        _flow.flow_accumulation(
-            acc, flow.source, flow.direction, weights, flow.shape)
+            # Generate the flow accumulation matrix (acc)
+            acc = np.zeros_like(flow.target, order='F', dtype=np.float32)
+            weights = np.ones_like(flow.target, order='F', dtype=np.float32)
+            _flow.flow_accumulation(
+                acc, flow.source, flow.direction, weights, flow.shape)
 
-        # Generate a 1D array that holds all indexes where more water than
-        # in the required threshold is collected. (acc >= threshold)
-        threshold = threshold.flatten(order='F')
-        acc = acc.flatten(order='F')
-        temp = []
-        for i, value in enumerate(acc):
-            if value >= threshold[i]:
-                temp.append(i)
-
-        self.stream = np.array(temp, dtype=np.int64)
+            # Generate a 1D array that holds all indexes where more water than
+            # in the required threshold is collected. (acc >= threshold)
+            threshold = threshold.flatten(order='F')
+            acc = acc.flatten(order='F')
+            self.stream = np.nonzero(acc >= threshold)[0].astype(np.int64)
 
         # Based on the stream array, generate 3 1D arrays where the value of
         # the stream array at each index holds respective value of the
