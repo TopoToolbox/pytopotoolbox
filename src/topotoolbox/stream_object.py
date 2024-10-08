@@ -124,21 +124,12 @@ class StreamObject():
         # Based on the stream array, generate 3 1D arrays where the value of
         # the stream array at each index holds respective value of the
         # original array. (source, target and direction)
-        source = flow.source.flatten(order='F')
-        temp_source = []
-        target = flow.target.flatten(order='F')
-        temp_target = []
-        direction = flow.direction.flatten(order='F')
-        temp_direction = []
-
-        for i in self.stream:
-            temp_source.append(source[i])
-            temp_target.append(target[i])
-            temp_direction.append(direction[i])
-
-        self.target = np.array(temp_target, dtype=np.int64)
-        self.source = np.array(temp_source, dtype=np.int64)
-        self.direction = np.array(temp_direction, dtype=np.int64)
+        self.source = flow.source.ravel(
+            order='F')[self.stream].astype(np.int64)
+        self.target = flow.target.ravel(
+            order='F')[self.stream].astype(np.int64)
+        self.direction = flow.direction.ravel(
+            order='F')[self.stream].astype(np.int64)
 
         # misc
         self.path = flow.path
@@ -161,10 +152,9 @@ class StreamObject():
             When using an dem to overlay, this controls the opacity of the dem.
         """
         stream = np.zeros(shape=self.shape, dtype=np.int64, order='F')
-        for i in self.stream:
-            x = i % self.shape[0]
-            y = i // self.shape[0]
-            stream[x][y] = 1
+        x_coords = self.stream % self.shape[0]  # x-coordinates
+        y_coords = self.stream // self.shape[0]  # y-coordinates
+        stream[x_coords, y_coords] = 1
 
         if overlay is not None:
             if self.shape == overlay.shape:
