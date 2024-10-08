@@ -119,7 +119,7 @@ class StreamObject():
             if value >= threshold[i]:
                 temp.append(i)
 
-        self.stream = np.array(temp, dtype=np.int32)
+        self.stream = np.array(temp, dtype=np.int64)
 
         # Based on the stream array, generate 3 1D arrays where the value of
         # the stream array at each index holds respective value of the
@@ -136,9 +136,9 @@ class StreamObject():
             temp_target.append(target[i])
             temp_direction.append(direction[i])
 
-        self.target = np.array(temp_target, dtype=np.int32)
-        self.source = np.array(temp_source, dtype=np.int32)
-        self.direction = np.array(temp_direction, dtype=np.int32)
+        self.target = np.array(temp_target, dtype=np.int64)
+        self.source = np.array(temp_source, dtype=np.int64)
+        self.direction = np.array(temp_direction, dtype=np.int64)
 
         # misc
         self.path = flow.path
@@ -160,7 +160,7 @@ class StreamObject():
         alpha : float, optional
             When using an dem to overlay, this controls the opacity of the dem.
         """
-        stream = np.zeros(shape=self.shape, dtype=np.int32, order='F')
+        stream = np.zeros(shape=self.shape, dtype=np.int64, order='F')
         for i in self.stream:
             x = i % self.shape[0]
             y = i // self.shape[0]
