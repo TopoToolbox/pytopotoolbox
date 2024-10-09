@@ -87,24 +87,18 @@ class StreamObject():
         # If stream_pixels are provided, the stream can be generated based
         # on stream_pixels without the need for a threshold
         if stream_pixels is not None:
-            if isinstance(stream_pixels, GridObject):
-                if stream_pixels.shape != self.shape:
-                    err = (
-                        f"stream_pixels GridObject shape {stream_pixels.shape}"
-                        f" does not match FlowObject shape {self.shape}.")
-                    raise ValueError(err)
+            if stream_pixels.shape != self.shape:
+                err = (
+                    f"stream_pixels shape {stream_pixels.shape}"
+                    f" does not match FlowObject shape {self.shape}.")
+                raise ValueError(err)
 
+            if isinstance(stream_pixels, GridObject):
                 self.stream = np.nonzero(
                     stream_pixels.z.flatten(order='F'))[0].astype(
                     np.int64)
 
             elif isinstance(stream_pixels, np.ndarray):
-                if stream_pixels.z.shape != self.shape:
-                    err = (
-                        f"stream_pixels ndarray shape {stream_pixels.shape}"
-                        f" does not match FlowObject shape {self.shape}.")
-                    raise ValueError(err)
-
                 self.stream = np.nonzero(
                     stream_pixels.flatten(order='F'))[0].astype(
                     np.int64)
