@@ -1,4 +1,5 @@
 import pytest
+import warnings
 import numpy as np
 
 import topotoolbox as topo
@@ -47,3 +48,25 @@ def test_init(tall_dem, wide_dem):
     with pytest.raises(ValueError):
         topo.StreamObject(flow_obj, threshold=topo.gen_random(
             rows=1, columns=1))
+
+    # An empty stream_pixels should result in all arrays in the StreamObject
+    # being empty (len = 0).
+    arr = np.zeros_like(grid_obj.z)
+    stream_obj = topo.StreamObject(flow_obj, stream_pixels=arr)
+    assert stream_obj.stream.size == 0
+    assert stream_obj.source.size == 0
+    assert stream_obj.target.size == 0
+    assert stream_obj.direction.size == 0
+
+    # When calling with a stream_pixels, threshold should be ignored and a
+    # warning should be thrown.
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")  # Catch all warnings
+
+        stream_obj = topo.StreamObject(
+            flow_obj, stream_pixels=arr, threshold=1000)
+
+        # Check that a warning was raised
+        assert len(w) > 0
+        assert issubclass(w[-1].category, Warning)
+        assert "threshold will be ignored" in str(w[-1].message)
