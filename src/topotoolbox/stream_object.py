@@ -104,8 +104,9 @@ class StreamObject():
                     np.int64)
 
             if threshold != 0:
-                warnings.warn("Since stream_pixels have been provided, the "
-                              "input for threshold will be ignored.")
+                warn = ("Since stream_pixels have been provided, the "
+                        "input for threshold will be ignored.")
+                warnings.warn(warn)
 
         # Create the appropriate threshold matrix based on the threshold input.
         else:
