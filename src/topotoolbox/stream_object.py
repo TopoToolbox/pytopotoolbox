@@ -21,7 +21,7 @@ class StreamObject():
 
     def __init__(self, flow: FlowObject, units: str = 'pixels',
                  threshold: int | float | GridObject | np.ndarray = 0,
-                 stream_pixels: np.ndarray | None = None) -> None:
+                 stream_pixels: GridObject | np.ndarray | None = None) -> None:
         """
     Initializes the StreamObject by processing flow accumulation.
 
@@ -40,6 +40,10 @@ class StreamObject():
         Default is 0, which will result in the threshold being generated
         based on this formula: threshold = (avg^2)*0.01
         where shape = (n,m).
+    stream_pixels : GridObject | np.ndarray, optional
+        A GridObject or np.ndarray made up of zeros and ones to denote where
+        the stream is located. Using this will overwrite any use of the
+        threshold argument.
 
     Raises
     ------
@@ -83,17 +87,30 @@ class StreamObject():
         # If stream_pixels are provided, the stream can be generated based
         # on stream_pixels without the need for a threshold
         if stream_pixels is not None:
-            if stream_pixels.shape != self.shape:
-                raise ValueError(
-                    f"Stream pixels array shape {stream_pixels.shape} does "
-                    f"not match FlowObject shape {self.shape}.")
-            self.stream = np.nonzero(
-                stream_pixels.flatten(order='F'))[0].astype(
-                np.int64)
-            print(self.stream)
+            if isinstance(stream_pixels, GridObject):
+                if stream_pixels.shape != self.shape:
+                    err = (
+                        f"stream_pixels GridObject shape {stream_pixels.shape}"
+                        f" does not match FlowObject shape {self.shape}.")
+                    raise ValueError(err)
+
+                self.stream = np.nonzero(
+                    stream_pixels.z.flatten(order='F'))[0].astype(
+                    np.int64)
+
+            elif isinstance(stream_pixels, np.ndarray):
+                if stream_pixels.z.shape != self.shape:
+                    err = (
+                        f"stream_pixels ndarray shape {stream_pixels.shape}"
+                        f" does not match FlowObject shape {self.shape}.")
+                    raise ValueError(err)
+
+                self.stream = np.nonzero(
+                    stream_pixels.flatten(order='F'))[0].astype(
+                    np.int64)
 
             if threshold != 0:
-                warnings.warn("Since stream_pixels have been provided, the"
+                warnings.warn("Since stream_pixels have been provided, the "
                               "input for threshold will be ignored.")
 
         # Create the appropriate threshold matrix based on the threshold input.
@@ -146,7 +163,7 @@ class StreamObject():
         self.target = flow.target.ravel(
             order='F')[self.stream].astype(np.int64)
         self.direction = flow.direction.ravel(
-            order='F')[self.stream].astype(np.int64)
+            order='F')[self.stream].astype(np.uint8)
 
         # misc
         self.path = flow.path
