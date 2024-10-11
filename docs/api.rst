@@ -7,6 +7,7 @@ API Documentation
 
    topotoolbox.GridObject
    topotoolbox.FlowObject
+   topotoolbox.run_graphflood
    topotoolbox.show
    topotoolbox.read_tif
    topotoolbox.write_tif
