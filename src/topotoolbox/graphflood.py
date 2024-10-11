@@ -14,7 +14,8 @@ from .grid_object import GridObject
 funcdict = {
     "run_full": _graphflood.graphflood_run_full,
     "sfgraph": _graphflood.graphflood_sfgraph,
-    "priority_flood_TO": _graphflood.compute_priority_flood_plus_topological_ordering,
+    "priority_flood_TO":
+    _graphflood.compute_priority_flood_plus_topological_ordering,
     "priority_flood": _graphflood.compute_priority_flood,
     "drainage_area_single_flow": _graphflood.compute_drainage_area_single_flow,
 }
