@@ -98,7 +98,7 @@ def run_graphflood(
                 the same dimension of the topographic grid"""
             )
 
-        if isinstance(grid, GridObject):
+        if isinstance(initial_hw, GridObject):
             hw = initial_hw.z.ravel(order="C")
         else:
             hw = initial_hw.ravel(order="C")
