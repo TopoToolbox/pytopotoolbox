@@ -1,25 +1,11 @@
 """This module contains the FlowObject class.
 """
-from .grid_object import GridObject
-
 import numpy as np
-import matplotlib.pyplot as plt
 
-# Add future flow functions here
-# pylint: disable=import-error
-# from ._flow import (  # type: ignore
-#    flow_somefuncname
-# )
-
-# pylint: disable=import-error
-from ._grid import (  # type: ignore
-    grid_fillsinks,
-    grid_identifyflats,
-    grid_gwdt,
-    grid_gwdt_computecosts,
-    grid_flow_routing_d8_carve,
-    grid_flow_routing_targets
-)
+# pylint: disable=no-name-in-module
+from . import _grid  # type: ignore
+from . import _flow  # type: ignore
+from .grid_object import GridObject
 
 __all__ = ['FlowObject']
 
@@ -47,67 +33,145 @@ class FlowObject():
         dem = grid.z
 
         filled_dem = np.zeros_like(dem, dtype=np.float32, order='F')
-        grid_fillsinks(filled_dem, dem, dims)
+        _grid.fillsinks(filled_dem, dem, dims)
 
         flats = np.zeros_like(dem, dtype=np.int32, order='F')
-        grid_identifyflats(flats, filled_dem, dims)
+        _grid.identifyflats(flats, filled_dem, dims)
 
         costs = np.zeros_like(dem, dtype=np.float32, order='F')
         conncomps = np.zeros_like(dem, dtype=np.int64, order='F')
-        grid_gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
+        _grid.gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
 
         dist = np.zeros_like(flats, dtype=np.float32, order='F')
         prev = conncomps  # prev: dtype=np.int64
         heap = np.zeros_like(flats, dtype=np.int64, order='F')
         back = np.zeros_like(flats, dtype=np.int64, order='F')
-        grid_gwdt(dist, prev, costs, flats, heap, back, dims)
+        _grid.gwdt(dist, prev, costs, flats, heap, back, dims)
 
         source = heap  # source: dtype=np.int64
         direction = np.zeros_like(dem, dtype=np.uint8, order='F')
-        grid_flow_routing_d8_carve(
+        _grid.flow_routing_d8_carve(
             source, direction, filled_dem, dist, flats, dims)
 
         target = back  # target: dtype=int64
-        grid_flow_routing_targets(target, source, direction, dims)
-
-        # TODO: use 'del' to immediately delete unused large arrays?
+        _grid.flow_routing_targets(target, source, direction, dims)
 
         self.path = grid.path
         self.name = grid.name
 
         # raster metadata
-        self.z = dem
-        self.target = target
-        self.source = source
+
+        self.target = target  # dtype=np.int64
+        self.source = source  # dtype=np.int64
+        self.direction = direction  # dtype=np.unit8
         self.shape = grid.shape
+        self.cellsize = grid.cellsize
 
         # georeference
         self.bounds = grid.bounds
         self.transform = grid.transform
         self.crs = grid.crs
 
-    def show(self, cmap: str = 'terrain'):
-        """
-        Display the FlowObject instance as an image using Matplotlib.
+    def flow_accumulation(self, weights: np.ndarray | float = 1.0):
+        """Computes the flow accumulation for a given flow network using
+        optional weights. The flow accumulation represents the amount of flow
+        each cell receives from its upstream neighbors.
 
         Parameters
         ----------
-        cmap : str, optional
-            Matplotlib colormap that will be used in the plot.
+        weights : np.ndarray | float, optional
+            An array of the same shape as the flow grid representing weights
+            for each cell, or a constant float value used as the weight for all
+            cells. If `weights=1.0` (default), the flow accumulation is
+            unweighted. If an ndarray is provided, it must match the shape of
+            the flow grid., by default 1.0
+
+        Returns
+        -------
+        GridObject
+            A new GridObject containing the flow accumulation grid.
+
+        Raises
+        ------
+        ValueError
+            If the shape of the `weights` array does not match the shape of the
+            flow network grid.
         """
+        acc = np.zeros_like(self.source, dtype=np.float32, order='F')
 
-        fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+        if weights == 1.0:
+            weights = np.ones_like(self.source, dtype=np.float32, order='F')
+        elif isinstance(weights, np.ndarray):
+            if weights.shape != acc.shape:
+                err = ("The shape of the provided weights ndarray does not "
+                       f"match the shape of the FlowObject. {self.shape}")
+                raise ValueError(err)from None
+        else:
+            weights = np.full(self.shape, weights, dtype=np.float32, order='F')
 
-        axs[0].imshow(self.z, cmap=cmap)
-        axs[0].set_title('dem')
+        _flow.flow_accumulation(
+            acc, self.source, self.direction, weights, self.shape)
 
-        axs[1].imshow(self.target, cmap=cmap)
-        axs[1].set_title('target')
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
 
-        axs[2].imshow(self.source, cmap=cmap)
-        axs[2].set_title('source')
+        result.z = acc
+        result.shape = self.shape
+        result.cellsize = self.cellsize
 
-        plt.tight_layout()
-        plt.show()
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.crs = self.crs
 
-    # TODO: Add magic functions, maybe use mixins to reuse GridObject functions
+        return result
+
+    # 'Magic' functions:
+    # ------------------------------------------------------------------------
+
+    def __len__(self):
+        return len(self.target)
+
+    def __iter__(self):
+        return iter(self.target)
+
+    def __getitem__(self, index):
+        if isinstance(index, tuple):
+            array_name, idx = index
+
+            if array_name == 'target':
+                return self.target[idx]
+            elif array_name == 'source':
+                return self.source[idx]
+            elif array_name == 'direction':
+                return self.direction[idx]
+            else:
+                raise ValueError(
+                    "Invalid raster name.('target', 'source', or 'direction')")
+        else:
+            raise ValueError(
+                "Index must be a tuple with (raster_name, index).")
+
+    def __setitem__(self, index, value):
+        # Check if the index is a tuple
+        if isinstance(index, tuple):
+            array_name, idx = index
+
+            if array_name == 'target':
+                self.target[idx] = value
+            elif array_name == 'source':
+                self.source[idx] = value
+            elif array_name == 'direction':
+                self.direction[idx] = value
+            else:
+                raise ValueError(
+                    "Invalid raster name.('target', 'source', or 'direction')")
+        else:
+            raise ValueError(
+                "Index must be a tuple with (raster_name, index).")
+
+    def __array__(self):
+        # Concatenate the arrays along their first axis.
+        # Not practical to compute with, but if there is a need to manually
+        # plot a FlowObject it'll show the logic nicely.
+        return np.concatenate((self.target, self.source, self.direction))
