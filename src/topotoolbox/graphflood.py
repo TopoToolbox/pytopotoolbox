@@ -34,35 +34,34 @@ def run_graphflood(
     N_iterations: int = 100,
 ):
     """
-    [Add description]
+    Runs the full graphflood's algorithm as described in Gailleton et al., 2024
 
     Parameters
     ----------
     grid : GridObject
-        A GridObject representing the digital elevation model. 
+        A GridObject representing the digital elevation model.
     initial_hw : np.ndarray or GridObject, optional
-        [Add description]
+        Flow depth.
         Default is a matrix filled with zeros and the same shape as 'grid'.
     BCs : np.ndarray or GridObject, optional
-        [Add description (Boundary Conditions?)]
-        Default is a matrix filled with ones except for the outermost edges, 
-        where the values are set to 3, has same shape as 'grid
+        Boundary codes.
+        Default is a matrix filled with ones except for the outermost edges,
+        where values are set to 3, has same shape as 'grid'
     dt : float, optional
-        [Add description]
-        Default is 1e-3.
+        time step(s ~ although this is not simulated time as we make the
+        steady low assumption). Default is 1e-3.
     P : float, np.ndarray, or GridObject, optional
-        [Add description]
-        Default is a matrix with the same shape of 'grid' 
+        Precipitation rates in m.s-1
+        Default is a matrix with the same shape of 'grid'
         filled with 10 * 1e-3 / 3600.
     manning : float, np.ndarray, or GridObject, optional
-        [Add description]
+        Friction coefficient.
         Default is a matrix with the same shape as 'grid' filled with 0.033.
     SFD : bool, optional
         [Add description]
         Default is `False`.
     D8 : bool, optional
-        [Add description]
-        Default is `True`.
+        True to include diagonal paths. Default is `True`.
     N_iterations : int, optional
         Number of iterations for the simulation. Default is 100.
 
