@@ -1,26 +1,22 @@
 """
-Basic interface to libtopotoolbox implementation of graphflood
-
+Basic interface to libtopotoolbox implementation of graphflood.
 """
 
-from .grid_object import GridObject
-import numpy as np
-from ._graphflood import (  # type: ignore
-    graphflood_run_full,
-    graphflood_sfgraph,
-    compute_priority_flood_plus_topological_ordering,
-    compute_priority_flood,
-    compute_drainage_area_single_flow
-    )
 from copy import deepcopy
+
+import numpy as np
+
+# pylint: disable=no-name-in-module
+from . import _graphflood  # type:ignore
+from .grid_object import GridObject
 
 # exposing function as string dictionary
 funcdict = {
-    "run_full": graphflood_run_full,
-    "sfgraph": graphflood_sfgraph,
-    "priority_flood_TO": compute_priority_flood_plus_topological_ordering,
-    "priority_flood": compute_priority_flood,
-    "drainage_area_single_flow": compute_drainage_area_single_flow,
+    "run_full": _graphflood.graphflood_run_full,
+    "sfgraph": _graphflood.graphflood_sfgraph,
+    "priority_flood_TO": _graphflood.compute_priority_flood_plus_topological_ordering,
+    "priority_flood": _graphflood.compute_priority_flood,
+    "drainage_area_single_flow": _graphflood.compute_drainage_area_single_flow,
 }
 
 __all__ = ["run_graphflood"]
@@ -28,15 +24,58 @@ __all__ = ["run_graphflood"]
 
 def run_graphflood(
     grid: GridObject,
-    initial_hw=None,
-    BCs=None,
-    dt=1e-3,
-    P=10 * 1e-3 / 3600,
-    manning=0.033,
-    SFD=False,
-    D8=True,
-    N_iterations=100,
+    initial_hw: np.ndarray | GridObject | None = None,
+    BCs: np.ndarray | GridObject | None = None,
+    dt: float = 1e-3,
+    P: float | np.ndarray | GridObject = 10 * 1e-3 / 3600,
+    manning: float | np.ndarray | GridObject = 0.033,
+    SFD: bool = False,
+    D8: bool = True,
+    N_iterations: int = 100,
 ):
+    """
+    Runs the full graphflood's algorithm as described in Gailleton et al., 2024
+
+    Parameters
+    ----------
+    grid : GridObject
+        A GridObject representing the digital elevation model.
+    initial_hw : np.ndarray or GridObject, optional
+        Flow depth.
+        Default is a matrix filled with zeros and the same shape as 'grid'.
+    BCs : np.ndarray or GridObject, optional
+        Boundary codes.
+        Default is a matrix filled with ones except for the outermost edges,
+        where values are set to 3, has same shape as 'grid'
+    dt : float, optional
+        time step(s ~ although this is not simulated time as we make the
+        steady low assumption). Default is 1e-3.
+    P : float, np.ndarray, or GridObject, optional
+        Precipitation rates in m.s-1
+        Default is a matrix with the same shape of 'grid'
+        filled with 10 * 1e-3 / 3600.
+    manning : float, np.ndarray, or GridObject, optional
+        Friction coefficient.
+        Default is a matrix with the same shape as 'grid' filled with 0.033.
+    SFD : bool, optional
+        [Add description]
+        Default is `False`.
+    D8 : bool, optional
+        True to include diagonal paths. Default is `True`.
+    N_iterations : int, optional
+        Number of iterations for the simulation. Default is 100.
+
+    Returns
+    -------
+    GridObject
+        [Add description]
+
+    Raises
+    ------
+    RuntimeError
+        If the shape of `initial_hw`, `BCs`, `P`, or `manning` does not match
+        the shape of the 'grid' GridObject`.
+    """
 
     # Preparing the arguments
     ny = grid.rows
@@ -124,7 +163,7 @@ def run_graphflood(
         # in case precipitation is a scalar
         manning = np.full_like(Z, manning)
 
-    graphflood_run_full(
+    _graphflood.graphflood_run_full(
         Z, hw, tBCs, Precipitations, manning,
         dim, dt, dx, SFD, D8, N_iterations, 1e-3
     )
