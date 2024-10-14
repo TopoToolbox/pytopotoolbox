@@ -59,8 +59,8 @@ def run_graphflood(
         Friction coefficient.
         Default is a matrix with the same shape as 'grid' filled with 0.033.
     SFD : bool, optional
-        [Add description]
-        Default is `False`.
+        True to compute single flow directions, False to compute multiple flow
+        directions. Default is `False`.
     D8 : bool, optional
         True to include diagonal paths. Default is `True`.
     N_iterations : int, optional
@@ -69,7 +69,7 @@ def run_graphflood(
     Returns
     -------
     GridObject
-        [Add description]
+        A grid object with the computed water depths.
 
     Raises
     ------
