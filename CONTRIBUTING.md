@@ -35,7 +35,7 @@ If you have a patch or new feature that you would like to contribute, please sub
 
 ### Code Style
 
-Please follow the [PEP 8](https://pep8.org/) style guide for Python code.
+Please follow the [PEP 8](https://pep8.org/) style guide for Python code. Make sure your code passes the linting tests (`pylint --rcfile=pyproject.toml src/topotoolbox/`, `mypy --ignore-missing-imports src/topotoolbox`) and the pytests (`python -m pytest`). Also add tests for new content you want to contribute.
 
 ### Commit Messages
 
