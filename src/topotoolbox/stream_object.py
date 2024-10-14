@@ -64,6 +64,7 @@ class StreamObject():
         self.transform = flow.transform
         self.crs = flow.crs
 
+        cell_area = 0.0
         # Calculate the are of a cell based on the units argument.
         if units == 'pixels':
             cell_area = 1.0

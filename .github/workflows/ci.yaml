@@ -58,8 +58,8 @@ jobs:
       - name: Run flake8
         run: flake8 src/topotoolbox
 
-      #- name: Run pylint
-      #  run: pylint src/topotoolbox/
+      - name: Run pylint
+        run: pylint --rcfile=pyproject.toml src/topotoolbox/
 
       - name: Run type checks
         run: mypy --ignore-missing-imports src/topotoolbox
