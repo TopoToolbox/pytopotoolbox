@@ -6,18 +6,9 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
-# pylint: disable=import-error
-from ._grid import (  # type: ignore
-    grid_fillsinks,
-    grid_identifyflats,
-    grid_excesstopography_fsm2d,
-    grid_excesstopography_fmm2d,
-    grid_gwdt_computecosts,
-    grid_gwdt,
-    grid_flow_routing_d8_carve,
-    grid_flow_routing_targets,
-    grid_gradient8,
-)
+
+# pylint: disable=no-name-in-module
+from . import _grid  # type: ignore
 
 __all__ = ['GridObject']
 
@@ -40,7 +31,7 @@ class GridObject():
         self.columns = 0
         self.shape = self.z.shape
 
-        self.cellsize = 0.0
+        self.cellsize = 0.0  # in meters if crs.is_projected == True
 
         # georeference
         self.bounds = None
@@ -59,7 +50,7 @@ class GridObject():
         dem = self.z.astype(np.float32, order='F')
         output = np.zeros_like(dem)
 
-        grid_fillsinks(output, dem, self.shape)
+        _grid.fillsinks(output, dem, self.shape)
 
         result = copy.copy(self)
         result.z = output
@@ -103,7 +94,7 @@ class GridObject():
         dem = self.z.astype(np.float32, order='F')
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
-        grid_identifyflats(output_grid, dem, self.shape)
+        _grid.identifyflats(output_grid, dem, self.shape)
 
         if raw:
             return tuple(output_grid)
@@ -186,15 +177,16 @@ class GridObject():
         cellsize = self.cellsize
 
         if method == 'fsm2d':
-            grid_excesstopography_fsm2d(
+            _grid.excesstopography_fsm2d(
                 excess, dem, threshold_slopes, cellsize, self.shape)
 
         elif method == 'fmm2d':
             heap = np.zeros_like(dem, dtype=np.int64)
             back = np.zeros_like(dem, dtype=np.int64)
 
-            grid_excesstopography_fmm2d(excess, heap, back, dem,
-                                        threshold_slopes, cellsize, self.shape)
+            _grid.excesstopography_fmm2d(excess, heap, back, dem,
+                                         threshold_slopes, cellsize,
+                                         self.shape)
 
         result = copy.copy(self)
         result.z = excess
@@ -266,7 +258,7 @@ class GridObject():
         costs = np.zeros_like(dem, dtype=np.float32, order='F')
         conncomps = np.zeros_like(dem, dtype=np.int64, order='F')
 
-        grid_gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
+        _grid.gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
         del conncomps, flats, filled_dem
         return costs
 
@@ -287,7 +279,7 @@ class GridObject():
         heap = np.zeros_like(flats, dtype=np.int64, order='F')
         back = np.zeros_like(flats, dtype=np.int64, order='F')
 
-        grid_gwdt(dist, prev, costs, flats, heap, back, dims)
+        _grid.gwdt(dist, prev, costs, flats, heap, back, dims)
         del costs, prev, heap, back
         return dist
 
@@ -310,7 +302,7 @@ class GridObject():
         source = np.zeros_like(flats, dtype=np.int64, order='F')
         direction = np.zeros_like(flats, dtype=np.uint8, order='F')
 
-        grid_flow_routing_d8_carve(
+        _grid.flow_routing_d8_carve(
             source, direction, filled_dem, dist, flats, dims)
         del filled_dem, dist, flats
         return source, direction
@@ -329,7 +321,7 @@ class GridObject():
         dims = self.shape
         target = np.zeros_like(source, dtype=np.int64, order='F')
 
-        grid_flow_routing_targets(target, source, direction, dims)
+        _grid.flow_routing_targets(target, source, direction, dims)
         del source, direction
         return target
 
