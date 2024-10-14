@@ -232,5 +232,5 @@ PYBIND11_MODULE(_grid, m) {
     m.def("grid_gwdt_computecosts", &wrap_gwdt_computecosts);
     m.def("grid_flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
     m.def("grid_flow_routing_targets", &wrap_flow_routing_targets);
-    m.def("grid_gradient8", &wrap_gradient8);
+    m.def("gradient8", &wrap_gradient8);
 }

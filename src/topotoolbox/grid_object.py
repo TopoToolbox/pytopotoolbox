@@ -232,7 +232,7 @@ class GridObject():
         dem = self.z.astype(np.float32, order='F')
         output = np.zeros_like(dem)
 
-        grid_gradient8(output, dem, self.cellsize, use_mp, self.shape)
+        _grid.gradient8(output, dem, self.cellsize, use_mp, self.shape)
         result = copy.copy(self)
 
         if unit == 'radian':
