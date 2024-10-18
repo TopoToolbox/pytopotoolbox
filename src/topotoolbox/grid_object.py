@@ -38,19 +38,52 @@ class GridObject():
         self.transform = None
         self.crs = None
 
-    def fillsinks(self) -> 'GridObject':
+    def fillsinks(self,
+                  bc: 'np.ndarray | GridObject | None' = None) -> 'GridObject':
         """Fill sinks in the digital elevation model (DEM).
+
+        Parameters
+        ----------
+        bc : ndarray or GridObject, optional
+           Boundary conditions for sink filling. `bc` should be an array
+           of np.uint8 that matches the shape of the DEM. Values of 1
+           indicate pixels that should be fixed to their values in the
+           original DEM and values of 0 indicate pixels that should be
+           filled.
 
         Returns
         -------
         GridObject
             The filled DEM.
+
         """
 
         dem = self.z.astype(np.float32, order='F')
         output = np.zeros_like(dem)
 
-        _grid.fillsinks(output, dem, self.shape)
+        restore_nans = False
+
+        if bc is None:
+            bc = np.ones_like(dem, dtype=np.uint8)
+            bc[1:-1, 1:-1] = 0  # Set interior pixels to 0
+
+            nans = np.isnan(dem)
+            dem[nans] = -np.inf
+            bc[nans] = 1  # Set NaNs to 1
+            restore_nans = True
+
+        if bc.shape != self.shape:
+            err = ("The shape of the provided boundary conditions does not "
+                   f"match the shape of the DEM. {self.shape}")
+            raise ValueError(err)from None
+
+        if isinstance(bc, GridObject):
+            bc = bc.z
+
+        _grid.fillsinks(output, dem, bc, self.shape)
+
+        if restore_nans:
+            output[nans] = np.nan
 
         result = copy.copy(self)
         result.z = output

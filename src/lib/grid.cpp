@@ -19,15 +19,17 @@ namespace py = pybind11;
 //   dem: A NumPy array representing the digital elevation model.
 //   dims: A tuple containing the number of rows and columns.
 
-void wrap_fillsinks(py::array_t<float> output, py::array_t<float> dem, 
+void wrap_fillsinks(py::array_t<float> output, py::array_t<float> dem,
+                    py::array_t<uint8_t> bc,
                     std::tuple<ptrdiff_t, ptrdiff_t> dims){
 
     float *output_ptr = output.mutable_data();
     float *dem_ptr = dem.mutable_data();
+    uint8_t *bc_ptr = bc.mutable_data();
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-    fillsinks(output_ptr, dem_ptr, dims_ptr);
+    fillsinks(output_ptr, dem_ptr, bc_ptr, dims_ptr);
 }
 
 // wrap_identifyflats: 
