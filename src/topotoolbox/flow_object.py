@@ -15,7 +15,8 @@ class FlowObject():
     digital elevation model (DEM).
     """
 
-    def __init__(self, grid: GridObject):
+    def __init__(self, grid: GridObject,
+                 bc: np.ndarray | GridObject | None = None):
         """The constructor for the FlowObject. Takes a GridObject as input,
         computes flow direction information and saves them as an FlowObject.
 
@@ -23,6 +24,12 @@ class FlowObject():
         ----------
         grid : GridObject
             The GridObject that will be the basis of the computation.
+        bc : ndarray or GridObject, optional
+            Boundary conditions for sink filling. `bc` should be an array
+            of np.uint8 that matches the shape of the DEM. Values of 1
+            indicate pixels that should be fixed to their values in the
+            original DEM and values of 0 indicate pixels that should be
+            filled.
 
         Notes
         -----
@@ -33,7 +40,28 @@ class FlowObject():
         dem = grid.z
 
         filled_dem = np.zeros_like(dem, dtype=np.float32, order='F')
-        _grid.fillsinks(filled_dem, dem, dims)
+        restore_nans = False
+        if bc is None:
+            bc = np.ones_like(dem, dtype=np.uint8)
+            bc[1:-1, 1:-1] = 0  # Set interior pixels to 0
+
+            nans = np.isnan(dem)
+            dem[nans] = -np.inf
+            bc[nans] = 1
+            restore_nans = True
+
+        if bc.shape != dims:
+            err = ("The shape of the provided boundary conditions does not "
+                   f"match the shape of the DEM. {dims}")
+            raise ValueError(err)from None
+
+        if isinstance(bc, GridObject):
+            bc = bc.z
+
+        _grid.fillsinks(filled_dem, dem, bc, dims)
+
+        if restore_nans:
+            filled_dem[nans] = np.nan
 
         flats = np.zeros_like(dem, dtype=np.int32, order='F')
         _grid.identifyflats(flats, filled_dem, dims)
