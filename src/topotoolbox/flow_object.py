@@ -25,11 +25,11 @@ class FlowObject():
         grid : GridObject
             The GridObject that will be the basis of the computation.
         bc : ndarray or GridObject, optional
-           Boundary conditions for sink filling. `bc` should be an array
-           of np.uint8 that matches the shape of the DEM. Values of 1
-           indicate pixels that should be fixed to their values in the
-           original DEM and values of 0 indicate pixels that should be
-           filled.
+            Boundary conditions for sink filling. `bc` should be an array
+            of np.uint8 that matches the shape of the DEM. Values of 1
+            indicate pixels that should be fixed to their values in the
+            original DEM and values of 0 indicate pixels that should be
+            filled.
 
         Notes
         -----
