@@ -273,6 +273,40 @@ class GridObject():
 
         return result
 
+    def acv(self, multiprocessing: bool = True) -> 'GridObject':
+        """
+    The anisotropic coefficient of variation (ACV) describes the general
+    geometry of the local land surface and can be used to distinguish elongated 
+    from oval land forms.
+
+    Parameters
+    ----------
+    multiprocessing : bool, optional
+        If True, use multiprocessing for computation. Default is True
+
+    Returns
+    -------
+    GridObject
+        GridObject containing the calculated anisotropic coefficient 
+        of variation.
+        """
+
+        if multiprocessing:
+            use_mp = 1
+        else:
+            use_mp = 0
+
+        # The acv() function uses arrays in order='C' instead of order='F'
+        dem = self.z.astype(np.float32, order='C')
+        output = np.zeros_like(dem)
+
+        _grid.acv(output, dem, use_mp, self.shape)
+
+        result = copy.copy(self)
+        result.z = output
+
+        return result
+
     def _gwdt_computecosts(self) -> np.ndarray:
         """
         Compute the cost array used in the gradient-weighted distance
