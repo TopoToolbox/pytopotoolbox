@@ -8,8 +8,8 @@ project(${SKBUILD_PROJECT_NAME}
 include(FetchContent)
 FetchContent_Declare(
   topotoolbox
-  GIT_REPOSITORY https://github.com/Teschl/libtopotoolbox.git
-  GIT_TAG acv
+  GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
+  GIT_TAG 2024-W45
 )
 FetchContent_MakeAvailable(topotoolbox)
 
