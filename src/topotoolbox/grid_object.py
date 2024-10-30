@@ -276,7 +276,7 @@ class GridObject():
     def acv(self, multiprocessing: bool = True) -> 'GridObject':
         """
     The anisotropic coefficient of variation (ACV) describes the general
-    geometry of the local land surface and can be used to distinguish elongated 
+    geometry of the local land surface and can be used to distinguish elongated
     from oval land forms.
 
     Parameters
@@ -287,7 +287,7 @@ class GridObject():
     Returns
     -------
     GridObject
-        GridObject containing the calculated anisotropic coefficient 
+        GridObject containing the calculated anisotropic coefficient
         of variation.
         """
 
