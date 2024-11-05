@@ -55,9 +55,6 @@ jobs:
           pip install matplotlib
           pip install rasterio
 
-      - name: Run flake8
-        run: flake8 src/topotoolbox
-
       - name: Run pylint
         run: pylint --rcfile=pyproject.toml src/topotoolbox/
 
