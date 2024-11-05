@@ -42,6 +42,7 @@ wheel.expand-macos-universal-tags = true
 [tool.pylint]
 disable = [
     "too-many-instance-attributes",
+    "too-many-positional",
     "too-many-arguments",
     "too-many-branches",
     "too-many-statements",
