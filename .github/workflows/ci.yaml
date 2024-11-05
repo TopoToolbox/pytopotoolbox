@@ -49,7 +49,7 @@ jobs:
       - name: Install tools
         run: | 
           pip install mypy
-          pip install pylint
+          pip install pylint==3.1.0
           pip install flake8
           pip install numpy
           pip install matplotlib
