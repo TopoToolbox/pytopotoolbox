@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
   topotoolbox
   GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG 2024-W40
+  GIT_TAG main
 )
 FetchContent_MakeAvailable(topotoolbox)
 
