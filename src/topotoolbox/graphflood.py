@@ -26,13 +26,13 @@ __all__ = ["run_graphflood"]
 def run_graphflood(
     grid: GridObject,
     initial_hw: np.ndarray | GridObject | None = None,
-    BCs: np.ndarray | GridObject | None = None,
+    bcs: np.ndarray | GridObject | None = None,
     dt: float = 1e-3,
-    P: float | np.ndarray | GridObject = 10 * 1e-3 / 3600,
+    p: float | np.ndarray | GridObject = 10 * 1e-3 / 3600,
     manning: float | np.ndarray | GridObject = 0.033,
-    SFD: bool = False,
-    D8: bool = True,
-    N_iterations: int = 100,
+    sfd: bool = False,
+    d8: bool = True,
+    n_iterations: int = 100,
 ):
     """
     Runs the full graphflood's algorithm as described in Gailleton et al., 2024
@@ -85,11 +85,11 @@ def run_graphflood(
     dim = np.array([ny, nx], dtype=np.uint64)
 
     # Order C for vectorised topography
-    Z = grid.z.ravel(order="C")
+    z = grid.z.ravel(order="C")
 
     # Ingesting the flow depth
     if initial_hw is None:
-        hw = np.zeros_like(Z)
+        hw = np.zeros_like(z)
     else:
         if initial_hw.shape != grid.z.shape:
             raise RuntimeError(
@@ -104,44 +104,44 @@ def run_graphflood(
             hw = initial_hw.ravel(order="C")
 
     # Ingesting boundary condition
-    if BCs is None:
-        tBCs = np.ones((grid.rows, grid.columns), dtype=np.uint8)
-        tBCs[[0, -1], :] = 3
-        tBCs[:, [0, -1]] = 3
-        tBCs = tBCs.ravel(order="C")
+    if bcs is None:
+        tbcs = np.ones((grid.rows, grid.columns), dtype=np.uint8)
+        tbcs[[0, -1], :] = 3
+        tbcs[:, [0, -1]] = 3
+        tbcs = tbcs.ravel(order="C")
     else:
-        if BCs.shape != grid.shape:
+        if bcs.shape != grid.shape:
             raise RuntimeError(
                 """Feeding the model with boundary conditions requires
                 a 2D numpy array or a GridObject of the same dimension
                  of the topographic grid"""
             )
 
-        if isinstance(BCs, GridObject):
-            tBCs = BCs.z.ravel(order="C").astype(np.uint8)
+        if isinstance(bcs, GridObject):
+            tbcs = bcs.z.ravel(order="C").astype(np.uint8)
         else:
-            tBCs = BCs.ravel(order="C").astype(np.uint8)
+            tbcs = bcs.ravel(order="C").astype(np.uint8)
 
     # Ingesting Precipitations
-    if isinstance(P, np.ndarray):
-        if P.shape != grid.shape:
+    if isinstance(p, np.ndarray):
+        if p.shape != grid.shape:
             raise RuntimeError(
                 """Feeding the model with precipitations requires a
                 2D numpy array or a GridObject of the same
                 dimension of the topographic grid"""
             )
-        Precipitations = P.ravel(order="C")
-    elif isinstance(P, GridObject):
-        if P.shape != grid.shape:
+        precipitations = p.ravel(order="C")
+    elif isinstance(p, GridObject):
+        if p.shape != grid.shape:
             raise RuntimeError(
                 """Feeding the model with precipitations requires a
                 2D numpy array or a GridObject of the same dimension
                 of the topographic grid"""
             )
-        Precipitations = P.z.ravel(order="C")
+        precipitations = p.z.ravel(order="C")
     else:
         # in case precipitation is a scalar
-        Precipitations = np.full_like(Z, P)
+        precipitations = np.full_like(z, p)
 
     # Ingesting manning
     if isinstance(manning, np.ndarray):
@@ -162,11 +162,11 @@ def run_graphflood(
         manning = manning.z.ravel(order="C")
     else:
         # in case precipitation is a scalar
-        manning = np.full_like(Z, manning)
+        manning = np.full_like(z, manning)
 
     _graphflood.graphflood_run_full(
-        Z, hw, tBCs, Precipitations, manning,
-        dim, dt, dx, SFD, D8, N_iterations, 1e-3
+        z, hw, tbcs, precipitations, manning,
+        dim, dt, dx, sfd, d8, n_iterations, 1e-3
     )
     res = deepcopy(grid)
 
