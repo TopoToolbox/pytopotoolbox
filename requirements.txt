@@ -31,5 +31,4 @@ rasterio==1.4.2
 six==1.16.0
 tomli==2.0.2
 tomlkit==0.13.2
-topotoolbox @ file:///home/theo/Documents/TopoToolbox3/pytopotoolbox
 typing_extensions==4.12.2
