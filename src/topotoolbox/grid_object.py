@@ -273,6 +273,17 @@ class GridObject():
 
         return result
 
+    def curvature(self, multiprocessing: bool = True):
+        if multiprocessing:
+            use_mp = 1
+        else:
+            use_mp = 0
+
+        dem = self.z.astype(np.float32, order='F')
+        result = np.zeros_like(dem, order='F')
+
+        _grid.curvature(result, self.z, use_mp, self.shape)
+
     def _gwdt_computecosts(self) -> np.ndarray:
         """
         Compute the cost array used in the gradient-weighted distance

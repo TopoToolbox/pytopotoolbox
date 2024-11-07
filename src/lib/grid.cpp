@@ -222,6 +222,18 @@ void wrap_gradient8(
     gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
 }
 
+void wrap_curvature(
+        py::array_t<float> output, py::array_t<float> dem, float cellsize, 
+        int use_mp, std::tuple<ptrdiff_t,ptrdiff_t> dims){
+            
+    float *output_ptr = output.mutable_data();
+    float *dem_ptr = dem.mutable_data();
+
+    std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
+    ptrdiff_t *dims_ptr = dims_array.data();
+    gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
+}
+
 // Make wrap_funcname() function available as grid_funcname() to be used by
 // by functions in the pytopotoolbox package
 
