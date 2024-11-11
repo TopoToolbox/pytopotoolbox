@@ -169,16 +169,14 @@ class FlowObject():
 
             if array_name == 'target':
                 return self.target[idx]
-            elif array_name == 'source':
+            if array_name == 'source':
                 return self.source[idx]
-            elif array_name == 'direction':
+            if array_name == 'direction':
                 return self.direction[idx]
-            else:
-                raise ValueError(
-                    "Invalid raster name.('target', 'source', or 'direction')")
-        else:
             raise ValueError(
-                "Index must be a tuple with (raster_name, index).")
+                "Invalid raster name ('target', 'source', or 'direction').")
+        raise ValueError(
+            "Index must be a tuple with (raster_name, index).")
 
     def __setitem__(self, index, value):
         # Check if the index is a tuple

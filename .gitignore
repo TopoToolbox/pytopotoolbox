@@ -21,3 +21,6 @@ docs/_temp
 
 # ignore mypy_cache
 .mypy_cache/
+
+# ignore .venv
+.venv/
