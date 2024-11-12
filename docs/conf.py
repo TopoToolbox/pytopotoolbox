@@ -13,6 +13,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'nbsphinx',
+    'myst_parser',
 ]
 
 project = 'TopoToolbox'
