@@ -87,6 +87,7 @@ class StreamObject():
 
         # If stream_pixels are provided, the stream can be generated based
         # on stream_pixels without the need for a threshold
+        w = np.zeros(flow.shape,dtype='bool',order='F').ravel(order='K')
         if stream_pixels is not None:
             if stream_pixels.shape != self.shape:
                 err = (
@@ -95,14 +96,10 @@ class StreamObject():
                 raise ValueError(err)
 
             if isinstance(stream_pixels, GridObject):
-                self.stream = np.nonzero(
-                    stream_pixels.z.flatten(order='F'))[0].astype(
-                    np.int64)
+                w = (stream_pixels.z != 0).ravel(order='F')
 
             elif isinstance(stream_pixels, np.ndarray):
-                self.stream = np.nonzero(
-                    stream_pixels.flatten(order='F'))[0].astype(
-                    np.int64)
+                w = (stream_pixels != 0).ravel(order='F')
 
             if threshold != 0:
                 warn = ("Since stream_pixels have been provided, the "
@@ -147,19 +144,35 @@ class StreamObject():
 
             # Generate a 1D array that holds all indexes where more water than
             # in the required threshold is collected. (acc >= threshold)
-            threshold = threshold.flatten(order='F')
-            acc = acc.flatten(order='F')
-            self.stream = np.nonzero(acc >= threshold)[0].astype(np.int64)
+            w = (acc >= threshold).ravel(order='F')
 
-        # Based on the stream array, generate 3 1D arrays where the value of
-        # the stream array at each index holds respective value of the
-        # original array. (source, target and direction)
-        self.source = flow.source.ravel(
-            order='F')[self.stream].astype(np.int64)
-        self.target = flow.target.ravel(
-            order='F')[self.stream].astype(np.int64)
-        self.direction = flow.direction.ravel(
-            order='F')[self.stream].astype(np.uint8)
+        # Indices of pixels in the stream network
+        # This is a node attribute list
+        self.stream = np.nonzero(w)[0]
+
+        # Find edges whose source pixel is in the stream network
+        u = flow.source.ravel(order='F')
+        v = flow.target.ravel(order='F')
+        d = flow.direction.ravel(order='F')
+
+        # v = -1 when the pixel is a sink or outlet. Drop those edges
+        # from the flow network
+        i = w[u] & (v != -1)
+
+        # Renumber the nodes of the stream network
+        ix = np.zeros_like(w,dtype='int64')
+        ix[w] = np.arange(0,self.stream.size)
+
+        # Edges in the stream network
+        #
+        # Elements of these edge attribute lists are 0-based indices
+        # into node attribute lists.
+        #
+        # To convert these to pixel indices in the original GridObject
+        # or FlowObject, use stream[source] or stream[target].
+        self.source = ix[u[i]]
+        self.target = ix[v[i]]
+        self.direction = d[i]
 
         # misc
         self.path = flow.path
@@ -182,9 +195,7 @@ class StreamObject():
             When using an dem to overlay, this controls the opacity of the dem.
         """
         stream = np.zeros(shape=self.shape, dtype=np.int64, order='F')
-        x_coords = self.stream % self.shape[0]  # x-coordinates
-        y_coords = self.stream // self.shape[0]  # y-coordinates
-        stream[x_coords, y_coords] = 1
+        stream[np.unravel_index(self.stream,self.shape,order='F')] = 1
 
         if overlay is not None:
             if self.shape == overlay.shape:
