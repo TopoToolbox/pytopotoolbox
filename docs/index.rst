@@ -25,7 +25,12 @@ For further documentation regarding the functionality of this package, check out
 Contributing
 ------------
 
-If you would like to contribute to pytopotoolbox, refer to the :doc:`_temp/CONTRIBUTING`.
+If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTING.md <_temp/CONTRIBUTING>`.
+
+Wrapping libtopotoolbox functions
+---------------------------------
+
+Refer to :doc:`wrapping libtopotoolbox functions<wrapping>` for a quick guide on how to create new functions.
 
 .. toctree::
    :maxdepth: 1
@@ -36,7 +41,7 @@ If you would like to contribute to pytopotoolbox, refer to the :doc:`_temp/CONTR
    Examples <examples>
    API <api>
    Contributing <_temp/CONTRIBUTING>
-   Wrapping libtopotoolbox <wrapping>
+   Wrapping libtopotoolbox functions<wrapping>
 
 Indices and Tables
 ------------------
