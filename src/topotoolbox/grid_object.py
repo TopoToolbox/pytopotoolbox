@@ -296,8 +296,7 @@ class GridObject():
         else:
             use_mp = 0
 
-        # The acv() function uses arrays in order='C' instead of order='F'
-        dem = self.z.astype(np.float32, order='C')
+        dem = self.z.astype(np.float32, order='F')
         output = np.zeros_like(dem)
 
         _grid.acv(output, dem, use_mp, self.shape)
