@@ -38,3 +38,15 @@ Issues = "https://github.com/TopoToolbox/pytopotoolbox/issues"
 
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
+
+[tool.pylint]
+disable = [
+    "too-many-instance-attributes",
+    "too-many-arguments",
+    "too-many-branches",
+    "too-many-statements",
+    "too-many-locals",
+    "duplicate-code",
+    "cyclic-import",
+    "too-many-positional-arguments",
+]

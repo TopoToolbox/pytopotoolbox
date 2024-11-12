@@ -47,19 +47,10 @@ jobs:
         uses: actions/setup-python@v5
 
       - name: Install tools
-        run: | 
-          pip install mypy
-          pip install pylint
-          pip install flake8
-          pip install numpy
-          pip install matplotlib
-          pip install rasterio
+        run: pip install -r requirements.txt
 
-      - name: Run flake8
-        run: flake8 src/topotoolbox
-
-      #- name: Run pylint
-      #  run: pylint src/topotoolbox/
+      - name: Run pylint
+        run: pylint --rcfile=pyproject.toml src/topotoolbox/
 
       - name: Run type checks
         run: mypy --ignore-missing-imports src/topotoolbox
