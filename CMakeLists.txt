@@ -4,6 +4,8 @@ project(${SKBUILD_PROJECT_NAME}
   VERSION ${SKBUILD_PROJECT_VERSION}
   LANGUAGES CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # include libtopotoolbox
 include(FetchContent)
 FetchContent_Declare(
