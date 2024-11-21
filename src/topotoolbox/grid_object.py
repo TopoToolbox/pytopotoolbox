@@ -83,6 +83,7 @@ class GridObject():
         _grid.fillsinks(output, dem, bc, self.shape)
 
         if restore_nans:
+            dem[nans] = np.nan
             output[nans] = np.nan
 
         result = copy.copy(self)
