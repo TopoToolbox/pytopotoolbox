@@ -24,7 +24,11 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
     for grid in [square_dem, wide_dem, tall_dem]:
         # since grid is a fixture, it has to be assigned/called first
         dem = grid
+        original_dem = dem.z.copy()
         filled_dem = dem.fillsinks()
+
+        # Ensure that DEM has not been modified by fillsinks
+        assert np.all(original_dem == dem.z)
 
         # Loop over all cells of the DEM
         for i in range(dem.shape[0]):
