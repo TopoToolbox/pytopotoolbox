@@ -92,7 +92,7 @@ def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
                              figsize=(5*num_grids, 5), dpi=dpi, squeeze=False)
 
     for i, dem in enumerate(grid):
-        ax = axes[i]
+        ax = axes[0, i]
         im = ax.imshow(dem, cmap=cmap)
         ax.set_title(dem.name)
         fig.colorbar(im, ax=ax, orientation='vertical')
