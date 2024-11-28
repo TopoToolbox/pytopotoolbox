@@ -130,9 +130,6 @@ def read_tif(path: str) -> GridObject:
         grid.name = os.path.splitext(os.path.basename(grid.path))[0]
 
         grid.z = dataset.read(1).astype(np.float32, order='F')
-        grid.rows = dataset.height
-        grid.columns = dataset.width
-        grid.shape = grid.z.shape
 
         grid.cellsize = dataset.res[0]
         grid.bounds = dataset.bounds
@@ -192,9 +189,6 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
     grid = GridObject()
 
     grid.z = noise_array
-    grid.rows = rows
-    grid.columns = columns
-    grid.shape = grid.z.shape
     grid.cellsize = cellsize
     grid.name = name
     return grid
@@ -230,9 +224,6 @@ def gen_random_bool(
 
     grid.path = ''
     grid.z = bool_array
-    grid.rows = rows
-    grid.columns = columns
-    grid.shape = grid.z.shape
     grid.cellsize = cellsize
     grid.name = name
 
