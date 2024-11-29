@@ -30,9 +30,6 @@ class GridObject():
 
         # raster metadata
         self.z = np.empty((), order='F', dtype=np.float32)
-        self.rows = 0
-        self.columns = 0
-        self.shape = self.z.shape
 
         self.cellsize = 0.0  # in meters if crs.is_projected == True
 
@@ -40,6 +37,24 @@ class GridObject():
         self.bounds = None
         self.transform = None
         self.crs = None
+
+    @property
+    def shape(self):
+        """Tuple of grid dimensions
+        """
+        return self.z.shape
+
+    @property
+    def rows(self):
+        """The size of the first dimension of the grid
+        """
+        return self.z.shape[0]
+
+    @property
+    def columns(self):
+        """The size of the second dimension of the grid
+        """
+        return self.z.shape[1]
 
     def reproject(self,
                   crs: 'CRS',
@@ -86,10 +101,6 @@ class GridObject():
         # Get cellsize from transform in case we did not specify one
         if dst.transform is not None:
             dst.cellsize = abs(dst.transform[0])
-
-        dst.shape = dst.z.shape
-        dst.rows = dst.shape[0]
-        dst.columns = dst.shape[1]
 
         return dst
 

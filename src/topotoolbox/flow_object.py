@@ -146,7 +146,6 @@ class FlowObject():
         result.name = self.name
 
         result.z = acc
-        result.shape = self.shape
         result.cellsize = self.cellsize
 
         result.bounds = self.bounds
