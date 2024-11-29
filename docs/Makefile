@@ -8,8 +8,6 @@ SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = .
 BUILDDIR      = _build
 
-EXAMPLEDIR    = ../examples
-TEMPDIR = _temp
 AUTOSUMMARYDIR = _autosummary
 
 # Put it first so that "make" without argument is like "make help".
@@ -20,11 +18,7 @@ help:
 
 # Target to build HTML documentation, including copying/removing examples
 html: 
-	@echo "Copying examples directory..."
-	@cp -r $(EXAMPLEDIR) $(TEMPDIR)
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-	@echo "Removing _temp directory..."
-	@rm -rf $(TEMPDIR)
 	@echo "Cleaning up _autosummary directory..."
 	@rm -rf $(AUTOSUMMARYDIR)/*
 
