@@ -39,7 +39,7 @@ run into problems with installation, please open an
 
 ## Contributing
 
-If you would like to contribute to pytopotoolbox, check out the [Contribution Guidelines](./CONTRIBUTING.md).
+If you would like to contribute to pytopotoolbox, check out the [Contribution Guidelines](./docs/CONTRIBUTING.md).
 
 ## License
 

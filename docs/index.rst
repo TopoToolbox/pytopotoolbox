@@ -28,7 +28,7 @@ For further documentation regarding the functionality of this package, check out
 Contributing
 ------------
 
-If you would like to contribute to pytopotoolbox, refer to the :doc:`_temp/CONTRIBUTING`.
+If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTING`.
 
 .. toctree::
    :maxdepth: 1
@@ -37,7 +37,7 @@ If you would like to contribute to pytopotoolbox, refer to the :doc:`_temp/CONTR
    Tutorial <tutorial>
    Examples <examples>
    API <api>
-   Contributing <_temp/CONTRIBUTING>
+   Contribution Guidelines <CONTRIBUTING>
    Developer Documentation <dev>
 
 Indices and Tables

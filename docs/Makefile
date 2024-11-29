@@ -15,15 +15,13 @@ AUTOSUMMARYDIR = _autosummary
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
- 
+
 .PHONY: help Makefile
 
 # Target to build HTML documentation, including copying/removing examples
 html: 
 	@echo "Copying examples directory..."
 	@cp -r $(EXAMPLEDIR) $(TEMPDIR)
-	@echo "Copying CONTRIBUTING.md file..."
-	@cp -r ../CONTRIBUTING.md $(TEMPDIR)/CONTRIBUTING.md
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	@echo "Removing _temp directory..."
 	@rm -rf $(TEMPDIR)
