@@ -40,20 +40,32 @@ run into problems with installation, please open an
 ## Testing and Linting
 
 To run the tests for this package, clone or download the source
-repository and run:
+repository. Then, from within the top-level directory of the source
+repository, install the developer dependencies and pytopotoolbox,
+ideally from within a dedicated virtual environment:
 
 ```bash
-cd path/to/pytopotoolbox
+pip install -r requirements.txt .
+```
+
+This will ensure that you have a consistent environment for the
+running the tests. Run the tests using pytest:
+
+```bash
 pytest
 ```
 
-To run the linting locally, use:
+To run the linter and type checks:
 
 ```bash
-cd path/to/pytopotoolbox
-flake8 src/topotoolbox
+pylint --rcfile=pyproject.toml src/topotoolbox
 mypy --ignoremissing-imports src/topotoolbox
 ```
+
+It is a good idea to run the linter and type checks before making a
+pull request to pytopotoolbox, because failing lints or type checks
+will cause a test failure that must be fixed before your contribution
+can be accepted.
 
 ## Contributing
 
