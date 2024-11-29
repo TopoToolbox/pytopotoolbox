@@ -38,6 +38,7 @@ If you would like to contribute to pytopotoolbox, refer to the :doc:`_temp/CONTR
    Examples <examples>
    API <api>
    Contributing <_temp/CONTRIBUTING>
+   Developer Documentation <dev>
 
 Indices and Tables
 ------------------
