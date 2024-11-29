@@ -36,6 +36,11 @@ html_context = {
     "default_mode": "light",
 }
 
+html_theme_options = {
+    "repository_url": "https://github.com/TopoToolbox/pytopotoolbox",
+    "use_repository_button": True,
+}
+
 # -- Options for nbsphinx ----------------------------------------------------
 
 nbsphinx_allow_errors = True
