@@ -6,6 +6,9 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
+from rasterio import CRS
+from rasterio.warp import reproject
+from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
 from . import _grid  # type: ignore
@@ -27,9 +30,6 @@ class GridObject():
 
         # raster metadata
         self.z = np.empty((), order='F', dtype=np.float32)
-        self.rows = 0
-        self.columns = 0
-        self.shape = self.z.shape
 
         self.cellsize = 0.0  # in meters if crs.is_projected == True
 
@@ -37,6 +37,72 @@ class GridObject():
         self.bounds = None
         self.transform = None
         self.crs = None
+
+    @property
+    def shape(self):
+        """Tuple of grid dimensions
+        """
+        return self.z.shape
+
+    @property
+    def rows(self):
+        """The size of the first dimension of the grid
+        """
+        return self.z.shape[0]
+
+    @property
+    def columns(self):
+        """The size of the second dimension of the grid
+        """
+        return self.z.shape[1]
+
+    def reproject(self,
+                  crs: 'CRS',
+                  resolution: 'float | None' = None,
+                  resampling: 'Resampling' = Resampling.bilinear):
+        """Reproject GridObject to a new coordinate system.
+
+        Parameters
+        ----------
+        crs : rasterio.CRS
+            Target coordinate system
+        resolution : float, optional
+            Target resolution.
+            If one is not provided, a resolution that approximately
+            matches that of the source coordinate system will be used.
+        resampling : rasterio.enums.Resampling, optional
+            Resampling method.
+            The default is bilinear resampling.
+
+        Returns
+        -------
+        GridObject
+            The reprojected data.
+
+        """
+        dst = GridObject()
+
+        dst.z, dst.transform = reproject(
+            self.z,
+            src_transform = self.transform,
+            src_crs = self.crs,
+            dst_transform = None, # Let rasterio derive the transform for us
+            dst_crs = crs,
+            dst_nodata = np.nan,
+            dst_resolution = resolution,
+            resampling = resampling,
+        )
+        # reproject gives us a 3D array, we want the first band
+        # We also want it in column-major order
+        dst.z = np.asfortranarray(dst.z[0,:,:])
+
+        dst.crs = crs
+
+        # Get cellsize from transform in case we did not specify one
+        if dst.transform is not None:
+            dst.cellsize = abs(dst.transform[0])
+
+        return dst
 
     def fillsinks(self,
                   bc: 'np.ndarray | GridObject | None' = None) -> 'GridObject':
@@ -83,6 +149,7 @@ class GridObject():
         _grid.fillsinks(output, dem, bc, self.shape)
 
         if restore_nans:
+            dem[nans] = np.nan
             output[nans] = np.nan
 
         result = copy.copy(self)

@@ -61,6 +61,7 @@ class FlowObject():
         _grid.fillsinks(filled_dem, dem, bc, dims)
 
         if restore_nans:
+            dem[nans] = np.nan
             filled_dem[nans] = np.nan
 
         flats = np.zeros_like(dem, dtype=np.int32, order='F')
@@ -145,7 +146,6 @@ class FlowObject():
         result.name = self.name
 
         result.z = acc
-        result.shape = self.shape
         result.cellsize = self.cellsize
 
         result.bounds = self.bounds

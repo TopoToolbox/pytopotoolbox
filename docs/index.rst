@@ -8,14 +8,17 @@ This Python library is based on the `TopoToolbox <https://topotoolbox.wordpress.
 Installing and Getting Started
 ------------------------------
 
-If you want to learn how to install or build the TopoToolbox package, head over to the :doc:`installing <installing>` page.
+TopoToolbox is on PyPI, so you can run
 
-If you have no experience with Python or this tool, the :doc:`tutorial <tutorial>` might be a good place to start. There you will find a basic walkthrough of the functionality.
+.. code-block:: bash
 
-Examples
---------
+    pip install topotoolbox
 
-If you are familiar with the basic workflow of this package but want more examples to gain a better understanding of the different functions, the section :doc:`examples <examples>` contains them in the form of Jupyter Notebooks. If you want to play around with them yourself, download them from the `GitHub repository <https://github.com/TopoToolbox/pytopotoolbox/tree/main/examples>`_.
+to obtain the latest version.
+
+Once you have the package installed, the :doc:`tutorial <tutorial>` provides a basic walkthrough of loading and displaying a digital elevation model with TopoToolbox.
+
+Further examples of TopoToolbox functionality can be found in the :doc:`example notebooks <examples>`, which can also be downloaded from the `GitHub repository <https://github.com/TopoToolbox/pytopotoolbox/tree/main/examples>`_.
 
 API Documentation
 -----------------
@@ -25,17 +28,17 @@ For further documentation regarding the functionality of this package, check out
 Contributing
 ------------
 
-If you would like to contribute to pytopotoolbox, refer to the :doc:`_temp/CONTRIBUTING`.
+If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTING`.
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
-   Installing <installing>
    Tutorial <tutorial>
    Examples <examples>
    API <api>
-   Contributing <_temp/CONTRIBUTING>
+   Contribution Guidelines <CONTRIBUTING>
+   Developer Documentation <dev>
 
 Indices and Tables
 ------------------
