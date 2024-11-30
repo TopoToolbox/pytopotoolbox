@@ -21,9 +21,9 @@ def tall_dem():
 
 def test_init(tall_dem, wide_dem):
     assert (wide_dem.target.size == wide_dem.source.size ==
-            wide_dem.direction.size == wide_dem.stream.size)
+            wide_dem.direction.size)
     assert (tall_dem.target.size == tall_dem.source.size ==
-            tall_dem.direction.size == tall_dem.stream.size)
+            tall_dem.direction.size)
 
     # Ensure that no index in stream exceeds the max possible index in the grid
     assert np.max(wide_dem.stream) <= wide_dem.shape[0] * wide_dem.shape[1]

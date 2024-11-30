@@ -33,6 +33,8 @@ If you have a patch or new feature that you would like to contribute, please sub
 4. Ensure the test suite passes.
 5. Make sure your code lints.
 
+Check the [developer documentation](dev.rst) for more details about setting up your development environment and running the tests.
+
 ### Code Style
 
 Please follow the [PEP 8](https://pep8.org/) style guide for Python code. Make sure your code passes the linting tests (`pylint --rcfile=pyproject.toml src/topotoolbox/`, `mypy --ignore-missing-imports src/topotoolbox`) and the pytests (`python -m pytest`). Also add tests for new content you want to contribute.

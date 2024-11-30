@@ -13,7 +13,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'nbsphinx',
-    'myst_parser',
+    'myst_parser'
 ]
 
 project = 'TopoToolbox'
@@ -34,6 +34,11 @@ html_logo = 'logo.png'
 
 html_context = {
     "default_mode": "light",
+}
+
+html_theme_options = {
+    "repository_url": "https://github.com/TopoToolbox/pytopotoolbox",
+    "use_repository_button": True,
 }
 
 # -- Options for nbsphinx ----------------------------------------------------
