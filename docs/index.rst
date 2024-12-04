@@ -39,7 +39,7 @@ If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTIN
    API <api>
    Contribution Guidelines <CONTRIBUTING>
    Developer Documentation <dev>
-   Wrapping Guide <wrapping>
+   Wrapping LibTopoToolbox <wrapping>
 
 Indices and Tables
 ------------------
