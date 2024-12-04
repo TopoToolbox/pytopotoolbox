@@ -84,17 +84,17 @@ class GridObject():
 
         dst.z, dst.transform = reproject(
             self.z,
-            src_transform = self.transform,
-            src_crs = self.crs,
-            dst_transform = None, # Let rasterio derive the transform for us
-            dst_crs = crs,
-            dst_nodata = np.nan,
-            dst_resolution = resolution,
-            resampling = resampling,
+            src_transform=self.transform,
+            src_crs=self.crs,
+            dst_transform=None,  # Let rasterio derive the transform for us
+            dst_crs=crs,
+            dst_nodata=np.nan,
+            dst_resolution=resolution,
+            resampling=resampling,
         )
         # reproject gives us a 3D array, we want the first band
         # We also want it in column-major order
-        dst.z = np.asfortranarray(dst.z[0,:,:])
+        dst.z = np.asfortranarray(dst.z[0, :, :])
 
         dst.crs = crs
 
@@ -340,16 +340,77 @@ class GridObject():
 
         return result
 
-    def curvature(self, multiprocessing: bool = True):
+    def curvature(self, multiprocessing: bool = True, meanfilt: bool = False,
+                  output_type: str = 'profc'):
+        """
+        Compute the curvature of a GridObject.
+
+        Parameters
+        ----------
+        multiprocessing : bool, optional
+            Whether to use multiprocessing for computation. Defaults to True.
+        meanfilt : bool, optional
+            Whether to apply a mean filter during the computation. 
+            Defaults to False.
+        output_type : str, optional
+            The type of curvature to compute. Must be one of:
+            - 'profc' : Profile curvature [m^(-1)]
+            - 'tangc' : Tangential curvature [m^(-1)]
+            - 'planc' : Planform curvature or contour curvature [m^(-1)]
+            - 'meanc' : Mean curvature [m^(-1)]
+            - 'total' : Total curvature [m^(-2)]
+            Defaults to 'profc'.
+
+        Returns
+        -------
+        result : GridObject
+            A new GridObject containing the computed curvature data.
+
+        Raises
+        ------
+        ValueError
+            If `output_type` is not a valid curvature type.
+
+        Examples
+        --------
+        Compute profile curvature for a DEM object:
+
+        >>> dem = topotoolbox.load_dem('tibet')
+        >>> result = dem.curvature()
+        >>> result.show()
+        """
         if multiprocessing:
-            use_mp = 1
+            multiprocessing = 1
         else:
-            use_mp = 0
+            multiprocessing = 0
+
+        if meanfilt:
+            meanfilt = 1
+        else:
+            meanfilt = 0
+
+        output_dict = {
+            'profc': 0,  # profile curvature [m^(-1)]
+            'tangc': 1,  # tangential curvature [m^(-1)]
+            'planc': 2,  # planform curvature or contour curvature [m^(-1)]
+            'meanc': 3,  # mean curvature [m^(-1)]
+            'total': 4   # total curvature [m^(-2)]
+        }
+
+        if output_type not in output_dict:
+            raise ValueError(
+                f"Invalid output_type '{output_type}'. Must be one of:"
+                f"{', '.join(output_dict.keys())}")
 
         dem = self.z.astype(np.float32, order='F')
-        result = np.zeros_like(dem, order='F')
+        output = np.zeros_like(dem, order='F')
 
-        _grid.curvature(result, self.z, use_mp, self.shape)
+        _grid.curvature(output, self.z, output_dict[output_type], meanfilt,
+                        multiprocessing, self.cellsize, self.shape)
+
+        result = copy.copy(self)
+        result.z = output
+        return result
 
     def _gwdt_computecosts(self) -> np.ndarray:
         """

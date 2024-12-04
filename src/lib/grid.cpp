@@ -222,19 +222,35 @@ void wrap_gradient8(
     gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
 }
 
+// wrap_curvature:
+// Parameters:
+//  output:
+//  dem:
+//  type:
+//      0 = 'profc' : profile curvature [m^(-1)]
+//      2 = 'planc' : planform curvature or contour curvature [m^(-1)]
+//      1 = 'tangc' : tangential curvature [m^(-1)]
+//      3 = 'meanc' : mean curvature [m^(-1)]
+//      4 = 'total' : total curvature [m^(-2)]
+//  meanfilt:
+//  use_mp:
+//  cellsize:
+//  dims:
+
 void wrap_curvature(
-        py::array_t<float> output, py::array_t<float> dem, float cellsize, 
-        int use_mp, std::tuple<ptrdiff_t,ptrdiff_t> dims){
+        py::array_t<float> output, py::array_t<float> dem, int type, 
+        int meanfilt, int use_mp, float cellsize, 
+        std::tuple<ptrdiff_t,ptrdiff_t> dims){
             
     float *output_ptr = output.mutable_data();
     float *dem_ptr = dem.mutable_data();
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-    gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
+    curvature(output_ptr, dem_ptr, type, meanfilt, cellsize, use_mp, dims_ptr);
 }
 
-// Make wrap_funcname() function available as grid_funcname() to be used by
+// Make wrap_funcname() function available as funcname() to be used by
 // by functions in the pytopotoolbox package
 
 PYBIND11_MODULE(_grid, m) {
@@ -247,4 +263,5 @@ PYBIND11_MODULE(_grid, m) {
     m.def("flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
     m.def("flow_routing_targets", &wrap_flow_routing_targets);
     m.def("gradient8", &wrap_gradient8);
+    m.def("curvature",&wrap_curvature);
 }

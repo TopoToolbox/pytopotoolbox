@@ -10,8 +10,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(FetchContent)
 FetchContent_Declare(
   topotoolbox
-  GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG 2024-W46
+  GIT_REPOSITORY https://github.com/Teschl/libtopotoolbox.git
+  GIT_TAG curv
 )
 FetchContent_MakeAvailable(topotoolbox)
 
