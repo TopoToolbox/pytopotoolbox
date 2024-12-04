@@ -60,10 +60,7 @@ autosummary_generate = True  # Enable autosummary to generate stub files
 # -- Options for nbgallery ---------------------------------------------------
 
 nbsphinx_thumbnails = {
-    '_temp/excesstopography': '_static/thumbnails/placeholder.png',
-    '_temp/magicfunctions': '_static/thumbnails/placeholder.png',
-    '_temp/plotting': '_static/thumbnails/placeholder.png',
-    '_temp/downloading': '_static/thumbnails/placeholder.png',
-    '_temp/flowobject': '_static/thumbnails/placeholder.png',
-    '_temp/streamobject': '_static/thumbnails/placeholder.png',
+    'examples/downloading': '_static/thumbnails/placeholder.png',
+    'examples/flowobject': '_static/thumbnails/placeholder.png',
+    'examples/streamobject': '_static/thumbnails/placeholder.png',
 }

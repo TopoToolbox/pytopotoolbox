@@ -21,7 +21,7 @@ This python library is based on the [TopoToolbox](https://topotoolbox.wordpress.
 
 To get started head to [pytopotoolbox/tutorial](https://topotoolbox.github.io/pytopotoolbox/tutorial.html). If you need more examples see [pytopotoolbox/examples](https://topotoolbox.github.io/pytopotoolbox/examples.html) or reference the API documentation [pytopotoolbox/api](https://topotoolbox.github.io/pytopotoolbox/api.html).
 
-The example files are also available as Jupyter Notebook files in the [./examples](/examples/) folder. Feel free to download and play around with them to gain a better understanding of the functionality of the TopoToolbox.
+The examples can also be downloaded as Jupyter Notebook files from [docs/examples](./docs/examples). Feel free to download and play around with them to gain a better understanding of the functionality of the TopoToolbox.
 
 ## Installation
 
