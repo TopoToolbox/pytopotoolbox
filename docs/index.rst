@@ -28,7 +28,7 @@ For further documentation regarding the functionality of this package, check out
 Contributing
 ------------
 
-If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTING`.
+If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTING` page. To get a better understanding of how we wrap functions for use in python, the :doc:`wrapping` page will help.
 
 .. toctree::
    :maxdepth: 1
@@ -39,6 +39,7 @@ If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTIN
    API <api>
    Contribution Guidelines <CONTRIBUTING>
    Developer Documentation <dev>
+   Wrapping Guide <wrapping>
 
 Indices and Tables
 ------------------
