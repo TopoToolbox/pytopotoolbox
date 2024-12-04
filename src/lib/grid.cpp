@@ -222,6 +222,27 @@ void wrap_gradient8(
     gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
 }
 
+
+// wrap_avc:
+// Parameters:
+//   output: A NumPy array which will store the resulting gradient of each cell.
+//   dem: A NumPy array containing the digital elevation model.
+//   use_mp: A int which will decide if OpenMP will be used.
+//   dims: A tuple containing the number of rows and columns.
+//
+//   This function requires the arrays to be in 'C' order.
+
+void wrap_acv(
+    py::array_t<float> output, py::array_t<float> dem, 
+    int use_mp, std::tuple<ptrdiff_t,ptrdiff_t> dims){
+
+    float *output_ptr = output.mutable_data();
+    float *dem_ptr = dem.mutable_data();
+
+    std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
+    ptrdiff_t *dims_ptr = dims_array.data();
+    acv(output_ptr, dem_ptr, use_mp, dims_ptr);
+}
 // Make wrap_funcname() function available as grid_funcname() to be used by
 // by functions in the pytopotoolbox package
 
@@ -235,4 +256,5 @@ PYBIND11_MODULE(_grid, m) {
     m.def("flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
     m.def("flow_routing_targets", &wrap_flow_routing_targets);
     m.def("gradient8", &wrap_gradient8);
+    m.def("acv", &wrap_acv);
 }
