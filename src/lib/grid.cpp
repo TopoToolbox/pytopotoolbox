@@ -32,6 +32,22 @@ void wrap_fillsinks(py::array_t<float> output, py::array_t<float> dem,
     fillsinks(output_ptr, dem_ptr, bc_ptr, dims_ptr);
 }
 
+void wrap_fillsinks_hybrid(py::array_t<float> output,
+                           py::array_t<ptrdiff_t> queue,
+                           py::array_t<float> dem,
+                           py::array_t<uint8_t> bc,
+                           std::tuple<ptrdiff_t, ptrdiff_t> dims){
+
+    float *output_ptr = output.mutable_data();
+    float *dem_ptr = dem.mutable_data();
+    ptrdiff_t *queue_ptr = queue.mutable_data();
+    uint8_t *bc_ptr = bc.mutable_data();
+
+    std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
+    ptrdiff_t *dims_ptr = dims_array.data();
+    fillsinks_hybrid(output_ptr, queue_ptr, dem_ptr, bc_ptr, dims_ptr);
+}
+
 // wrap_identifyflats: 
 // Parameters:
 //   output: A NumPy array to store the output, where flats, sill amd presills will be marked.
@@ -227,6 +243,7 @@ void wrap_gradient8(
 
 PYBIND11_MODULE(_grid, m) {
     m.def("fillsinks", &wrap_fillsinks);
+    m.def("fillsinks_hybrid", &wrap_fillsinks_hybrid);
     m.def("identifyflats", &wrap_identifyflats);
     m.def("excesstopography_fsm2d", &wrap_excesstopography_fsm2d);
     m.def("excesstopography_fmm2d", &wrap_excesstopography_fmm2d);
