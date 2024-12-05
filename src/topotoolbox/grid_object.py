@@ -117,6 +117,10 @@ class GridObject():
             indicate pixels that should be fixed to their values in the
             original DEM and values of 0 indicate pixels that should be
             filled.
+        hybrid: bool, optional
+            Should hybrid reconstruction algorithm be used? Defaults to True. Hybrid
+            reconstruction is faster but requires additional memory be allocated
+            for a queue.
 
         Returns
         -------
