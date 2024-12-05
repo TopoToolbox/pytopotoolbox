@@ -25,10 +25,15 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
         # since grid is a fixture, it has to be assigned/called first
         dem = grid
         original_dem = dem.z.copy()
-        filled_dem = dem.fillsinks()
+        filled_dem = dem.fillsinks(hybrid=False)
+        filled_dem_hybrid = dem.fillsinks(hybrid=True)
 
         # Ensure that DEM has not been modified by fillsinks
         assert np.all(original_dem == dem.z)
+
+        # The sequential and hybrid reconstruction algorithms should
+        # produce the same result
+        assert np.all(filled_dem.z == filled_dem_hybrid.z)
 
         # Loop over all cells of the DEM
         for i in range(dem.shape[0]):
