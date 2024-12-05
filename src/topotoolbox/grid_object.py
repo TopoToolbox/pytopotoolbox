@@ -105,7 +105,8 @@ class GridObject():
         return dst
 
     def fillsinks(self,
-                  bc: 'np.ndarray | GridObject | None' = None) -> 'GridObject':
+                  bc: 'np.ndarray | GridObject | None' = None,
+                  hybrid: bool = True) -> 'GridObject':
         """Fill sinks in the digital elevation model (DEM).
 
         Parameters
@@ -146,7 +147,11 @@ class GridObject():
         if isinstance(bc, GridObject):
             bc = bc.z
 
-        _grid.fillsinks(output, dem, bc, self.shape)
+        if hybrid:
+            queue = np.zeros_like(dem, dtype=np.int64)
+            _grid.fillsinks_hybrid(output, queue, dem, bc, self.shape)
+        else:
+            _grid.fillsinks(output, dem, bc, self.shape)
 
         if restore_nans:
             dem[nans] = np.nan
