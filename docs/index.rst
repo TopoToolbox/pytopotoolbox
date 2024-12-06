@@ -16,7 +16,7 @@ TopoToolbox is on PyPI, so you can run
 
 to obtain the latest version.
 
-Once you have the package installed, the :doc:`tutorial <tutorial>` provides a basic walkthrough of loading and displaying a digital elevation model with TopoToolbox.
+Once you have the package installed, the :doc:`tutorial <tutorial/tutorial>` provides a basic walkthrough of loading and displaying a digital elevation model with TopoToolbox.
 
 Further examples of TopoToolbox functionality can be found in the :doc:`example notebooks <examples>`, which can also be downloaded from the `GitHub repository <https://github.com/TopoToolbox/pytopotoolbox/tree/main/examples>`_.
 
@@ -34,7 +34,7 @@ If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTIN
    :maxdepth: 1
    :hidden:
 
-   Tutorial <tutorial>
+   Getting Started with TopoToolbox <tutorial/tutorial>
    Examples <examples>
    API <api>
    Contribution Guidelines <CONTRIBUTING>
