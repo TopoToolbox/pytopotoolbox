@@ -370,6 +370,12 @@ class GridObject():
         ------
         ValueError
             If wrong ctype has been used.
+
+        Examples
+        --------
+        >>> dem = topotoolbox.load_dem('tibet')
+        >>> curv = dem.curvature()
+        >>> curv.show()
         """
 
         if meanfilt:
