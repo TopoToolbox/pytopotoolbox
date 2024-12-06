@@ -295,7 +295,8 @@ class GridObject():
 
         return result
 
-    def gradient8(self, unit: str = 'tangent', multiprocessing: bool = True):
+    def gradient8(self, unit: str = 'tangent',
+                  multiprocessing: bool = True) -> 'GridObject':
         """
     Compute the gradient of a digital elevation model (DEM) using an
     8-direction algorithm.
