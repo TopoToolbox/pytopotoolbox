@@ -342,7 +342,7 @@ class GridObject():
 
         return result
 
-    def curvature(self, ctype='profc', meanfilt=False):
+    def curvature(self, ctype='profc', meanfilt=False) -> 'GridObject':
         """curvature returns the second numerical derivative (curvature) of a
         digital elevation model. By default, curvature returns the profile
         curvature (profc). 
@@ -350,8 +350,12 @@ class GridObject():
         Parameters
         ----------
         ctype : str, optional
-            What type of curvature will be computed ['profc', 'planc', 'tangc',
-            'meanc', 'total'], by default 'profc'
+            What type of curvature will be computed, by default 'profc'
+            - 'profc' : profile curvature [m^(-1)],
+            - 'planc' : planform curvature [m^(-1))], 
+            - 'tangc' : tangential curvature [m^(-1)],
+            - 'meanc' : mean curvature [m^(-1)],
+            - 'total' : total curvature [m^(-2)]
         meanfilt : bool, optional
             True if a mean filter will be applied before comuting the
             curvature, by default False
@@ -417,8 +421,7 @@ class GridObject():
                 "Invalid curvature type. Must be one of: 'profc', 'planc',"
                 "'tangc', 'meanc', 'total'.")
 
-        # Handle NaNs and infinities
-        curvature[np.isinf(curvature) | np.isnan(curvature)] = 0
+        # Keep NaNs like they are in dem
         curvature[np.isnan(dem)] = np.nan
 
         result = copy.copy(self)
