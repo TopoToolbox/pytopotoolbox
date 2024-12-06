@@ -1,10 +1,12 @@
 """This module contains the GridObject class.
 """
 
+from scipy.ndimage import convolve
 import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import ndimage
 
 from rasterio import CRS
 from rasterio.warp import reproject
@@ -340,76 +342,87 @@ class GridObject():
 
         return result
 
-    def curvature(self, multiprocessing: bool = True, meanfilt: bool = False,
-                  output_type: str = 'profc'):
-        """
-        Compute the curvature of a GridObject.
+    def curvature(self, ctype='profc', meanfilt=False):
+        """curvature returns the second numerical derivative (curvature) of a
+        digital elevation model. By default, curvature returns the profile
+        curvature (profc). 
 
         Parameters
         ----------
-        multiprocessing : bool, optional
-            Whether to use multiprocessing for computation. Defaults to True.
+        ctype : str, optional
+            What type of curvature will be computed ['profc', 'planc', 'tangc',
+            'meanc', 'total'], by default 'profc'
         meanfilt : bool, optional
-            Whether to apply a mean filter during the computation. 
-            Defaults to False.
-        output_type : str, optional
-            The type of curvature to compute. Must be one of:
-            - 'profc' : Profile curvature [m^(-1)]
-            - 'tangc' : Tangential curvature [m^(-1)]
-            - 'planc' : Planform curvature or contour curvature [m^(-1)]
-            - 'meanc' : Mean curvature [m^(-1)]
-            - 'total' : Total curvature [m^(-2)]
-            Defaults to 'profc'.
+            True if a mean filter will be applied before comuting the
+            curvature, by default False
 
         Returns
         -------
-        result : GridObject
-            A new GridObject containing the computed curvature data.
+        GridObject
+            A GridObject storing the computed values.
 
         Raises
         ------
         ValueError
-            If `output_type` is not a valid curvature type.
-
-        Examples
-        --------
-        Compute profile curvature for a DEM object:
-
-        >>> dem = topotoolbox.load_dem('tibet')
-        >>> result = dem.curvature()
-        >>> result.show()
+            If wrong ctype has been used.
         """
-        if multiprocessing:
-            multiprocessing = 1
-        else:
-            multiprocessing = 0
 
         if meanfilt:
-            meanfilt = 1
+            kernel = np.ones((3, 3)) / 9
+            dem = convolve(self.z, kernel, mode='nearest')
         else:
-            meanfilt = 0
+            dem = self.z
 
-        output_dict = {
-            'profc': 0,  # profile curvature [m^(-1)]
-            'tangc': 1,  # tangential curvature [m^(-1)]
-            'planc': 2,  # planform curvature or contour curvature [m^(-1)]
-            'meanc': 3,  # mean curvature [m^(-1)]
-            'total': 4   # total curvature [m^(-2)]
-        }
+        kernel_fx = np.array(
+            [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]) / (6 * self.cellsize)
+        kernel_fy = np.array(
+            [[1, 1, 1], [0, 0, 0], [-1, -1, -1]]) / (6 * self.cellsize)
 
-        if output_type not in output_dict:
+        fx = convolve(dem, kernel_fx, mode='nearest')
+        fy = convolve(dem, kernel_fy, mode='nearest')
+
+        kernel_fxx = np.array(
+            [[1, -2, 1], [1, -2, 1], [1, -2, 1]]) / (3 * self.cellsize**2)
+        kernel_fyy = kernel_fxx.T
+        kernel_fxy = np.array(
+            [[-1, 0, 1], [0, 0, 0], [1, 0, -1]]) / (4 * self.cellsize**2)
+
+        fxx = convolve(dem, kernel_fxx, mode='nearest')
+        fyy = convolve(dem, kernel_fyy, mode='nearest')
+        fxy = convolve(dem, kernel_fxy, mode='nearest')
+
+        epsilon = 1e-10
+        if ctype == 'profc':
+            denominator = (fx**2 + fy**2) * (1 + fx **
+                                             2 + fy**2)**(3/2) + epsilon
+            curvature = - (fx**2 * fxx + 2 * fx * fy * fxy + fy **
+                           2 * fyy) / denominator
+        elif ctype == 'tangc':
+            denominator = (fx**2 + fy**2) * (1 + fx **
+                                             2 + fy**2)**(1/2) + epsilon
+            curvature = - (fy**2 * fxx - 2 * fx * fy * fxy + fx **
+                           2 * fyy) / denominator
+        elif ctype == 'planc':
+            denominator = (fx**2 + fy**2)**(3/2) + epsilon
+            curvature = - (fy**2 * fxx - 2 * fx * fy * fxy + fx **
+                           2 * fyy) / denominator
+        elif ctype == 'meanc':
+            denominator = 2 * (fx**2 + fy**2 + 1)**(3/2) + epsilon
+            curvature = -((1 + fy ** 2) * fxx - 2 * fxy * fx * fy +
+                          (1 + fx ** 2) * fyy) / denominator
+        elif ctype == 'total':
+            curvature = fxx**2 + 2 * fxy**2 + fyy**2
+        else:
             raise ValueError(
-                f"Invalid output_type '{output_type}'. Must be one of:"
-                f"{', '.join(output_dict.keys())}")
+                "Invalid curvature type. Must be one of: 'profc', 'planc',"
+                "'tangc', 'meanc', 'total'.")
 
-        dem = self.z.astype(np.float32, order='F')
-        output = np.zeros_like(dem, order='F')
-
-        _grid.curvature(output, self.z, output_dict[output_type], meanfilt,
-                        multiprocessing, self.cellsize, self.shape)
+        # Handle NaNs and infinities
+        curvature[np.isinf(curvature) | np.isnan(curvature)] = 0
+        curvature[np.isnan(dem)] = np.nan
 
         result = copy.copy(self)
-        result.z = output
+        result.z = curvature
         return result
 
     def _gwdt_computecosts(self) -> np.ndarray:
