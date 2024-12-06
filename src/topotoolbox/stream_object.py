@@ -10,6 +10,7 @@ from .flow_object import FlowObject
 
 # pylint: disable=no-name-in-module
 from . import _flow  # type: ignore
+from . import _stream  # type: ignore
 from .grid_object import GridObject
 
 _all_ = ['StreamObject']
@@ -256,6 +257,58 @@ class StreamObject():
             plt.colorbar()
             plt.tight_layout()
             plt.show()
+
+    def chitransform(self,
+                     upstream_area : GridObject | np.ndarray,
+                     a0 : float = 1e6,
+                     mn : float = 0.45,
+                     k  : GridObject | np.ndarray | None = None,
+                     correctcellsize : bool = True):
+        """Coordinate transformation using the integral approach
+
+        Transforms the horizontal spatial coordinates of a river
+        longitudinal profile using an integration in upstream
+        direction of drainage area (chi, see Perron and Royden, 2013).
+
+        """
+
+        # Retrieve node attribute lists
+        a = self.ezgetnal(upstream_area)
+
+        if correctcellsize:
+            a = a * self.cellsize**2
+
+        # Set up k
+        if k is not None:
+            node_k = self.ezgetnal(k)
+            a = (1 / node_k) * (1 / a)**mn
+        else:
+            a = (a0 / a)**mn
+
+        # Cumulative trapezoidal integration
+        weight = self.distance()
+        c = np.zeros_like(a)
+        if a.dtype == np.float32:
+            # libtopotoolbox expects source and target to be 1-based
+            # indices into node attribute lists, so we must add 1 to
+            # source and target, which are zero-based indices.
+            _stream.streamquad_trapz_f32(c,
+                                         a,
+                                         self.source + 1,
+                                         self.target + 1,
+                                         weight)
+        elif a.dtype == np.float64:
+            _stream.streamquad_trapz_f64(c,
+                                         a,
+                                         self.source + 1,
+                                         self.target + 1,
+                                         weight)
+        else:
+            # This is probably unreachable
+            raise TypeError("modified area is not a floating point object")
+
+        return c
+
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
