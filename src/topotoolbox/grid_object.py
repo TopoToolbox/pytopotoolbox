@@ -1,13 +1,10 @@
 """This module contains the GridObject class.
 """
-
-from scipy.ndimage import convolve
 import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import ndimage
-
+from scipy.ndimage import convolve
 from rasterio import CRS
 from rasterio.warp import reproject
 from rasterio.enums import Resampling
