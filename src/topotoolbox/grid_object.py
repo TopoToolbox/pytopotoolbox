@@ -105,7 +105,8 @@ class GridObject():
         return dst
 
     def fillsinks(self,
-                  bc: 'np.ndarray | GridObject | None' = None) -> 'GridObject':
+                  bc: 'np.ndarray | GridObject | None' = None,
+                  hybrid: bool = True) -> 'GridObject':
         """Fill sinks in the digital elevation model (DEM).
 
         Parameters
@@ -116,6 +117,10 @@ class GridObject():
             indicate pixels that should be fixed to their values in the
             original DEM and values of 0 indicate pixels that should be
             filled.
+        hybrid: bool, optional
+            Should hybrid reconstruction algorithm be used? Defaults to True. Hybrid
+            reconstruction is faster but requires additional memory be allocated
+            for a queue.
 
         Returns
         -------
@@ -146,7 +151,11 @@ class GridObject():
         if isinstance(bc, GridObject):
             bc = bc.z
 
-        _grid.fillsinks(output, dem, bc, self.shape)
+        if hybrid:
+            queue = np.zeros_like(dem, dtype=np.int64)
+            _grid.fillsinks_hybrid(output, queue, dem, bc, self.shape)
+        else:
+            _grid.fillsinks(output, dem, bc, self.shape)
 
         if restore_nans:
             dem[nans] = np.nan

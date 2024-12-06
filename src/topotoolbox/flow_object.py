@@ -16,7 +16,8 @@ class FlowObject():
     """
 
     def __init__(self, grid: GridObject,
-                 bc: np.ndarray | GridObject | None = None):
+                 bc: np.ndarray | GridObject | None = None,
+                 hybrid : bool = True):
         """The constructor for the FlowObject. Takes a GridObject as input,
         computes flow direction information and saves them as an FlowObject.
 
@@ -30,6 +31,10 @@ class FlowObject():
             indicate pixels that should be fixed to their values in the
             original DEM and values of 0 indicate pixels that should be
             filled.
+        hybrid: bool, optional
+            Should hybrid reconstruction algorithm be used to fill
+            sinks? Defaults to True. Hybrid reconstruction is faster
+            but requires additional memory be allocated for a queue.
 
         Notes
         -----
@@ -58,7 +63,11 @@ class FlowObject():
         if isinstance(bc, GridObject):
             bc = bc.z
 
-        _grid.fillsinks(filled_dem, dem, bc, dims)
+        queue = np.zeros_like(dem, dtype=np.int64, order='F')
+        if hybrid:
+            _grid.fillsinks_hybrid(filled_dem, queue, dem, bc, dims)
+        else:
+            _grid.fillsinks(filled_dem, dem, bc, dims)
 
         if restore_nans:
             dem[nans] = np.nan
@@ -73,7 +82,7 @@ class FlowObject():
 
         dist = np.zeros_like(flats, dtype=np.float32, order='F')
         prev = conncomps  # prev: dtype=np.int64
-        heap = np.zeros_like(flats, dtype=np.int64, order='F')
+        heap = queue      # heap: dtype=np.int64
         back = np.zeros_like(flats, dtype=np.int64, order='F')
         _grid.gwdt(dist, prev, costs, flats, heap, back, dims)
 
