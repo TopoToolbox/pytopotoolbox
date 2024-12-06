@@ -7,27 +7,34 @@ import topotoolbox as topo
 
 @pytest.fixture
 def wide_dem():
-    dem = topo.gen_random(rows=128, columns=64)
-    flow = topo.FlowObject(dem)
-    yield topo.StreamObject(flow)
-
+    yield topo.gen_random(rows=128, columns=64)
 
 @pytest.fixture
 def tall_dem():
-    dem = topo.gen_random(rows=64, columns=128)
-    flow = topo.FlowObject(dem)
-    yield topo.StreamObject(flow)
-
+    yield topo.gen_random(columns=64, rows=128)
 
 def test_init(tall_dem, wide_dem):
-    assert (wide_dem.target.size == wide_dem.source.size ==
-            wide_dem.direction.size)
-    assert (tall_dem.target.size == tall_dem.source.size ==
-            tall_dem.direction.size)
+    tall_flow = topo.FlowObject(tall_dem)
+    tall_stream = topo.StreamObject(tall_flow)
+
+    wide_flow = topo.FlowObject(wide_dem)
+    wide_stream = topo.StreamObject(wide_flow)
+
+    assert (wide_stream.target.size == wide_stream.source.size ==
+            wide_stream.direction.size)
+    assert (tall_stream.target.size == tall_stream.source.size ==
+            tall_stream.direction.size)
 
     # Ensure that no index in stream exceeds the max possible index in the grid
-    assert np.max(wide_dem.stream) <= wide_dem.shape[0] * wide_dem.shape[1]
-    assert np.max(tall_dem.stream) <= tall_dem.shape[0] * tall_dem.shape[1]
+    assert np.max(wide_stream.stream) <= wide_stream.shape[0] * wide_stream.shape[1]
+    assert np.max(tall_stream.stream) <= tall_stream.shape[0] * tall_stream.shape[1]
+
+    tall_acc = tall_flow.flow_accumulation()
+    wide_acc = wide_flow.flow_accumulation()
+
+    # Run the chi transforms
+    tall_stream.chitransform(tall_acc)
+    wide_stream.chitransform(wide_acc)
 
     grid_obj = topo.gen_random(rows=64, columns=64)
     flow_obj = topo.FlowObject(grid_obj)
