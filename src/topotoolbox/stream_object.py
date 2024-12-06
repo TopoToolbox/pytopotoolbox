@@ -179,6 +179,22 @@ class StreamObject():
         self.path = flow.path
         self.name = flow.name
 
+    def distance(self) -> np.ndarray:
+        """
+        Compute the pixel-to-pixel distance for each edge.
+
+        Returns
+        -------
+        np.ndarray, float32
+            An edge attribute list with the distance between pixels
+        """
+        d = np.abs(self.stream[self.source] - self.stream[self.target])
+
+        dist = self.cellsize * np.where((d == self.strides[0]) | (d == self.strides[1]),
+                                        np.float32(1.0),
+                                        np.sqrt(np.float32(2.0)))
+
+        return dist
     def show(self, cmap='hot', overlay: GridObject | None = None,
              overlay_cmap: str = 'binary', alpha: float = 0.8) -> None:
         """
