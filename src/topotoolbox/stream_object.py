@@ -195,6 +195,32 @@ class StreamObject():
                                         np.sqrt(np.float32(2.0)))
 
         return dist
+
+    def ezgetnal(self,
+                 k):
+        """
+        Retrieve a node attribute list from k
+        """
+
+        if isinstance(k, GridObject):
+            nal = k.z[np.unravel_index(self.stream, self.shape, order='F')]
+        elif isinstance(k, np.ndarray):
+            if k.shape == self.shape:
+                # We have passed an ndarray with the same shape as the
+                # corresponding GridObject, index into it
+                nal = k[np.unravel_index(self.stream, self.shape, order='F')]
+            elif k.shape == self.stream.shape:
+                # k is already a node attribute list
+                nal = k
+            else:
+                raise ValueError(f"{k} is not of the appropriate shape")
+        elif np.isscalar(k):
+            nal = np.full(np.stream.shape, k)
+        else:
+            raise TypeError(f"{k} is not a supported source for a node attribute list")
+
+        return nal
+
     def show(self, cmap='hot', overlay: GridObject | None = None,
              overlay_cmap: str = 'binary', alpha: float = 0.8) -> None:
         """
