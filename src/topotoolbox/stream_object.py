@@ -58,6 +58,7 @@ class StreamObject():
 
         self.cellsize = flow.cellsize
         self.shape = flow.shape
+        self.strides = flow.strides
 
         # georeference
         self.bounds = flow.bounds
