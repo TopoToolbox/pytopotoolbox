@@ -238,7 +238,7 @@ void wrap_gradient8(
     gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
 }
 
-// Make wrap_funcname() function available as grid_funcname() to be used by
+// Make wrap_funcname() function available as funcname() to be used by
 // by functions in the pytopotoolbox package
 
 PYBIND11_MODULE(_grid, m) {
