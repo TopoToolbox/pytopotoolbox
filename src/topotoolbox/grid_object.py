@@ -6,6 +6,8 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
+from scipy.ndimage import convolve, median_filter, generic_filter
+from scipy.signal import wiener
 from rasterio import CRS
 from rasterio.warp import reproject
 from rasterio.enums import Resampling
@@ -84,17 +86,17 @@ class GridObject():
 
         dst.z, dst.transform = reproject(
             self.z,
-            src_transform = self.transform,
-            src_crs = self.crs,
-            dst_transform = None, # Let rasterio derive the transform for us
-            dst_crs = crs,
-            dst_nodata = np.nan,
-            dst_resolution = resolution,
-            resampling = resampling,
+            src_transform=self.transform,
+            src_crs=self.crs,
+            dst_transform=None,  # Let rasterio derive the transform for us
+            dst_crs=crs,
+            dst_nodata=np.nan,
+            dst_resolution=resolution,
+            resampling=resampling,
         )
         # reproject gives us a 3D array, we want the first band
         # We also want it in column-major order
-        dst.z = np.asfortranarray(dst.z[0,:,:])
+        dst.z = np.asfortranarray(dst.z[0, :, :])
 
         dst.crs = crs
 
@@ -300,6 +302,78 @@ class GridObject():
         result = copy.copy(self)
         result.z = excess
 
+        return result
+
+    def filter(self, method: str = 'mean', kernelsize: int = 3) -> 'GridObject':
+        """The function filter is a wrapper around various image filtering
+        algorithms. Only filters with rectangular kernels of uneven
+        dimensions are supported.
+
+        Parameters
+        ----------
+        method : str, optional
+            Which method will be used to filter the DEM: ['mean', 'average',
+            'median', 'sobel', 'scharr', 'wiener', 'std'], by default 'mean'
+        kernelsize : int, optional
+            Size of the kernel that will be applied. Note that ['sobel',
+            'scharr'] require that the kernelsize is 3, by default 3
+
+        Returns
+        -------
+        GridObject
+            The filtered DEM as a GridObject.
+
+        Raises
+        ------
+        ValueError
+            If the kernelsize does not match the requirements of this function
+            or the selected method is not implemented in the function.
+        """
+
+        valid_methods = ['mean', 'average', 'median',
+                         'sobel', 'scharr', 'wiener', 'std']
+
+        if method in ['mean', 'average']:
+            kernel = np.ones((kernelsize, kernelsize)) / kernelsize**2
+            filtered = convolve(self.z, kernel, mode='nearest')
+
+        elif method in ['median']:
+            filtered = median_filter(self.z, size=kernelsize, mode='reflect')
+
+        elif method in ['sobel', 'scharr']:
+            if kernelsize != 3:
+                arr = f"The method '{method}' only works with a 3x3 kernel'."
+                raise ValueError(arr) from None
+
+            if method == 'sobel':
+                ky = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+            else:  # 'scharr'
+                ky = np.array([[3, 10, 3], [0, 0, 0], [-3, - 10, - 3]])
+
+            kx = ky.T
+            filtered = np.hypot(
+                convolve(self.z, ky, mode='nearest'),
+                convolve(self.z, kx, mode='nearest'))
+
+        elif method in ['wiener']:
+            filtered = wiener(self.z, mysize=kernelsize)
+
+        elif method in ['std']:
+            # This solution is based on this thread:
+            # https://stackoverflow.com/questions/19518827/what-is-the-python
+            # -equivalent-for-matlabs-stdfilt-function
+            filtered = generic_filter(self.z, np.std, size=kernelsize)
+
+        else:
+            err = (f"Argument 'method={method}' has to be"
+                   f"one of {valid_methods}.")
+            raise ValueError(err) from None
+
+        # Keep NaNs like they are in self.z
+        filtered[np.isnan(self.z)] = np.nan
+
+        result = copy.copy(self)
+        result.z = filtered
         return result
 
     def gradient8(self, unit: str = 'tangent', multiprocessing: bool = True):

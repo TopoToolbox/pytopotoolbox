@@ -22,6 +22,7 @@ license = { file = "LICENSE" }
 dependencies = [
     "numpy",
     "matplotlib",
+    "scipy",
     "rasterio"
 ]
 requires-python = ">=3.10"
