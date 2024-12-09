@@ -40,7 +40,7 @@ and the linter and type checks with
 .. code-block:: bash
 		
     pylint --rcfile=pyproject.toml src/topotoolbox
-    mypy --ignoremissing-imports src/topotoolbox
+    mypy --ignore-missing-imports src/topotoolbox
 
 It is a good idea to run the linter and type checks before making a
 pull request to pytopotoolbox, because failing lints or type checks
