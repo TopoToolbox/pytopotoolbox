@@ -362,6 +362,8 @@ class GridObject():
             # https://stackoverflow.com/questions/19518827/what-is-the-python
             # -equivalent-for-matlabs-stdfilt-function
             filtered = generic_filter(self.z, np.std, size=kernelsize)
+            factor = np.sqrt(kernelsize**2 / (kernelsize**2 - 1))
+            np.multiply(filtered, factor, out=filtered)
 
         else:
             err = (f"Argument 'method={method}' has to be"
@@ -425,14 +427,14 @@ class GridObject():
     def curvature(self, ctype='profc', meanfilt=False) -> 'GridObject':
         """curvature returns the second numerical derivative (curvature) of a
         digital elevation model. By default, curvature returns the profile
-        curvature (profc). 
+        curvature (profc).
 
         Parameters
         ----------
         ctype : str, optional
             What type of curvature will be computed, by default 'profc'
             - 'profc' : profile curvature [m^(-1)],
-            - 'planc' : planform curvature [m^(-1))], 
+            - 'planc' : planform curvature [m^(-1))],
             - 'tangc' : tangential curvature [m^(-1)],
             - 'meanc' : mean curvature [m^(-1)],
             - 'total' : total curvature [m^(-2)]
