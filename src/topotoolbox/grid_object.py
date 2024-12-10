@@ -516,17 +516,24 @@ class GridObject():
         result.z = curvature
         return result
 
-    def erode(self, footprint: np.ndarray = None, structure: np.ndarray = None) -> 'GridObject':
-        """Apply a morphological erosion operation to the GridObject.
+    def erode(self, size: tuple = None, footprint: np.ndarray = None,
+              structure: np.ndarray = None) -> 'GridObject':
+        """Apply a morphological erosion operation to the GridObject. Either
+        size, footprint or structure has to be passed to this function.
+        Otherwise, a default size will be used.
 
         Parameters
         ----------
-        footprint : np.ndarray, optional
+        size : tuple of ints
+            A tuple of ints containing the shape of the structuring element.
+            Only needed if neither footprint nor structure is provided.
+            Defaults to (3,3)
+        footprint : np.ndarray of ints, optional
             A boolean array defining the footprint of the erosion operation.
             Non-zero elements define the neighborhood over which the erosion
             is applied. If None, the default is a full 
             connectivity neighborhood.
-        structure : np.ndarray, optional
+        structure : np.ndarray of ints, optional
             A structuring element used for the erosion. This defines the 
             connectivity of the elements. If None, a flat structuring element
             is used.
@@ -537,10 +544,15 @@ class GridObject():
             A GridObject storing the computed values."""
 
         # Replace NaN values with inf
-        dem = self.z[np.isnan(self.z)] = np.inf
+        dem = self.z.copy()
+        dem[np.isnan(dem)] = np.inf
 
-        eroded = grey_erosion(dem, structure=structure,
-                              footprint=footprint.astype(bool))
+        if size is None and (structure is None and footprint is None):
+            # TODO: choose default vaule
+            size = (3, 3)
+
+        eroded = grey_erosion(
+            dem, size=size, structure=structure, footprint=footprint)
 
         # Keep NaNs like they are in dem
         eroded[np.isnan(self.z)] = np.nan
