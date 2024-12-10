@@ -516,8 +516,9 @@ class GridObject():
         result.z = curvature
         return result
 
-    def erode(self, size: tuple = None, footprint: np.ndarray = None,
-              structure: np.ndarray = None) -> 'GridObject':
+    def erode(
+            self, size: tuple | None = None, footprint: np.ndarray | None = None,
+            structure: np.ndarray | None = None) -> 'GridObject':
         """Apply a morphological erosion operation to the GridObject. Either
         size, footprint or structure has to be passed to this function.
         Otherwise, a default size will be used.
