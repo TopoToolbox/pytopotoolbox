@@ -198,9 +198,29 @@ class StreamObject():
         return dist
 
     def ezgetnal(self,
-                 k):
-        """
-        Retrieve a node attribute list from k
+                 k : GridObject | np.ndarray | float):
+        """Retrieve a node attribute list from k
+
+        Parameters
+        ----------
+        k : GridObject | np.ndarray | float
+            The object from which node values will be extracted. If
+            `k` is a `GridObject` or an `np.ndarray` with the same
+            shape as the underlying DEM of this `StreamObject`, the
+            node values will be extracted from the grid by
+            indexing. If `k` is an array with the same shape as the
+            node attribute list, `ezgetnal` returns `k`. If `k` is a
+            scalar value, `ezgetnal` returns an array of the right
+            shape filled with `k`.
+
+        Raises
+        ------
+        ValueError
+            If `k` does not have the right shape to be indexed by the
+            `StreamObject`.
+        TypeError
+            If `k` does not represent a type of data that can be
+            extracted into a node attribute list.
         """
 
         if isinstance(k, GridObject):
@@ -216,7 +236,7 @@ class StreamObject():
             else:
                 raise ValueError(f"{k} is not of the appropriate shape")
         elif np.isscalar(k):
-            nal = np.full(np.stream.shape, k)
+            nal = np.full(self.stream.shape, k)
         else:
             raise TypeError(f"{k} is not a supported source for a node attribute list")
 
@@ -270,6 +290,44 @@ class StreamObject():
         longitudinal profile using an integration in upstream
         direction of drainage area (chi, see Perron and Royden, 2013).
 
+        Parameters
+        ----------
+        upstream_area : GridObject | np.ndarray
+            Raster with the upstream areas. Must be the same size and
+            projection as the GridObject used to create the
+            StreamObject.
+        a0 : float, optional
+            Reference area in the same units as the upstream_area
+            raster. Defaults to 100_000.
+        mn : float, optional
+            mn-ratio. Defaults to 0.45.
+        k  : GridObject | np.ndarray | None, optional
+            Erosional efficiency, which may vary spatially. If `k` is
+            supplied, then `chitransform` returns the time needed for
+            a signal (knickpoint) propagating upstream from the outlet
+            of the stream network. If `k` has units of m^(1 - 2m) / y,
+            then time will have units of y. Note that calculating the
+            response time requires the assumption that n=1. Defaults
+            to None, which does not use the erosional efficiency.
+        correctcellsize : bool, optional
+            If true, multiplies the `upstream_area` raster by
+            `self.cellsize**2`. Use if `a0` has the same units of
+            `self.cellsize**2` and `upstream_area` has units of
+            pixels, such as the default output from
+            `flow_accumulation`. If the units of `upstream_area` are
+            already m^2, then set correctcellsize to False. Defaults
+            to True.
+
+        Raises
+        ------
+        ValueError
+            If `upstream_area` or `k` does not have the right shape to
+            be indexed by the `StreamObject`.
+        TypeError
+            If `upstream_area` or `k` does not represent a type of data that can be
+            extracted into a node attribute list.
+        TypeError
+            If the modified upstream area is not a supported floating point type.
         """
 
         # Retrieve node attribute lists
