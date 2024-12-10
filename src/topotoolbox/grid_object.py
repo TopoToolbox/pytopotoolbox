@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.ndimage import convolve, median_filter, generic_filter
+from scipy.ndimage import convolve, median_filter, generic_filter, grey_erosion
 from scipy.signal import wiener
 from rasterio import CRS
 from rasterio.warp import reproject
@@ -514,6 +514,39 @@ class GridObject():
 
         result = copy.copy(self)
         result.z = curvature
+        return result
+
+    def erode(self, footprint: np.ndarray = None, structure: np.ndarray = None) -> 'GridObject':
+        """Apply a morphological erosion operation to the GridObject.
+
+        Parameters
+        ----------
+        footprint : np.ndarray, optional
+            A boolean array defining the footprint of the erosion operation.
+            Non-zero elements define the neighborhood over which the erosion
+            is applied. If None, the default is a full 
+            connectivity neighborhood.
+        structure : np.ndarray, optional
+            A structuring element used for the erosion. This defines the 
+            connectivity of the elements. If None, a flat structuring element
+            is used.
+
+        Returns
+        -------
+        GridObject
+            A GridObject storing the computed values."""
+
+        # Replace NaN values with inf
+        dem = self.z[np.isnan(self.z)] = np.inf
+
+        eroded = grey_erosion(dem, structure=structure,
+                              footprint=footprint.astype(bool))
+
+        # Keep NaNs like they are in dem
+        eroded[np.isnan(self.z)] = np.nan
+
+        result = copy.copy(self)
+        result.z = eroded
         return result
 
     def _gwdt_computecosts(self) -> np.ndarray:
