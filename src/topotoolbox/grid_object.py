@@ -520,37 +520,45 @@ class GridObject():
             self, size: tuple | None = None, footprint: np.ndarray | None = None,
             structure: np.ndarray | None = None) -> 'GridObject':
         """Apply a morphological erosion operation to the GridObject. Either
-        size, footprint or structure has to be passed to this function.
-        Otherwise, a default size will be used.
+        size, footprint or structure has to be passed to this function. If
+        nothing is provided, the function will raise an error.
 
         Parameters
         ----------
         size : tuple of ints
             A tuple of ints containing the shape of the structuring element.
-            Only needed if neither footprint nor structure is provided.
-            Defaults to (3,3)
+            Only needed if neither footprint nor structure is provided. Will
+            result in a full and flat structuring element.
+            Defaults to None
         footprint : np.ndarray of ints, optional
-            A boolean array defining the footprint of the erosion operation.
+            A array defining the footprint of the erosion operation.
             Non-zero elements define the neighborhood over which the erosion
-            is applied. If None, the default is a full 
-            connectivity neighborhood.
+            is applied. Defaults to None
         structure : np.ndarray of ints, optional
-            A structuring element used for the erosion. This defines the 
-            connectivity of the elements. If None, a flat structuring element
-            is used.
+            A array defining the structuring element used for the erosion. 
+            This defines the connectivity of the elements. Defaults to None
 
         Returns
         -------
         GridObject
-            A GridObject storing the computed values."""
+            A GridObject storing the computed values.
+
+        Raises
+        ------
+        ValueError
+            If size, structure and footprint are all None."""
+
+        if size is None and structure is None and footprint is None:
+            err = ("Erode requires a structuring element to be specified."
+                   " Use the size argument for a full and flat structuring"
+                   " element (equivalent to a a minimum filter) or the"
+                   " structure and footprint arguments to specify"
+                   " a non-flat structuring element.")
+            raise ValueError(err) from None
 
         # Replace NaN values with inf
         dem = self.z.copy()
         dem[np.isnan(dem)] = np.inf
-
-        if size is None and (structure is None and footprint is None):
-            # TODO: choose default vaule
-            size = (3, 3)
 
         eroded = grey_erosion(
             dem, size=size, structure=structure, footprint=footprint)
