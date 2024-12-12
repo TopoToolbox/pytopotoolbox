@@ -628,6 +628,23 @@ class GridObject():
         result.z = eroded
         return result
 
+    def evansslope(
+            self, padval: str = 'replicate', modified: bool = False,
+            remove_nans: bool = True) -> 'GridObject':
+
+        dem = self.z.copy()
+        if remove_nans:
+            # TODO: NaN replacement should be nearest
+            dem[np.isnan(dem)] = 0
+
+        kx = np.array(
+            [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])/(6*self.cellsize)
+        fx = convolve(dem, kx, mode='nearest')
+        # kernel for dz/dy
+        ky = np.array(
+            [[1, 1, 1], [0, 0, 0], [-1, -1, -1]])/(6*self.cellsize)
+        fy = convolve(dem, ky, mode='nearest')
+
     def _gwdt_computecosts(self) -> np.ndarray:
         """
         Compute the cost array used in the gradient-weighted distance
