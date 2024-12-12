@@ -104,6 +104,7 @@ class FlowObject():
         self.direction = direction  # dtype=np.unit8
         self.shape = grid.shape
         self.cellsize = grid.cellsize
+        self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
 
         # georeference
         self.bounds = grid.bounds
