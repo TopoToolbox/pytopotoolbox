@@ -5,7 +5,12 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.ndimage import convolve, median_filter, generic_filter, grey_dilation
+from scipy.ndimage import (
+    convolve,
+    median_filter,
+    generic_filter,
+    grey_erosion,
+    grey_dilation)
 from scipy.signal import wiener
 from rasterio import CRS
 from rasterio.warp import reproject
@@ -567,6 +572,60 @@ class GridObject():
 
         result = copy.copy(self)
         result.z = dilated
+        return result
+
+    def erode(
+            self, size: tuple | None = None, footprint: np.ndarray | None = None,
+            structure: np.ndarray | None = None) -> 'GridObject':
+        """Apply a morphological erosion operation to the GridObject. Either
+        size, footprint or structure has to be passed to this function. If
+        nothing is provided, the function will raise an error.
+
+        Parameters
+        ----------
+        size : tuple of ints
+            A tuple of ints containing the shape of the structuring element.
+            Only needed if neither footprint nor structure is provided. Will
+            result in a full and flat structuring element.
+            Defaults to None
+        footprint : np.ndarray of ints, optional
+            A array defining the footprint of the erosion operation.
+            Non-zero elements define the neighborhood over which the erosion
+            is applied. Defaults to None
+        structure : np.ndarray of ints, optional
+            A array defining the structuring element used for the erosion. 
+            This defines the connectivity of the elements. Defaults to None
+
+        Returns
+        -------
+        GridObject
+            A GridObject storing the computed values.
+
+        Raises
+        ------
+        ValueError
+            If size, structure and footprint are all None."""
+
+        if size is None and structure is None and footprint is None:
+            err = ("Erode requires a structuring element to be specified."
+                   " Use the size argument for a full and flat structuring"
+                   " element (equivalent to a a minimum filter) or the"
+                   " structure and footprint arguments to specify"
+                   " a non-flat structuring element.")
+            raise ValueError(err) from None
+
+        # Replace NaN values with inf
+        dem = self.z.copy()
+        dem[np.isnan(dem)] = np.inf
+
+        eroded = grey_erosion(
+            dem, size=size, structure=structure, footprint=footprint)
+
+        # Keep NaNs like they are in dem
+        eroded[np.isnan(self.z)] = np.nan
+
+        result = copy.copy(self)
+        result.z = eroded
         return result
 
     def _gwdt_computecosts(self) -> np.ndarray:
