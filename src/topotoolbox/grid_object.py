@@ -10,7 +10,8 @@ from scipy.ndimage import (
     median_filter,
     generic_filter,
     grey_erosion,
-    grey_dilation)
+    grey_dilation,
+    distance_transform_edt)
 from scipy.signal import wiener
 from rasterio import CRS
 from rasterio.warp import reproject
@@ -629,21 +630,65 @@ class GridObject():
         return result
 
     def evansslope(
-            self, padval: str = 'replicate', modified: bool = False,
-            remove_nans: bool = True) -> 'GridObject':
+            self, partial_derivitives: bool = False, mode: str = 'nearest',
+            modified: bool = False) -> 'GridObject':
+        """Evans method fits a second-order polynomial to 3x3 subgrids. The
+        parameters of the polynomial are the partial derivatives which are
+        used to calculate the surface slope = sqrt(Gx**2 + Gy**2).
 
+        Evans method approximates the surface by regression surfaces.
+        Gradients are thus less susceptible to noise in the DEM.
+
+        Parameters
+        ----------
+        mode : str, optional
+            The mode parameter determines how the input DEM is extended
+            beyond its boundaries: ['reflect', 'constant', 'nearest', 'mirror',
+            'wrap', 'grid-mirror', 'grid-constant', 'grid-wrap']. See
+            scipy.ndimage.convolve for more information, by default 'nearest'
+        modified : bool, optional
+            If True, the surface is weakly smoothed before gradients are
+            calculated (see Shary et al., 2002), by default False
+        partial_derivitives : bool, optional
+            If True, both partial derivatives [fx, fy] will be returned as
+            GridObjects instead of just the evansslope, by default False
+
+        Returns
+        -------
+        GridObject
+            A GridObject containing the computed evansslope data.
+        """
         dem = self.z.copy()
-        if remove_nans:
-            # TODO: NaN replacement should be nearest
-            dem[np.isnan(dem)] = 0
+        # NaN replacement not optional since convolve can't handle NaNs
+        indices = distance_transform_edt(
+            np.isnan(dem), return_distances=False, return_indices=True)
+        dem = dem[tuple(indices)]
+
+        if modified:
+            kernel = np.array([[0, 1, 0], [1, 41, 1], [0, 1, 0]])/45
+            dem = convolve(dem, kernel, mode=mode)
 
         kx = np.array(
             [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])/(6*self.cellsize)
-        fx = convolve(dem, kx, mode='nearest')
+        fx = convolve(dem, kx, mode=mode)
         # kernel for dz/dy
         ky = np.array(
             [[1, 1, 1], [0, 0, 0], [-1, -1, -1]])/(6*self.cellsize)
-        fy = convolve(dem, ky, mode='nearest')
+        fy = convolve(dem, ky, mode=mode)
+
+        if partial_derivitives:
+            result_kx = copy.copy(self)
+            result_ky = copy.copy(self)
+            result_kx.z = kx
+            result_ky.z = ky
+            return result_kx, result_ky
+
+        slope = np.sqrt(fx**2 + fy**2)
+        slope[np.isnan(self.z)] = np.nan
+
+        result = copy.copy(self)
+        result.z = slope
+        return result
 
     def _gwdt_computecosts(self) -> np.ndarray:
         """
