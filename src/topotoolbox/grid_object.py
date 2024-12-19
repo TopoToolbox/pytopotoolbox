@@ -1,6 +1,7 @@
 """This module contains the GridObject class.
 """
 import copy
+from typing import Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -631,7 +632,7 @@ class GridObject():
 
     def evansslope(
             self, partial_derivitives: bool = False, mode: str = 'nearest',
-            modified: bool = False) -> 'GridObject':
+            modified: bool = False) -> 'GridObject' | Tuple['GridObject', 'GridObject']:
         """Evans method fits a second-order polynomial to 3x3 subgrids. The
         parameters of the polynomial are the partial derivatives which are
         used to calculate the surface slope = sqrt(Gx**2 + Gy**2).
