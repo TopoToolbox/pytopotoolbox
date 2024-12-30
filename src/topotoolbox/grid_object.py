@@ -631,7 +631,7 @@ class GridObject():
         return result
 
     def evansslope(
-            self, partial_derivitives: bool = False, mode: str = 'nearest',
+            self, partial_derivatives: bool = False, mode: str = 'nearest',
             modified: bool = False) -> 'GridObject' | Tuple['GridObject', 'GridObject']:
         """Evans method fits a second-order polynomial to 3x3 subgrids. The
         parameters of the polynomial are the partial derivatives which are
@@ -650,7 +650,7 @@ class GridObject():
         modified : bool, optional
             If True, the surface is weakly smoothed before gradients are
             calculated (see Shary et al., 2002), by default False
-        partial_derivitives : bool, optional
+        partial_derivatives : bool, optional
             If True, both partial derivatives [fx, fy] will be returned as
             GridObjects instead of just the evansslope, by default False
 
@@ -677,7 +677,7 @@ class GridObject():
             [[1, 1, 1], [0, 0, 0], [-1, -1, -1]])/(6*self.cellsize)
         fy = convolve(dem, ky, mode=mode)
 
-        if partial_derivitives:
+        if partial_derivatives:
             result_kx = copy.copy(self)
             result_ky = copy.copy(self)
             result_kx.z = kx
