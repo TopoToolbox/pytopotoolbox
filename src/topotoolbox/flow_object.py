@@ -164,6 +164,32 @@ class FlowObject():
 
         return result
 
+    def drainagebasins(self):
+        """Delineate drainage basins from a flow network.
+
+        Returns
+        -------
+        GridObject
+            An integer-valued GridObject with a unique label for each drainage
+            basin.
+        """
+        basins = np.zeros(self.shape, dtype=np.int64, order='F')
+
+        _flow.drainagebasins(basins, self.source, self.target, self.shape)
+
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
+
+        result.z = basins
+        result.cellsize = self.cellsize
+
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.crs = self.crs
+
+        return result
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
