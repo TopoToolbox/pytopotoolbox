@@ -803,6 +803,27 @@ class GridObject():
         plt.tight_layout()
         plt.show()
 
+    def shufflelabel(self):
+        """Randomize the labels of a GridObject
+
+        This function is helpful when plotting drainage basins. It will work with
+        any kind of data, but is most useful when given ordinal data such as an
+        integer-valued GridObject.
+
+        Returns
+        -------
+        GridObject
+          A grid identical to the input, but with randomly reassigned labels.
+        """
+        result = copy.copy(self)
+
+        labels = self.z
+        u,indices = np.unique(labels,return_inverse=True)
+        result.z = np.random.permutation(u)[indices]
+
+        return result
+
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
