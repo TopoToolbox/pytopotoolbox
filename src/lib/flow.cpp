@@ -49,9 +49,22 @@ void wrap_flow_accumulation(
     flow_accumulation(acc_ptr, source_ptr, direction_ptr, weights_ptr, dims_ptr);
 }
 
+void wrap_drainagebasins(py::array_t<ptrdiff_t> basins,
+                         py::array_t<ptrdiff_t> source,
+                         py::array_t<ptrdiff_t> target,
+                         std::tuple<ptrdiff_t, ptrdiff_t> dims) {
+  ptrdiff_t *basins_ptr = basins.mutable_data();
+  ptrdiff_t *source_ptr = source.mutable_data();
+  ptrdiff_t *target_ptr = target.mutable_data();
+  ptrdiff_t dims_array[2] = {std::get<0>(dims), std::get<1>(dims)};
+
+  drainagebasins(basins_ptr, source_ptr, target_ptr, dims_array);
+}
+
 // Make wrap_funcname() function available as grid_funcname() to be used by
 // by functions in the pytopotoolbox package
 
 PYBIND11_MODULE(_flow, m) {
-    m.def("flow_accumulation", &wrap_flow_accumulation);
+  m.def("flow_accumulation", &wrap_flow_accumulation);
+  m.def("drainagebasins", &wrap_drainagebasins);
 }
