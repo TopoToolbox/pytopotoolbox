@@ -173,9 +173,9 @@ class GridObject():
 
         if hybrid:
             queue = np.zeros_like(dem, dtype=np.int64)
-            _grid.fillsinks_hybrid(output, queue, dem, bc, self.shape)
+            _grid.fillsinks_hybrid(output, queue, dem, bc, self.dims)
         else:
-            _grid.fillsinks(output, dem, bc, self.shape)
+            _grid.fillsinks(output, dem, bc, self.dims)
 
         if restore_nans:
             dem[nans] = np.nan
