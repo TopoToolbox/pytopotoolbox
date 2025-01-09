@@ -149,7 +149,7 @@ class GridObject():
 
         """
 
-        dem = self.z.astype(np.float32, order='F')
+        dem = self.z.astype(np.float32)
         output = np.zeros_like(dem)
 
         restore_nans = False
