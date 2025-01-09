@@ -3,6 +3,8 @@ import pytest
 
 import topotoolbox as topo
 
+import opensimplex
+
 
 @pytest.fixture
 def square_dem():
@@ -67,6 +69,30 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
                 assert sink < 8
 
 
+def test_fillsinks_order():
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    dem_C = topo.GridObject()
+    dem_C.z = 64 * (opensimplex.noise2array(x,y) + 1)
+
+    assert dem_C.z.flags.c_contiguous
+    
+    dem_F = topo.GridObject()
+    dem_F.z = np.asfortranarray(dem_C.z)
+
+    assert dem_F.z.flags.f_contiguous
+
+    filled_C = dem_C.fillsinks()
+    assert filled_C.z.flags.c_contiguous
+    
+    filled_F = dem_F.fillsinks()    
+    assert filled_F.z.flags.f_contiguous
+   
+    assert np.array_equal(filled_F.z, filled_C.z)
+    
 def test_identifyflats(square_dem, wide_dem, tall_dem):
     # TODO: add more tests
     for dem in [square_dem, wide_dem, tall_dem]:
