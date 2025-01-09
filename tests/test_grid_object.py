@@ -78,12 +78,22 @@ def test_fillsinks_order():
     dem_C = topo.GridObject()
     dem_C.z = 64 * (opensimplex.noise2array(x,y) + 1)
 
+    assert dem_C.shape[0] == 256
+    assert dem_C.shape[1] == 128
+    
     assert dem_C.z.flags.c_contiguous
+    assert dem_C.dims[0] == 128
+    assert dem_C.dims[1] == 256
     
     dem_F = topo.GridObject()
     dem_F.z = np.asfortranarray(dem_C.z)
 
+    assert dem_F.shape[0] == 256
+    assert dem_F.shape[1] == 128
+    
     assert dem_F.z.flags.f_contiguous
+    assert dem_F.dims[0] == 256
+    assert dem_F.dims[1] == 128
 
     filled_C = dem_C.fillsinks()
     assert filled_C.z.flags.c_contiguous

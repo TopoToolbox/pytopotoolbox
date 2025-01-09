@@ -64,6 +64,18 @@ class GridObject():
         """
         return self.z.shape[1]
 
+    @property
+    def dims(self):
+        """The dimensions of the grid in the correct order for libtopotoolbox
+        """
+        if self.z.flags.c_contiguous:
+            return (self.columns, self.rows)
+
+        if self.z.flags.f_contiguous:
+            return (self.rows, self.columns)
+
+        raise TypeError("Grid is not stored as a contiguous row- or column-major array")
+
     def reproject(self,
                   crs: 'CRS',
                   resolution: 'float | None' = None,
