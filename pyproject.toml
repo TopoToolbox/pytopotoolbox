@@ -31,6 +31,10 @@ classifiers = []
 
 [project.optional-dependencies]
 opensimplex = ["opensimplex"]
+test = [
+     "pytest",
+     "opensimplex"
+]
 
 [project.urls]
 Homepage = "https://topotoolbox.github.io"
