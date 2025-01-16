@@ -64,6 +64,18 @@ class GridObject():
         """
         return self.z.shape[1]
 
+    @property
+    def dims(self):
+        """The dimensions of the grid in the correct order for libtopotoolbox
+        """
+        if self.z.flags.c_contiguous:
+            return (self.columns, self.rows)
+
+        if self.z.flags.f_contiguous:
+            return (self.rows, self.columns)
+
+        raise TypeError("Grid is not stored as a contiguous row- or column-major array")
+
     def reproject(self,
                   crs: 'CRS',
                   resolution: 'float | None' = None,
@@ -137,7 +149,7 @@ class GridObject():
 
         """
 
-        dem = self.z.astype(np.float32, order='F')
+        dem = self.z.astype(np.float32)
         output = np.zeros_like(dem)
 
         restore_nans = False
@@ -161,9 +173,9 @@ class GridObject():
 
         if hybrid:
             queue = np.zeros_like(dem, dtype=np.int64)
-            _grid.fillsinks_hybrid(output, queue, dem, bc, self.shape)
+            _grid.fillsinks_hybrid(output, queue, dem, bc, self.dims)
         else:
-            _grid.fillsinks(output, dem, bc, self.shape)
+            _grid.fillsinks(output, dem, bc, self.dims)
 
         if restore_nans:
             dem[nans] = np.nan
