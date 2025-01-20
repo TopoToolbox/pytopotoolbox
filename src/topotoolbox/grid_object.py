@@ -798,7 +798,14 @@ class GridObject():
         print(f"cellsize: {self.cellsize}")
         print(f"bounds: {self.bounds}")
         print(f"transform: {self.transform}")
-        print(f"crs: {self.crs}")
+        if self.crs.is_projected:
+            print(f"coordinate system (Projected): {self.crs}")
+        elif self.crs.is_geographic:
+            print(f"coordinate system (Geographic): {self.crs}")
+        else:
+            print(f"coordinate system: {self.crs}")
+        print(f"maximum z-value: {np.nanmax(self.z)}")
+        print(f"minimum z-value: {np.nanmin(self.z)}")
 
     def show(self, cmap='terrain') -> None:
         """
