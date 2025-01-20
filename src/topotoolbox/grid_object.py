@@ -798,9 +798,9 @@ class GridObject():
         print(f"cellsize: {self.cellsize}")
         print(f"bounds: {self.bounds}")
         print(f"transform: {self.transform}")
-        if self.crs.is_projected:
+        if self.crs is not None and self.crs.is_projected:
             print(f"coordinate system (Projected): {self.crs}")
-        elif self.crs.is_geographic:
+        elif self.crs is not None and self.crs.is_geographic:
             print(f"coordinate system (Geographic): {self.crs}")
         else:
             print(f"coordinate system: {self.crs}")
