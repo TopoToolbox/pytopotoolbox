@@ -723,9 +723,6 @@ class GridObject():
             A GridObject containing the computed aspect data.
         """
 
-        # [Nx,Ny] = surfnorm(Z);
-        # ASP   = cart2pol(Nx,Ny);
-        # ASP   = mod(90+ASP/pi*180,360);
         grad_y, grad_x = np.gradient(self.z)
         aspect = np.arctan2(-grad_x, grad_y)
         aspect = np.degrees(aspect)
