@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 
 from .flow_object import FlowObject
 
@@ -288,41 +289,34 @@ class StreamObject():
 
         return segments
 
-    def show(self, cmap='hot', overlay: GridObject | None = None,
-             overlay_cmap: str = 'binary', alpha: float = 0.8) -> None:
-        """
-        Display the StreamObject instance as an image using Matplotlib.
+    def plot(self, ax=None, **kwargs):
+        """Plot the StreamObject
+
+        Stream segments as computed by StreamObject.xy are plotted
+        using a LineCollection. Note that collections are not used in
+        autoscaling the provided axis. If the axis limits are not
+        already set, by another underlying plot, for example, call
+        ax.autoscale_view() on the returned axes to show the plot.
 
         Parameters
         ----------
-        cmap : str, optional
-            Matplotlib colormap that will be used for the stream.
-        overlay_cmap : str, optional
-            Matplotlib colormap that will be used in the background plot.
-        overlay : GridObject | None, optional
-            To overlay the stream over a dem to better visualize the stream.
-        alpha : float, optional
-            When using an dem to overlay, this controls the opacity of the dem.
-        """
-        stream = np.zeros(shape=self.shape, dtype=np.int64, order='F')
-        stream[np.unravel_index(self.stream,self.shape,order='F')] = 1
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the StreamObject. If no axes are
+            given, the current axes are used.
 
-        if overlay is not None:
-            if self.shape == overlay.shape:
-                plt.imshow(overlay, cmap=overlay_cmap, alpha=alpha)
-                plt.imshow(stream, cmap=cmap,
-                           alpha=stream.astype(np.float32))
-                plt.show()
-            else:
-                err = (f"Shape mismatch: Stream shape {self.shape} does not "
-                       f"match overlay shape {overlay.shape}.")
-                raise ValueError(err) from None
-        else:
-            plt.imshow(stream, cmap=cmap)
-            plt.title(self.name)
-            plt.colorbar()
-            plt.tight_layout()
-            plt.show()
+        **kwargs
+            Additional keyword arguments are forwarded to LineCollection
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes into which the StreamObject has been plotted.
+        """
+        if ax is None:
+            ax = plt.gca()
+        collection = LineCollection(self.xy(), **kwargs)
+        ax.add_collection(collection)
+        return ax
 
     def chitransform(self,
                      upstream_area : GridObject | np.ndarray,
