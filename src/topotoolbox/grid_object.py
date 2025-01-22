@@ -12,8 +12,8 @@ from scipy.ndimage import (
     generic_filter,
     grey_erosion,
     grey_dilation,
-    distance_transform_edt,
-    sobel)
+    distance_transform_edt
+)
 from scipy.signal import wiener
 from rasterio import CRS
 from rasterio.warp import reproject
@@ -723,17 +723,17 @@ class GridObject():
             A GridObject containing the computed aspect data.
         """
 
-        grad_y, grad_x = np.gradient(self.z)
-        aspect = np.arctan2(-grad_x, grad_y)
+        grad_y, grad_x = np.gradient(self.z, edge_order=2)
+        aspect: np.ndarray = np.arctan2(-grad_x, grad_y)
         aspect = np.degrees(aspect)
         aspect = np.mod(aspect, 360)
 
         if classify:
             aspclass = np.array([1, 3, 5, 7, 8, 6, 4, 2])
-            aspedges = aspect // 45 + 1
+            aspedges = aspect // 45
             aspedges = aspedges.astype(np.int8)
 
-            aspect[aspedges > 0] = aspclass[aspedges[aspedges > 0]-1]
+            aspect = aspclass[aspedges]
             aspect = aspect.astype(np.int8)
 
         result = copy.copy(self)
