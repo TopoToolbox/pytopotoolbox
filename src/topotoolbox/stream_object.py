@@ -242,6 +242,52 @@ class StreamObject():
 
         return nal
 
+    def xy(self):
+        """Compute the x and y coordinates of continuous stream segments
+
+        Returns
+        -------
+        list
+            A list of lists of (x,y) pairs.
+        """
+        ys, xs = np.unravel_index(self.stream, self.shape, order='F') # pylint: disable=unbalanced-tuple-unpacking
+
+        vertices = range(self.stream.size)
+        edges = range(self.source.size)
+
+        # Construct an adjacency list for the graph,
+        # so we can do a depth-first search
+        adjacency_list = [ [] for _ in vertices ]
+        for e in edges:
+            src = self.source[e]
+            tgt = self.target[e]
+            adjacency_list[src].append(tgt)
+
+        # Depth-first search of the graph
+        visited = np.zeros(self.stream.size, dtype=np.bool)
+        segments = []
+        stack = []
+
+        for e in edges:
+            src = self.source[e]
+            if not visited[src]:
+                # Start a new segment
+                stack.append(src)
+                segments.append([])
+            while stack:
+                u = stack.pop()
+                # Always append the next vertex to the segment
+                segments[-1].append((xs[u], ys[u]))
+                # If u has already been visited, we stop the segment
+                # otherwise, we push its children to visit later
+                if not visited[u]:
+                    visited[u] = True
+                    # Add any neighbors of
+                    for v in adjacency_list[u]:
+                        stack.append(v)
+
+        return segments
+
     def show(self, cmap='hot', overlay: GridObject | None = None,
              overlay_cmap: str = 'binary', alpha: float = 0.8) -> None:
         """
