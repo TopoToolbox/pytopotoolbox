@@ -12,7 +12,8 @@ from scipy.ndimage import (
     generic_filter,
     grey_erosion,
     grey_dilation,
-    distance_transform_edt)
+    distance_transform_edt
+)
 from scipy.signal import wiener
 from rasterio import CRS
 from rasterio.warp import reproject
@@ -74,7 +75,8 @@ class GridObject():
         if self.z.flags.f_contiguous:
             return (self.rows, self.columns)
 
-        raise TypeError("Grid is not stored as a contiguous row- or column-major array")
+        raise TypeError(
+            "Grid is not stored as a contiguous row- or column-major array")
 
     def reproject(self,
                   crs: 'CRS',
@@ -703,6 +705,41 @@ class GridObject():
         result.z = slope
         return result
 
+    def aspect(self, classify: bool = False) -> 'GridObject':
+        """Aspect returns the slope exposition of each cell in a digital
+        elevation model in degrees. In contrast to the second output of
+        gradient8 which returns the steepest slope direction, aspect 
+        returns the angle of the slope.
+
+        Parameters
+        ----------
+        classify : bool, optional
+            directions are classified according to the scheme proposed by
+            Gomez-Plaza et al. (2001), by default False
+
+        Returns
+        -------
+        GridObject
+            A GridObject containing the computed aspect data.
+        """
+
+        grad_y, grad_x = np.gradient(self.z, edge_order=2)
+        aspect: np.ndarray = np.arctan2(-grad_x, grad_y)
+        aspect = np.degrees(aspect)
+        aspect = np.mod(aspect, 360)
+
+        if classify:
+            aspclass = np.array([1, 3, 5, 7, 8, 6, 4, 2])
+            aspedges = aspect // 45
+            aspedges = aspedges.astype(np.int8)
+
+            aspect = aspclass[aspedges]
+            aspect = aspect.astype(np.int8)
+
+        result = copy.copy(self)
+        result.z = aspect
+        return result
+
     def _gwdt_computecosts(self) -> np.ndarray:
         """
         Compute the cost array used in the gradient-weighted distance
@@ -837,11 +874,10 @@ class GridObject():
         result = copy.copy(self)
 
         labels = self.z
-        u,indices = np.unique(labels,return_inverse=True)
+        u, indices = np.unique(labels, return_inverse=True)
         result.z = np.random.permutation(u)[indices]
 
         return result
-
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
