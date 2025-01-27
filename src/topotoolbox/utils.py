@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from .grid_object import GridObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
-           "gen_random_bool", "get_cache_contents", "clear_cache", "show"]
+           "gen_random_bool", "get_cache_contents", "clear_cache"]
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
 DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
@@ -57,49 +57,6 @@ def write_tif(dem: GridObject, path: str) -> None:
             transform=dem.transform
     ) as dataset:
         dataset.write(dem.z, 1)
-
-
-def show(*grid: GridObject, dpi: int = 100, cmap: str = 'terrain'):
-    """
-    Display one or more GridObject instances using Matplotlib.
-
-    Parameters
-    ----------
-    *grid : GridObject
-        One or more GridObject instances to be displayed. Each GridObject
-        should have an attribute `name` and be suitable for use with `imshow`.
-    dpi : int, optional
-        The resolution of the plots in dots per inch. Default is 100.
-    cmap : str, optional
-        Matplotlib colormap that will be used in the plot.
-
-    Notes
-    -----
-    The function creates a subplot for each GridObject instance passed as
-    an argument. Each subplot displays the grid using the 'terrain' colormap.
-    A colorbar is added to each subplot. The title of each subplot is set to
-    the `name` attribute of the respective GridObject.
-
-    Examples
-    --------
-    >>> dem1 = topotoolbox.load_dem('taiwan')
-    >>> dem2 = topotoolbox.load_dem('perfectworld')
-    >>> topotoolbox.show(dem1, dem2)
-    """
-
-    num_grids = len(grid)
-    fig, axes = plt.subplots(1, num_grids,
-                             figsize=(5*num_grids, 5), dpi=dpi, squeeze=False)
-
-    for i, dem in enumerate(grid):
-        ax = axes[0, i]
-        im = ax.imshow(dem, cmap=cmap)
-        ax.set_title(dem.name)
-        fig.colorbar(im, ax=ax, orientation='vertical')
-
-    plt.tight_layout()
-    plt.show()
-
 
 def read_tif(path: str) -> GridObject:
     """Generate a new GridObject from a .tif file.

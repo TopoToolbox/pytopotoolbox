@@ -844,20 +844,27 @@ class GridObject():
         print(f"maximum z-value: {np.nanmax(self.z)}")
         print(f"minimum z-value: {np.nanmin(self.z)}")
 
-    def show(self, cmap='terrain') -> None:
-        """
-        Display the GridObject instance as an image using Matplotlib.
+    def plot(self, ax=None, **kwargs):
+        """Plot the GridObject
 
         Parameters
         ----------
-        cmap : str, optional
-            Matplotlib colormap that will be used in the plot.
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the GridObject. If no axes
+            are given, the current axes are used.
+
+        **kwargs
+            Additional keyword arguments are forwarded to
+            matplotlib.axes.Axes.imshow
+
+        Returns
+        -------
+        matplotlib.image.AxesImage
+            The image constructed by imshow
         """
-        plt.imshow(self, cmap=cmap)
-        plt.title(self.name)
-        plt.colorbar()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            ax = plt.gca()
+        return ax.imshow(self.z,**kwargs)
 
     def shufflelabel(self):
         """Randomize the labels of a GridObject
