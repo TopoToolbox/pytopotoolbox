@@ -8,7 +8,6 @@ from urllib.request import urlopen, urlretrieve
 
 import rasterio
 import numpy as np
-import matplotlib.pyplot as plt
 
 from .grid_object import GridObject
 
