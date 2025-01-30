@@ -198,6 +198,22 @@ class StreamObject():
 
         return dist
 
+    def downstream_distance(self) -> np.ndarray:
+        """Compute the maximum distance between a node in the stream
+        network and the channel head.
+
+        Returns
+        -------
+        np.ndarray, float32
+            A node attribute list with the downstream distances
+        """
+
+        d = self.distance() # Edge attribute list
+        dds = np.zeros_like(self.stream, dtype=np.float32)
+        _stream.traverse_down_f32_max_add(dds, d, self.source + 1, self.target + 1)
+
+        return dds
+
     def ezgetnal(self,
                  k : GridObject | np.ndarray | float):
         """Retrieve a node attribute list from k
