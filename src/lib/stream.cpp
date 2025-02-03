@@ -86,6 +86,6 @@ void wrap_traverse_down_f32_max_add(py::array_t<float> output,
 PYBIND11_MODULE(_stream, m) {
   m.def("streamquad_trapz_f32", &wrap_streamquad_trapz_f32);
   m.def("streamquad_trapz_f64", &wrap_streamquad_trapz_f64);
-  m.def("traverse_up_u32_and", &wrap_traverse_down_f32_max_add);
+  m.def("traverse_up_u32_and", &wrap_traverse_up_u32_and);
   m.def("traverse_down_f32_max_add", &wrap_traverse_down_f32_max_add);  
 }
