@@ -210,7 +210,7 @@ class StreamObject():
 
         d = self.distance() # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
-        _stream.traverse_down_f32_max_add(dds, d, self.source + 1, self.target + 1)
+        _stream.traverse_down_f32_max_add(dds, d, self.source, self.target)
 
         return dds
 
@@ -403,19 +403,16 @@ class StreamObject():
         weight = self.distance()
         c = np.zeros_like(a)
         if a.dtype == np.float32:
-            # libtopotoolbox expects source and target to be 1-based
-            # indices into node attribute lists, so we must add 1 to
-            # source and target, which are zero-based indices.
             _stream.streamquad_trapz_f32(c,
                                          a,
-                                         self.source + 1,
-                                         self.target + 1,
+                                         self.source,
+                                         self.target,
                                          weight)
         elif a.dtype == np.float64:
             _stream.streamquad_trapz_f64(c,
                                          a,
-                                         self.source + 1,
-                                         self.target + 1,
+                                         self.source,
+                                         self.target,
                                          weight)
         else:
             # This is probably unreachable
