@@ -2,10 +2,12 @@
 """
 import math
 import warnings
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+from scipy.sparse import coo_matrix
 
 from .flow_object import FlowObject
 
@@ -90,7 +92,7 @@ class StreamObject():
 
         # If stream_pixels are provided, the stream can be generated based
         # on stream_pixels without the need for a threshold
-        w = np.zeros(flow.shape,dtype='bool',order='F').ravel(order='K')
+        w = np.zeros(flow.shape, dtype='bool', order='F').ravel(order='K')
         if stream_pixels is not None:
             if stream_pixels.shape != self.shape:
                 err = (
@@ -163,8 +165,8 @@ class StreamObject():
         i = w[u] & (v != -1)
 
         # Renumber the nodes of the stream network
-        ix = np.zeros_like(w,dtype='int64')
-        ix[w] = np.arange(0,self.stream.size)
+        ix = np.zeros_like(w, dtype='int64')
+        ix[w] = np.arange(0, self.stream.size)
 
         # Edges in the stream network
         #
@@ -192,9 +194,10 @@ class StreamObject():
         """
         d = np.abs(self.stream[self.source] - self.stream[self.target])
 
-        dist = self.cellsize * np.where((d == self.strides[0]) | (d == self.strides[1]),
-                                        np.float32(1.0),
-                                        np.sqrt(np.float32(2.0)))
+        dist = self.cellsize * np.where(
+            (d == self.strides[0]) | (d == self.strides[1]),
+            np.float32(1.0),
+            np.sqrt(np.float32(2.0)))
 
         return dist
 
@@ -208,14 +211,15 @@ class StreamObject():
             A node attribute list with the downstream distances
         """
 
-        d = self.distance() # Edge attribute list
+        d = self.distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
-        _stream.traverse_down_f32_max_add(dds, d, self.source + 1, self.target + 1)
+        _stream.traverse_down_f32_max_add(
+            dds, d, self.source + 1, self.target + 1)
 
         return dds
 
     def ezgetnal(self,
-                 k : GridObject | np.ndarray | float):
+                 k: GridObject | np.ndarray | float):
         """Retrieve a node attribute list from k
 
         Parameters
@@ -255,7 +259,8 @@ class StreamObject():
         elif np.isscalar(k):
             nal = np.full(self.stream.shape, k)
         else:
-            raise TypeError(f"{k} is not a supported source for a node attribute list")
+            raise TypeError(
+                f"{k} is not a supported source for a node attribute list")
 
         return nal
 
@@ -267,14 +272,15 @@ class StreamObject():
         list
             A list of lists of (x,y) pairs.
         """
-        ys, xs = np.unravel_index(self.stream, self.shape, order='F') # pylint: disable=unbalanced-tuple-unpacking
+        # pylint: disable=unbalanced-tuple-unpacking
+        ys, xs = np.unravel_index(self.stream, self.shape, order='F')
 
         vertices = range(self.stream.size)
         edges = range(self.source.size)
 
         # Construct an adjacency list for the graph,
         # so we can do a depth-first search
-        adjacency_list = [ [] for _ in vertices ]
+        adjacency_list = [[] for _ in vertices]
         for e in edges:
             src = self.source[e]
             tgt = self.target[e]
@@ -335,11 +341,11 @@ class StreamObject():
         return ax
 
     def chitransform(self,
-                     upstream_area : GridObject | np.ndarray,
-                     a0 : float = 1e6,
-                     mn : float = 0.45,
-                     k  : GridObject | np.ndarray | None = None,
-                     correctcellsize : bool = True):
+                     upstream_area: GridObject | np.ndarray,
+                     a0: float = 1e6,
+                     mn: float = 0.45,
+                     k: GridObject | np.ndarray | None = None,
+                     correctcellsize: bool = True):
         """Coordinate transformation using the integral approach
 
         Transforms the horizontal spatial coordinates of a river
@@ -423,6 +429,48 @@ class StreamObject():
 
         return c
 
+    def trunk(self) -> 'StreamObject':
+
+        nrc = len(self.stream)
+        dds = self.downstream_distance()
+
+        D = coo_matrix(
+            (dds[self.source] + 1, (self.source, self.target)),
+            shape=(nrc, nrc)).tocsr()
+
+        # OUTLET = np.any(D, axis=0).T & ~np.any(D, axis=1)
+        OUTLET = np.ravel(
+            D.astype(bool).max(axis=0)) & ~np.ravel(
+            D.astype(bool).max(axis=1))
+
+        Imax = np.argmax(D, axis=0)
+
+        II = np.zeros(nrc, dtype=bool)
+        II[Imax] = True
+
+        I = np.zeros(nrc, dtype=bool)
+        I[OUTLET] = True
+
+        for r in range(len(self.source) - 1, -1, -1):
+            I[self.source[r]] = I[self.target[r]] and II[self.source[r]]
+
+        L = I.copy()
+        I = L[self.target] & L[self.source]
+
+        result = copy.copy(self)
+
+        result.source = self.source[I]
+        result.target = self.target[I]
+
+        IX = np.cumsum(L)
+        result.source = IX[result.source]
+        result.target = IX[result.target]
+
+        # self.x = self.x[L]
+        # self.y = self.y[L]
+        # self.IXgrid = self.IXgrid[L]
+
+        return result
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
