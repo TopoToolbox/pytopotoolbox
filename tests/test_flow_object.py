@@ -17,7 +17,7 @@ def test_flowobject(wide_dem):
     assert np.all((0 <= fd.target) & (fd.target < np.prod(dem.shape)))
 
     # Run flow_accumulation at least once during the tests
-    acc = fd.flow_accumulation();
+    acc = fd.flow_accumulation()
 
     # Ensure that FlowObject does not modify the original DEM
     assert np.all(dem.z == original_dem)
