@@ -139,10 +139,10 @@ class FlowObject():
             If the shape of the `weights` array does not match the shape of the
             flow network grid.
         """
-        acc = np.zeros_like(self.source, dtype=np.float32, order='F')
+        acc = np.zeros(self.shape, dtype=np.float32, order='F')
 
         if weights == 1.0:
-            weights = np.ones_like(self.source, dtype=np.float32, order='F')
+            weights = np.ones(self.shape, dtype=np.float32, order='F')
         elif isinstance(weights, np.ndarray):
             if weights.shape != acc.shape:
                 err = ("The shape of the provided weights ndarray does not "
@@ -151,8 +151,10 @@ class FlowObject():
         else:
             weights = np.full(self.shape, weights, dtype=np.float32, order='F')
 
+        fraction = np.ones_like(self.source, dtype=np.float32)
+
         _flow.flow_accumulation(
-            acc, self.source, self.direction, weights, self.shape)
+            acc, self.source, self.target, fraction, weights, self.shape)
 
         result = GridObject()
         result.path = self.path

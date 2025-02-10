@@ -140,10 +140,11 @@ class StreamObject():
             threshold /= cell_area
 
             # Generate the flow accumulation matrix (acc)
-            acc = np.zeros_like(flow.target, order='F', dtype=np.float32)
-            weights = np.ones_like(flow.target, order='F', dtype=np.float32)
+            acc = np.zeros(flow.shape, order='F', dtype=np.float32)
+            fraction = np.zeros_like(flow.source, dtype=np.float32)
+            weights = np.ones(flow.shape, order='F', dtype=np.float32)
             _flow.flow_accumulation(
-                acc, flow.source, flow.direction, weights, flow.shape)
+                acc, flow.source, flow.target, fraction, weights, flow.shape)
 
             # Generate a 1D array that holds all indexes where more water than
             # in the required threshold is collected. (acc >= threshold)
