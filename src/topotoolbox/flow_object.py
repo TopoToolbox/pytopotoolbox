@@ -86,22 +86,25 @@ class FlowObject():
         back = np.zeros_like(flats, dtype=np.int64, order='F')
         _grid.gwdt(dist, prev, costs, flats, heap, back, dims)
 
-        source = heap  # source: dtype=np.int64
+        node = heap  # node: dtype=np.int64
         direction = np.zeros_like(dem, dtype=np.uint8, order='F')
         _grid.flow_routing_d8_carve(
-            source, direction, filled_dem, dist, flats, dims)
+            node, direction, filled_dem, dist, flats, dims)
 
-        target = back  # target: dtype=int64
-        _grid.flow_routing_targets(target, source, direction, dims)
+        source = conncomps  # source: dtype=int64
+        target = back       # target: dtype=int64
+        _grid.flow_routing_d8_edgelist(source, target, node , direction, dims)
 
         self.path = grid.path
         self.name = grid.name
 
         # raster metadata
 
-        self.target = target  # dtype=np.int64
-        self.source = source  # dtype=np.int64
         self.direction = direction  # dtype=np.unit8
+
+        self.source = source  # dtype=np.int64
+        self.target = target  # dtype=np.int64
+
         self.shape = grid.shape
         self.cellsize = grid.cellsize
         self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
