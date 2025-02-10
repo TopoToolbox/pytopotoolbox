@@ -141,7 +141,7 @@ class StreamObject():
 
             # Generate the flow accumulation matrix (acc)
             acc = np.zeros(flow.shape, order='F', dtype=np.float32)
-            fraction = np.zeros_like(flow.source, dtype=np.float32)
+            fraction = np.ones_like(flow.source, dtype=np.float32)
             weights = np.ones(flow.shape, order='F', dtype=np.float32)
             _flow.flow_accumulation(
                 acc, flow.source, flow.target, fraction, weights, flow.shape)
