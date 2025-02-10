@@ -56,9 +56,10 @@ void wrap_drainagebasins(py::array_t<ptrdiff_t> basins,
   ptrdiff_t *basins_ptr = basins.mutable_data();
   ptrdiff_t *source_ptr = source.mutable_data();
   ptrdiff_t *target_ptr = target.mutable_data();
+  ptrdiff_t edge_count = source.size();
   ptrdiff_t dims_array[2] = {std::get<0>(dims), std::get<1>(dims)};
 
-  drainagebasins(basins_ptr, source_ptr, target_ptr, dims_array);
+  drainagebasins(basins_ptr, source_ptr, target_ptr, edge_count, dims_array);
 }
 
 // Make wrap_funcname() function available as grid_funcname() to be used by
