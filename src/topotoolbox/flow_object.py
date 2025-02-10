@@ -91,9 +91,9 @@ class FlowObject():
         _grid.flow_routing_d8_carve(
             node, direction, filled_dem, dist, flats, dims)
 
-        source = conncomps  # source: dtype=int64
-        target = back       # target: dtype=int64
-        _grid.flow_routing_d8_edgelist(source, target, node , direction, dims)
+        source = np.ravel(conncomps)  # source: dtype=int64
+        target = np.ravel(back)       # target: dtype=int64
+        edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims)
 
         self.path = grid.path
         self.name = grid.name
@@ -102,8 +102,8 @@ class FlowObject():
 
         self.direction = direction  # dtype=np.unit8
 
-        self.source = source  # dtype=np.int64
-        self.target = target  # dtype=np.int64
+        self.source = source[0:edge_count]  # dtype=np.int64
+        self.target = target[0:edge_count]  # dtype=np.int64
 
         self.shape = grid.shape
         self.cellsize = grid.cellsize

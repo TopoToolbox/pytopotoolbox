@@ -207,7 +207,7 @@ void wrap_flow_routing_d8_carve(
 //   direction: A NumPy array representing the computed flow directions.
 //   dims: A tuple containing the number of rows and columns.
 
-void wrap_flow_routing_d8_edgelist(
+ptrdiff_t wrap_flow_routing_d8_edgelist(
         py::array_t<ptrdiff_t> source,
         py::array_t<ptrdiff_t> target,
         py::array_t<ptrdiff_t> node,
@@ -222,7 +222,7 @@ void wrap_flow_routing_d8_edgelist(
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-    flow_routing_d8_edgelist(source_ptr, target_ptr, node_ptr, direction_ptr, dims_ptr);    
+    return flow_routing_d8_edgelist(source_ptr, target_ptr, node_ptr, direction_ptr, dims_ptr);
 }
 
 // wrap_gradient8:
