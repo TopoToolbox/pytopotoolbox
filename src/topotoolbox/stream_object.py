@@ -140,10 +140,11 @@ class StreamObject():
             threshold /= cell_area
 
             # Generate the flow accumulation matrix (acc)
-            acc = np.zeros_like(flow.target, order='F', dtype=np.float32)
-            weights = np.ones_like(flow.target, order='F', dtype=np.float32)
+            acc = np.zeros(flow.shape, order='F', dtype=np.float32)
+            fraction = np.ones_like(flow.source, dtype=np.float32)
+            weights = np.ones(flow.shape, order='F', dtype=np.float32)
             _flow.flow_accumulation(
-                acc, flow.source, flow.direction, weights, flow.shape)
+                acc, flow.source, flow.target, fraction, weights, flow.shape)
 
             # Generate a 1D array that holds all indexes where more water than
             # in the required threshold is collected. (acc >= threshold)
@@ -154,13 +155,11 @@ class StreamObject():
         self.stream = np.nonzero(w)[0]
 
         # Find edges whose source pixel is in the stream network
-        u = flow.source.ravel(order='F')
-        v = flow.target.ravel(order='F')
+        u = flow.source
+        v = flow.target
         d = flow.direction.ravel(order='F')
 
-        # v = -1 when the pixel is a sink or outlet. Drop those edges
-        # from the flow network
-        i = w[u] & (v != -1)
+        i = w[u]
 
         # Renumber the nodes of the stream network
         ix = np.zeros_like(w,dtype='int64')
@@ -175,7 +174,7 @@ class StreamObject():
         # or FlowObject, use stream[source] or stream[target].
         self.source = ix[u[i]]
         self.target = ix[v[i]]
-        self.direction = d[i]
+        self.direction = d[u[i]]
 
         # misc
         self.path = flow.path
