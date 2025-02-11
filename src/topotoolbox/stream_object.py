@@ -7,7 +7,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 from .flow_object import FlowObject
 
@@ -430,18 +430,24 @@ class StreamObject():
         return c
 
     def trunk(self) -> 'StreamObject':
+        """_summary_
+
+        Returns
+        -------
+        StreamObject
+            _description_
+        """
 
         nrc = len(self.stream)
         dds = self.downstream_distance()
 
-        D = coo_matrix(
+        D = csr_matrix(
             (dds[self.source] + 1, (self.source, self.target)),
-            shape=(nrc, nrc)).tocsr()
+            shape=(nrc, nrc))
 
-        # OUTLET = np.any(D, axis=0).T & ~np.any(D, axis=1)
-        OUTLET = np.ravel(
-            D.astype(bool).max(axis=0)) & ~np.ravel(
-            D.astype(bool).max(axis=1))
+        any_column = np.array(D.sum(axis=0) > 0).flatten()
+        any_row = np.array(D.sum(axis=1) > 0).flatten()
+        OUTLET = any_column & ~any_row
 
         Imax = np.argmax(D, axis=0)
 
