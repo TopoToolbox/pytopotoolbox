@@ -866,23 +866,36 @@ class GridObject():
             ax = plt.gca()
         return ax.imshow(self.z,**kwargs)
 
-    def shufflelabel(self):
+    def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
 
         This function is helpful when plotting drainage basins. It will work with
         any kind of data, but is most useful when given ordinal data such as an
         integer-valued GridObject.
 
+        Parameters
+        ----------
+        seed: optional
+        
+          The seed used to generate the random permutation of labels.
+
+          The seed is passed directly to `numpy.random.default_rng`__.
+
+          .. __:
+             https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.default_rng
+
         Returns
         -------
         GridObject
           A grid identical to the input, but with randomly reassigned labels.
+
         """
         result = copy.copy(self)
 
         labels = self.z
         u, indices = np.unique(labels, return_inverse=True)
-        result.z = np.random.permutation(u)[indices]
+        rng = np.random.default_rng(seed)
+        result.z = rng.permutation(u)[indices]
 
         return result
 
