@@ -263,7 +263,7 @@ class StreamObject():
 
         Arguments
         ---------
-        data, tuple, optional
+        data: tuple, optional
            A tuple of two node attribute lists representing the
            desired x and y values for each pixel in the stream
            network. If this argument is not supplied, the returned x
@@ -359,7 +359,7 @@ class StreamObject():
 
         Parameters
         ----------
-        z, GridObject, np.ndarray
+        z: GridObject, np.ndarray
           The node attribute list that will be plotted
 
         ax: matplotlib.axes.Axes, optional
