@@ -504,7 +504,7 @@ class StreamObject():
         return c
 
     def trunk(self) -> 'StreamObject':
-        """trunk reduces a stream network to the longest streams in each stream
+        """Reduces a stream network to the longest streams in each stream
         network tree (e.g. connected component). The algorithm identifies
         the main trunk by sequently tracing the maximum downstream 
         distance in upstream direction. 
@@ -522,6 +522,7 @@ class StreamObject():
             (dds[self.source] + 1, (self.source, self.target)),
             shape=(nrc, nrc))
 
+        # Identify outlet reaches
         any_column = np.array(D.sum(axis=0) > 0).flatten()
         any_row = np.array(D.sum(axis=1) > 0).flatten()
         OUTLET = any_column & ~any_row
@@ -543,7 +544,6 @@ class StreamObject():
         result = copy.copy(self)
 
         result.stream = self.stream[L]
-
         result.source = self.source[I]
         result.target = self.target[I]
 
