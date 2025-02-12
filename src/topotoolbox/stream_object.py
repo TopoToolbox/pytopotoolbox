@@ -349,7 +349,7 @@ class StreamObject():
         ax.add_collection(collection)
         return ax
 
-    def plotdz(self, z, ax=None, **kwargs):
+    def plotdz(self, z, ax=None, dunit:str='m',doffset: float=0,**kwargs):
         """Plot a node attribute list against upstream distance
 
         Note that collections are not used in
@@ -366,6 +366,14 @@ class StreamObject():
             The axes in which to plot the StreamObject. If no axes are
             given, the current axes are used.
 
+        dunit: str, optional
+            The unit to plot the upstream distance. Should be either
+            'm' for meters or 'km' for kilometers.
+
+        doffset: float, optional
+            An offset to be applied to the upstream distance.
+            `doffset` should be in the units specified by `dunit`.
+
         **kwargs
             Additional keyword arguments are forwarded to LineCollection
 
@@ -373,6 +381,12 @@ class StreamObject():
         -------
         matplotlib.axes.Axes
             The axes into which the plot as been added
+
+        Raises
+        ------
+        ValueError
+            If `dunit` is not one of 'm' or 'km'.
+
         """
         if ax is None:
             ax = plt.gca()
@@ -386,6 +400,13 @@ class StreamObject():
                                      self.source,
                                      self.target,
                                      self.distance())
+
+        if dunit == 'km':
+            dist /= 1000
+        elif dunit != 'm':
+            raise ValueError("dunit must be one of 'm' or 'km'")
+
+        dist += doffset
 
         collection = LineCollection(self.xy((dist, z)), **kwargs)
         ax.add_collection(collection)
