@@ -35,18 +35,22 @@ namespace py = pybind11;
 //         rows and  columns) where flow accumulation is performed.
 
 void wrap_flow_accumulation(
-        py::array_t<float> acc, py::array_t<ptrdiff_t> source, 
-        py::array_t<uint8_t> direction, py::array_t<float> weights,
+        py::array_t<float> acc,
+        py::array_t<ptrdiff_t> source,
+        py::array_t<ptrdiff_t> target,
+        py::array_t<float> fraction,
+        py::array_t<float> weights,
         std::tuple<ptrdiff_t,ptrdiff_t> dims){
 
     float *acc_ptr = acc.mutable_data();
     ptrdiff_t *source_ptr = source.mutable_data();
-    uint8_t *direction_ptr = direction.mutable_data();
+    ptrdiff_t *target_ptr = target.mutable_data();
+    float *fraction_ptr = fraction.mutable_data();
     float *weights_ptr = weights.mutable_data();
     
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-    flow_accumulation(acc_ptr, source_ptr, direction_ptr, weights_ptr, dims_ptr);
+    flow_accumulation_edgelist(acc_ptr, source_ptr, target_ptr, fraction_ptr, weights_ptr, source.size(), dims_ptr);
 }
 
 void wrap_drainagebasins(py::array_t<ptrdiff_t> basins,
@@ -56,9 +60,10 @@ void wrap_drainagebasins(py::array_t<ptrdiff_t> basins,
   ptrdiff_t *basins_ptr = basins.mutable_data();
   ptrdiff_t *source_ptr = source.mutable_data();
   ptrdiff_t *target_ptr = target.mutable_data();
+  ptrdiff_t edge_count = source.size();
   ptrdiff_t dims_array[2] = {std::get<0>(dims), std::get<1>(dims)};
 
-  drainagebasins(basins_ptr, source_ptr, target_ptr, dims_array);
+  drainagebasins(basins_ptr, source_ptr, target_ptr, edge_count, dims_array);
 }
 
 // Make wrap_funcname() function available as grid_funcname() to be used by

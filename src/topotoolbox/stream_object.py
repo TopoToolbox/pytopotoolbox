@@ -142,10 +142,11 @@ class StreamObject():
             threshold /= cell_area
 
             # Generate the flow accumulation matrix (acc)
-            acc = np.zeros_like(flow.target, order='F', dtype=np.float32)
-            weights = np.ones_like(flow.target, order='F', dtype=np.float32)
+            acc = np.zeros(flow.shape, order='F', dtype=np.float32)
+            fraction = np.ones_like(flow.source, dtype=np.float32)
+            weights = np.ones(flow.shape, order='F', dtype=np.float32)
             _flow.flow_accumulation(
-                acc, flow.source, flow.direction, weights, flow.shape)
+                acc, flow.source, flow.target, fraction, weights, flow.shape)
 
             # Generate a 1D array that holds all indexes where more water than
             # in the required threshold is collected. (acc >= threshold)
@@ -156,13 +157,11 @@ class StreamObject():
         self.stream = np.nonzero(w)[0]
 
         # Find edges whose source pixel is in the stream network
-        u = flow.source.ravel(order='F')
-        v = flow.target.ravel(order='F')
+        u = flow.source
+        v = flow.target
         d = flow.direction.ravel(order='F')
 
-        # v = -1 when the pixel is a sink or outlet. Drop those edges
-        # from the flow network
-        i = w[u] & (v != -1)
+        i = w[u]
 
         # Renumber the nodes of the stream network
         ix = np.zeros_like(w, dtype='int64')
@@ -177,7 +176,7 @@ class StreamObject():
         # or FlowObject, use stream[source] or stream[target].
         self.source = ix[u[i]]
         self.target = ix[v[i]]
-        self.direction = d[i]
+        self.direction = d[u[i]]
 
         # misc
         self.path = flow.path
@@ -213,8 +212,7 @@ class StreamObject():
 
         d = self.distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
-        _stream.traverse_down_f32_max_add(
-            dds, d, self.source + 1, self.target + 1)
+        _stream.traverse_down_f32_max_add(dds, d, self.source, self.target)
 
         return dds
 
@@ -264,16 +262,32 @@ class StreamObject():
 
         return nal
 
-    def xy(self):
+    def xy(self, data=None):
         """Compute the x and y coordinates of continuous stream segments
+
+        Arguments
+        ---------
+        data: tuple, optional
+           A tuple of two node attribute lists representing the
+           desired x and y values for each pixel in the stream
+           network. If this argument is not supplied, the returned x
+           and y values are the indices of the pixel in the DEM in the
+           second and first dimension respectively. This reversal of
+           dimensions corresponds to the orientation used by pyplot's
+           `imshow`, and allows plotting the stream network over a
+           corresponding GridObject.
 
         Returns
         -------
         list
             A list of lists of (x,y) pairs.
+
         """
-        # pylint: disable=unbalanced-tuple-unpacking
-        ys, xs = np.unravel_index(self.stream, self.shape, order='F')
+        if data is None:
+            ys, xs = np.unravel_index(
+                self.stream, self.shape, order='F')  # pylint: disable=unbalanced-tuple-unpacking
+        else:
+            xs, ys = data
 
         vertices = range(self.stream.size)
         edges = range(self.source.size)
@@ -337,6 +351,69 @@ class StreamObject():
         if ax is None:
             ax = plt.gca()
         collection = LineCollection(self.xy(), **kwargs)
+        ax.add_collection(collection)
+        return ax
+
+    def plotdz(self, z, ax=None, dunit: str = 'm', doffset: float = 0, **kwargs):
+        """Plot a node attribute list against upstream distance
+
+        Note that collections are not used in
+        autoscaling the provided axis. If the axis limits are not
+        already set, by another underlying plot, for example, call
+        ax.autoscale_view() on the returned axes to show the plot.
+
+        Parameters
+        ----------
+        z: GridObject, np.ndarray
+          The node attribute list that will be plotted
+
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the StreamObject. If no axes are
+            given, the current axes are used.
+
+        dunit: str, optional
+            The unit to plot the upstream distance. Should be either
+            'm' for meters or 'km' for kilometers.
+
+        doffset: float, optional
+            An offset to be applied to the upstream distance.
+            `doffset` should be in the units specified by `dunit`.
+
+        **kwargs
+            Additional keyword arguments are forwarded to LineCollection
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes into which the plot as been added
+
+        Raises
+        ------
+        ValueError
+            If `dunit` is not one of 'm' or 'km'.
+
+        """
+        if ax is None:
+            ax = plt.gca()
+        z = self.ezgetnal(z)
+        dist = np.zeros_like(z)
+        a = np.ones_like(z)
+
+        # Compute upstream distance using streamquad_trapz_f32
+        # Another traversal might be more efficient in the future
+        _stream.streamquad_trapz_f32(dist, a,
+                                     self.source,
+                                     self.target,
+                                     self.distance())
+
+        if dunit == 'km':
+            dist /= 1000
+        elif dunit != 'm':
+            raise ValueError("dunit must be one of 'm' or 'km'")
+
+        dist += doffset
+
+        collection = LineCollection(self.xy((dist, z)), **kwargs)
         ax.add_collection(collection)
         return ax
 
@@ -409,19 +486,16 @@ class StreamObject():
         weight = self.distance()
         c = np.zeros_like(a)
         if a.dtype == np.float32:
-            # libtopotoolbox expects source and target to be 1-based
-            # indices into node attribute lists, so we must add 1 to
-            # source and target, which are zero-based indices.
             _stream.streamquad_trapz_f32(c,
                                          a,
-                                         self.source + 1,
-                                         self.target + 1,
+                                         self.source,
+                                         self.target,
                                          weight)
         elif a.dtype == np.float64:
             _stream.streamquad_trapz_f64(c,
                                          a,
-                                         self.source + 1,
-                                         self.target + 1,
+                                         self.source,
+                                         self.target,
                                          weight)
         else:
             # This is probably unreachable

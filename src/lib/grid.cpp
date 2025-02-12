@@ -174,7 +174,8 @@ void wrap_gwdt_computecosts(
 
 // wrap_flow_routing_d8_carve:
 // Parameters:
-//   source: A NumPy array representing the source cells for flow routing.
+//   node: A NumPy array representing the topologically sorted list of
+//         flow network vertices.
 //   direction: A NumPy array to store the computed flow directions.
 //   dem: A NumPy array representing the digital elevation model (DEM).
 //   dist: A NumPy array to store the computed flow distances.
@@ -182,11 +183,11 @@ void wrap_gwdt_computecosts(
 //   dims: A tuple containing the number of rows and columns.
 
 void wrap_flow_routing_d8_carve(
-        py::array_t<ptrdiff_t> source, py::array_t<uint8_t> direction, 
+        py::array_t<ptrdiff_t> node, py::array_t<uint8_t> direction, 
         py::array_t<float> dem, py::array_t<float> dist, 
         py::array_t<int32_t> flats, std::tuple<ptrdiff_t, ptrdiff_t> dims){
     
-    ptrdiff_t *source_ptr = source.mutable_data();
+    ptrdiff_t *node_ptr = node.mutable_data();
     uint8_t *direction_ptr = direction.mutable_data();
     float *dem_ptr = dem.mutable_data();
     float *dist_ptr = dist.mutable_data();
@@ -195,27 +196,33 @@ void wrap_flow_routing_d8_carve(
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
 
-    flow_routing_d8_carve(source_ptr, direction_ptr, dem_ptr, dist_ptr, flats_ptr, dims_ptr);
+    flow_routing_d8_carve(node_ptr, direction_ptr, dem_ptr, dist_ptr, flats_ptr, dims_ptr);
 }
 
-// wrap_flow_routing_targets:
+// wrap_flow_routing_d8_edgelist:
 // Parameters:
-//   target: A NumPy array to store the computed target cells for flow routing.
 //   source: A NumPy array representing the source cells for flow routing.
+//   target: A NumPy array to store the computed target cells for flow routing.
+//   node: A Numpy array containing the topologically sorted list of vertices.
 //   direction: A NumPy array representing the computed flow directions.
 //   dims: A tuple containing the number of rows and columns.
 
-void wrap_flow_routing_targets(
-        py::array_t<ptrdiff_t> target, py::array_t<ptrdiff_t> source,
-        py::array_t<uint8_t> direction, std::tuple<ptrdiff_t,ptrdiff_t> dims){
+ptrdiff_t wrap_flow_routing_d8_edgelist(
+        py::array_t<ptrdiff_t> source,
+        py::array_t<ptrdiff_t> target,
+        py::array_t<ptrdiff_t> node,
+        py::array_t<uint8_t> direction,
+        std::tuple<ptrdiff_t,ptrdiff_t> dims) {
 
-    ptrdiff_t *target_ptr = target.mutable_data();
     ptrdiff_t *source_ptr = source.mutable_data();
+    ptrdiff_t *target_ptr = target.mutable_data();
+
+    ptrdiff_t *node_ptr = node.mutable_data();
     uint8_t *direction_ptr = direction.mutable_data(); 
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-    flow_routing_targets(target_ptr, source_ptr, direction_ptr, dims_ptr);
+    return flow_routing_d8_edgelist(source_ptr, target_ptr, node_ptr, direction_ptr, dims_ptr);
 }
 
 // wrap_gradient8:
@@ -250,6 +257,6 @@ PYBIND11_MODULE(_grid, m) {
     m.def("gwdt", &wrap_gwdt);
     m.def("gwdt_computecosts", &wrap_gwdt_computecosts);
     m.def("flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
-    m.def("flow_routing_targets", &wrap_flow_routing_targets);
+    m.def("flow_routing_d8_edgelist", &wrap_flow_routing_d8_edgelist);
     m.def("gradient8", &wrap_gradient8);
 }

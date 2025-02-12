@@ -86,22 +86,25 @@ class FlowObject():
         back = np.zeros_like(flats, dtype=np.int64, order='F')
         _grid.gwdt(dist, prev, costs, flats, heap, back, dims)
 
-        source = heap  # source: dtype=np.int64
+        node = heap  # node: dtype=np.int64
         direction = np.zeros_like(dem, dtype=np.uint8, order='F')
         _grid.flow_routing_d8_carve(
-            source, direction, filled_dem, dist, flats, dims)
+            node, direction, filled_dem, dist, flats, dims)
 
-        target = back  # target: dtype=int64
-        _grid.flow_routing_targets(target, source, direction, dims)
+        source = np.ravel(conncomps)  # source: dtype=int64
+        target = np.ravel(back)       # target: dtype=int64
+        edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims)
 
         self.path = grid.path
         self.name = grid.name
 
         # raster metadata
 
-        self.target = target  # dtype=np.int64
-        self.source = source  # dtype=np.int64
         self.direction = direction  # dtype=np.unit8
+
+        self.source = source[0:edge_count]  # dtype=np.int64
+        self.target = target[0:edge_count]  # dtype=np.int64
+
         self.shape = grid.shape
         self.cellsize = grid.cellsize
         self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
@@ -136,10 +139,10 @@ class FlowObject():
             If the shape of the `weights` array does not match the shape of the
             flow network grid.
         """
-        acc = np.zeros_like(self.source, dtype=np.float32, order='F')
+        acc = np.zeros(self.shape, dtype=np.float32, order='F')
 
         if weights == 1.0:
-            weights = np.ones_like(self.source, dtype=np.float32, order='F')
+            weights = np.ones(self.shape, dtype=np.float32, order='F')
         elif isinstance(weights, np.ndarray):
             if weights.shape != acc.shape:
                 err = ("The shape of the provided weights ndarray does not "
@@ -148,8 +151,10 @@ class FlowObject():
         else:
             weights = np.full(self.shape, weights, dtype=np.float32, order='F')
 
+        fraction = np.ones_like(self.source, dtype=np.float32)
+
         _flow.flow_accumulation(
-            acc, self.source, self.direction, weights, self.shape)
+            acc, self.source, self.target, fraction, weights, self.shape)
 
         result = GridObject()
         result.path = self.path
