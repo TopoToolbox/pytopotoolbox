@@ -258,15 +258,31 @@ class StreamObject():
 
         return nal
 
-    def xy(self):
+    def xy(self, data=None):
         """Compute the x and y coordinates of continuous stream segments
+
+        Arguments
+        ---------
+        data, tuple, optional
+           A tuple of two node attribute lists representing the
+           desired x and y values for each pixel in the stream
+           network. If this argument is not supplied, the returned x
+           and y values are the indices of the pixel in the DEM in the
+           second and first dimension respectively. This reversal of
+           dimensions corresponds to the orientation used by pyplot's
+           `imshow`, and allows plotting the stream network over a
+           corresponding GridObject.
 
         Returns
         -------
         list
             A list of lists of (x,y) pairs.
+
         """
-        ys, xs = np.unravel_index(self.stream, self.shape, order='F') # pylint: disable=unbalanced-tuple-unpacking
+        if data is None:
+            ys, xs = np.unravel_index(self.stream, self.shape, order='F') # pylint: disable=unbalanced-tuple-unpacking
+        else:
+            xs, ys = data
 
         vertices = range(self.stream.size)
         edges = range(self.source.size)
@@ -332,6 +348,49 @@ class StreamObject():
         collection = LineCollection(self.xy(), **kwargs)
         ax.add_collection(collection)
         return ax
+
+    def plotdz(self, z, ax=None, **kwargs):
+        """Plot a node attribute list against upstream distance
+
+        Note that collections are not used in
+        autoscaling the provided axis. If the axis limits are not
+        already set, by another underlying plot, for example, call
+        ax.autoscale_view() on the returned axes to show the plot.
+
+        Parameters
+        ----------
+        z, GridObject, np.ndarray
+          The node attribute list that will be plotted
+
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the StreamObject. If no axes are
+            given, the current axes are used.
+
+        **kwargs
+            Additional keyword arguments are forwarded to LineCollection
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes into which the plot as been added
+        """
+        if ax is None:
+            ax = plt.gca()
+        z = self.ezgetnal(z)
+        dist = np.zeros_like(z)
+        a = np.ones_like(z)
+
+        # Compute upstream distance using streamquad_trapz_f32
+        # Another traversal might be more efficient in the future
+        _stream.streamquad_trapz_f32(dist, a,
+                                     self.source,
+                                     self.target,
+                                     self.distance())
+
+        collection = LineCollection(self.xy((dist, z)), **kwargs)
+        ax.add_collection(collection)
+        return ax
+
 
     def chitransform(self,
                      upstream_area : GridObject | np.ndarray,
