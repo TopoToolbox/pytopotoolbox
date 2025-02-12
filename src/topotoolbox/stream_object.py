@@ -430,12 +430,15 @@ class StreamObject():
         return c
 
     def trunk(self) -> 'StreamObject':
-        """_summary_
+        """trunk reduces a stream network to the longest streams in each stream
+        network tree (e.g. connected component). The algorithm identifies
+        the main trunk by sequently tracing the maximum downstream 
+        distance in upstream direction. 
 
         Returns
         -------
         StreamObject
-            _description_
+            StreamObject with truncated streams.
         """
 
         nrc = len(self.stream)
@@ -460,21 +463,19 @@ class StreamObject():
         for r in range(len(self.source) - 1, -1, -1):
             I[self.source[r]] = I[self.target[r]] and II[self.source[r]]
 
-        L = I.copy()
-        I = L[self.target] & L[self.source]
+        L = I
+        I = L[self.source] & L[self.target]
 
         result = copy.copy(self)
+
+        result.stream = self.stream[L]
 
         result.source = self.source[I]
         result.target = self.target[I]
 
-        IX = np.cumsum(L)
+        IX = np.cumsum(L) - 1
         result.source = IX[result.source]
         result.target = IX[result.target]
-
-        # self.x = self.x[L]
-        # self.y = self.y[L]
-        # self.IXgrid = self.IXgrid[L]
 
         return result
 
