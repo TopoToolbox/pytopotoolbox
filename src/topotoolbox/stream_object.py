@@ -503,8 +503,8 @@ class StreamObject():
 
         return c
 
-    def trunk(self, downstream_distance: np.ndarray = None,
-              flow_accumulation: GridObject = None) -> 'StreamObject':
+    def trunk(self, downstream_distance: np.ndarray | None = None,
+              flow_accumulation: GridObject | None = None) -> 'StreamObject':
         """Reduces a stream network to the longest streams in each stream
         network tree (e.g. connected component). The algorithm identifies
         the main trunk by sequently tracing the maximum downstream 
