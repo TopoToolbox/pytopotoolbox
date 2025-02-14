@@ -2,10 +2,12 @@
 """
 import math
 import warnings
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+from scipy.sparse import csr_matrix
 
 from .flow_object import FlowObject
 
@@ -90,7 +92,7 @@ class StreamObject():
 
         # If stream_pixels are provided, the stream can be generated based
         # on stream_pixels without the need for a threshold
-        w = np.zeros(flow.shape,dtype='bool',order='F').ravel(order='K')
+        w = np.zeros(flow.shape, dtype='bool', order='F').ravel(order='K')
         if stream_pixels is not None:
             if stream_pixels.shape != self.shape:
                 err = (
@@ -162,8 +164,8 @@ class StreamObject():
         i = w[u]
 
         # Renumber the nodes of the stream network
-        ix = np.zeros_like(w,dtype='int64')
-        ix[w] = np.arange(0,self.stream.size)
+        ix = np.zeros_like(w, dtype='int64')
+        ix[w] = np.arange(0, self.stream.size)
 
         # Edges in the stream network
         #
@@ -191,9 +193,10 @@ class StreamObject():
         """
         d = np.abs(self.stream[self.source] - self.stream[self.target])
 
-        dist = self.cellsize * np.where((d == self.strides[0]) | (d == self.strides[1]),
-                                        np.float32(1.0),
-                                        np.sqrt(np.float32(2.0)))
+        dist = self.cellsize * np.where(
+            (d == self.strides[0]) | (d == self.strides[1]),
+            np.float32(1.0),
+            np.sqrt(np.float32(2.0)))
 
         return dist
 
@@ -207,14 +210,14 @@ class StreamObject():
             A node attribute list with the downstream distances
         """
 
-        d = self.distance() # Edge attribute list
+        d = self.distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
         _stream.traverse_down_f32_max_add(dds, d, self.source, self.target)
 
         return dds
 
     def ezgetnal(self,
-                 k : GridObject | np.ndarray | float):
+                 k: GridObject | np.ndarray | float):
         """Retrieve a node attribute list from k
 
         Parameters
@@ -254,7 +257,8 @@ class StreamObject():
         elif np.isscalar(k):
             nal = np.full(self.stream.shape, k)
         else:
-            raise TypeError(f"{k} is not a supported source for a node attribute list")
+            raise TypeError(
+                f"{k} is not a supported source for a node attribute list")
 
         return nal
 
@@ -280,7 +284,8 @@ class StreamObject():
 
         """
         if data is None:
-            ys, xs = np.unravel_index(self.stream, self.shape, order='F') # pylint: disable=unbalanced-tuple-unpacking
+            # pylint: disable=unbalanced-tuple-unpacking
+            ys, xs = np.unravel_index(self.stream, self.shape, order='F')
         else:
             xs, ys = data
 
@@ -289,7 +294,7 @@ class StreamObject():
 
         # Construct an adjacency list for the graph,
         # so we can do a depth-first search
-        adjacency_list = [ [] for _ in vertices ]
+        adjacency_list = [[] for _ in vertices]
         for e in edges:
             src = self.source[e]
             tgt = self.target[e]
@@ -349,7 +354,7 @@ class StreamObject():
         ax.add_collection(collection)
         return ax
 
-    def plotdz(self, z, ax=None, dunit:str='m',doffset: float=0,**kwargs):
+    def plotdz(self, z, ax=None, dunit: str = 'm', doffset: float = 0, **kwargs):
         """Plot a node attribute list against upstream distance
 
         Note that collections are not used in
@@ -412,13 +417,12 @@ class StreamObject():
         ax.add_collection(collection)
         return ax
 
-
     def chitransform(self,
-                     upstream_area : GridObject | np.ndarray,
-                     a0 : float = 1e6,
-                     mn : float = 0.45,
-                     k  : GridObject | np.ndarray | None = None,
-                     correctcellsize : bool = True):
+                     upstream_area: GridObject | np.ndarray,
+                     a0: float = 1e6,
+                     mn: float = 0.45,
+                     k: GridObject | np.ndarray | None = None,
+                     correctcellsize: bool = True):
         """Coordinate transformation using the integral approach
 
         Transforms the horizontal spatial coordinates of a river
@@ -499,6 +503,72 @@ class StreamObject():
 
         return c
 
+    def trunk(self, downstream_distance: np.ndarray | None = None,
+              flow_accumulation: GridObject | None = None) -> 'StreamObject':
+        """Reduces a stream network to the longest streams in each stream
+        network tree (e.g. connected component). The algorithm identifies
+        the main trunk by sequently tracing the maximum downstream 
+        distance in upstream direction. 
+
+        Parameters
+        ----------
+        flow_accumulation : Gridobject, optional
+            A GridObject filled with flow accumulation values (as returned by
+            the function FlowObject.flow_accumulation). Defaults to None.
+        downstream_distance : np.ndarray, optional
+            A numpy ndarray node-attribute list as generated by ezgetnal(). 
+            This argument overwrites the flow_accumulation if used.
+            Defaults to None.
+
+        Returns
+        -------
+        StreamObject
+            StreamObject with truncated streams.
+        """
+
+        stream_network_size = len(self.stream)
+
+        if not downstream_distance is None:
+            pass
+        elif not flow_accumulation is None:
+            downstream_distance = self.ezgetnal(flow_accumulation)
+        else:
+            downstream_distance = self.downstream_distance()
+
+        sparse_distance = csr_matrix(
+            (downstream_distance[self.source] + 1, (self.source, self.target)),
+            shape=(stream_network_size, stream_network_size))
+
+        # Identify outlet reaches
+        any_column = np.array(sparse_distance.sum(axis=0) > 0).flatten()
+        any_row = np.array(sparse_distance.sum(axis=1) > 0).flatten()
+        outlets = any_column & ~any_row
+
+        trunks_max = np.argmax(sparse_distance, axis=0)
+
+        max_neighbor = np.zeros(stream_network_size, dtype=bool)
+        max_neighbor[trunks_max] = True
+
+        trunks = np.zeros(stream_network_size, dtype=bool)
+        trunks[outlets] = True
+
+        for r in range(len(self.source) - 1, -1, -1):
+            trunks[self.source[r]] = trunks[self.target[r]
+                                            ] and max_neighbor[self.source[r]]
+
+        result = copy.copy(self)
+        result.stream = self.stream[trunks]
+        cumsum_index = np.cumsum(trunks) - 1
+
+        trunks = trunks[self.source] & trunks[self.target]
+
+        result.source = self.source[trunks]
+        result.target = self.target[trunks]
+
+        result.source = cumsum_index[result.source]
+        result.target = cumsum_index[result.target]
+
+        return result
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
