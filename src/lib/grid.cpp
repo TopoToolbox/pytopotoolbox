@@ -9,6 +9,8 @@ extern "C" {
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <iostream>
+#include <cstdlib> 
 
 namespace py = pybind11;
 
@@ -245,6 +247,40 @@ void wrap_gradient8(
     gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
 }
 
+// wrap_prominance_wrapper:
+
+py::tuple wrap_prominence(py::array_t<float> dem, float tolerance, 
+                          std::tuple<ptrdiff_t, ptrdiff_t> dims) {
+
+    std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
+    ptrdiff_t *dims_ptr = dims_array.data();   
+
+    float *dem_ptr = dem.mutable_data();
+
+
+    float *result_values = nullptr;
+    ptrdiff_t *result_indexes = nullptr;
+    ptrdiff_t result_size = 0;
+
+    prominence(&result_values, &result_indexes, &result_size, dem_ptr, tolerance, dims_ptr);
+
+    // create ndarrays from result data using custom delete capsules
+    auto py_result_values = py::array_t<float>(
+        {result_size},
+        {sizeof(float)},
+        result_values,
+        py::capsule(result_values, [](void *p) { std::free(p); })
+    );
+    auto py_result_indexes = py::array_t<ptrdiff_t>(
+        {result_size},
+        {sizeof(ptrdiff_t)},
+        result_indexes,
+        py::capsule(result_indexes, [](void *p) { std::free(p); })
+    );
+
+    return py::make_tuple(py_result_values, py_result_indexes);
+}
+
 // Make wrap_funcname() function available as funcname() to be used by
 // by functions in the pytopotoolbox package
 
@@ -259,4 +295,5 @@ PYBIND11_MODULE(_grid, m) {
     m.def("flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
     m.def("flow_routing_d8_edgelist", &wrap_flow_routing_d8_edgelist);
     m.def("gradient8", &wrap_gradient8);
+    m.def("prominence", &wrap_prominence);
 }
