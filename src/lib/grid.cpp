@@ -248,6 +248,12 @@ void wrap_gradient8(
 }
 
 // wrap_prominance_wrapper:
+// Parameters:
+//   dem: A NumPy array containing the digital elevation model.
+//   tolerance: tolerance in [m] with the minimum prominence.
+//   dims: A tuple containing the number of rows and columns.
+// Returns:
+//   tuple of computed values and respective indicies
 
 py::tuple wrap_prominence(py::array_t<float> dem, float tolerance, 
                           std::tuple<ptrdiff_t, ptrdiff_t> dims) {
