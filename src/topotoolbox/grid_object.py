@@ -740,6 +740,33 @@ class GridObject():
         result.z = aspect
         return result
 
+    def prominence(self, tolerance: float) -> Tuple[np.ndarray, Tuple]:
+        """This function calculates the prominence of peaks in a DEM. The
+        prominence is the minimal amount one would need to descend from a peak
+        before being able to ascend to a higher peak. The function uses image
+        reconstruct (see function imreconstruct) to calculate the prominence.
+        It may take a while to run for large DEMs. The algorithm iteratively
+        finds the next higher prominence and stops if the prominence is less
+        than the tolerance, the second input parameter to the function.
+
+        Parameters
+        ----------
+        tolerance : float
+            The minimum tolerance for the second to last found peak. (meters)
+            Will always find one peak.
+
+        Returns
+        -------
+        Tuple[np.ndarray, Tuple]
+            A Tuple containing a ndarray storing the computed prominence and
+            a tuple of ndarray. Each array in the inner tuple has the same
+            shape as the indices array (as returned by np.unravel_index).
+        """
+        dem = np.nan_to_num(self.z)
+        values, indices = _grid.prominence(dem, tolerance, self.shape)
+        indices = np.unravel_index(indices, dem.shape, order='F')
+        return values, indices
+
     def _gwdt_computecosts(self) -> np.ndarray:
         """
         Compute the cost array used in the gradient-weighted distance
@@ -864,7 +891,7 @@ class GridObject():
         """
         if ax is None:
             ax = plt.gca()
-        return ax.imshow(self.z,**kwargs)
+        return ax.imshow(self.z, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
@@ -876,7 +903,7 @@ class GridObject():
         Parameters
         ----------
         seed: optional
-        
+
           The seed used to generate the random permutation of labels.
 
           The seed is passed directly to `numpy.random.default_rng`__.
