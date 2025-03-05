@@ -570,6 +570,78 @@ class StreamObject():
 
         return result
 
+    def klargestconncomps(self, k = 1) -> 'StreamObject':
+        """Extract the k largest connected components of the stream network
+
+        Components are ordered by the number of stream network pixels.
+
+        Parameters
+        ----------
+        k : integer, optional
+            The number of components to keep. The default is 1
+
+        Returns
+        -------
+        StreamObject
+            A new StreamObject containing only the k largest connected components
+        """
+        nv = self.stream.size
+        ne = self.source.size
+
+        # Compute outlets of the stream network
+        # NOTE(wkearn): This can be factored into its own function (`streampoi`)
+        indegree = np.zeros(nv, dtype=np.uint8)
+        outdegree = np.zeros(nv, dtype=np.uint8)
+        _stream.edgelist_degree(indegree, outdegree, self.source, self.target)
+        outlets = (outdegree == 0) & (indegree > 0)
+
+        # Count the nodes in each connected component of the stream
+        # network.
+        # This might be slightly inconsistent with the MATLAB
+        # implementation which sorts by the number of edges in each
+        # connected component.
+        acc = np.ones(nv, dtype=np.float32)
+        weights = np.ones(ne, dtype=np.float32)
+        _stream.traverse_down_f32_add_mul(acc, weights, self.source, self.target)
+
+        # Indices of the outlets in a node attribute list
+        outlet_indices = np.flatnonzero(outlets)
+
+        # Indices of the sorted accumulation values, from lowest to highest
+        ixs = np.argsort(acc[outlets])
+
+        # conncomps will be 1 for all pixels in the k largest
+        # connected components
+        conncomps = np.zeros(nv, dtype=np.uint8)
+
+        # Initialize to 1 at the outlets of the k largest components
+        conncomps[outlet_indices[ixs[-k:]]] = 1
+
+        # And propagate those values from the outlets upstream
+        _stream.propagatevaluesupstream_u8(conncomps, self.source, self.target)
+
+        # Convert to boolean array so we can index with it
+        conncomps_mask = conncomps > 0
+
+        # NOTE(wkearn): this (copied from our `trunk` implementation)
+        # is equivalent to `subgraph`, a STREAMobj method for
+        # extracting a new StreamObject based on a logical node
+        # attribute list.
+        result = copy.copy(self)
+        result.stream = self.stream[conncomps_mask]
+        cumsum_index = np.cumsum(conncomps_mask) - 1
+
+        conncomps_mask = conncomps_mask[self.source] & conncomps_mask[self.target]
+
+        result.source = self.source[conncomps_mask]
+        result.target = self.target[conncomps_mask]
+
+        result.source = cumsum_index[result.source]
+        result.target = cumsum_index[result.target]
+
+        return result
+
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 

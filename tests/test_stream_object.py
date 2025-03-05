@@ -4,6 +4,12 @@ import numpy as np
 
 import topotoolbox as topo
 
+def issubgraph(S1 : topo.StreamObject, S2 : topo.StreamObject):
+    """Test whether S1 represents a subgraph of S2
+    """
+    es1 = set(map(tuple,np.stack((S1.stream[S1.source],S1.stream[S1.target]),axis=1)))
+    es2 = set(map(tuple,np.stack((S2.stream[S2.source],S2.stream[S2.target]),axis=1)))
+    return es1 <= es2
 
 @pytest.fixture
 def wide_dem():
@@ -35,6 +41,14 @@ def test_init(tall_dem, wide_dem):
     # Run the chi transforms
     tall_stream.chitransform(tall_acc)
     wide_stream.chitransform(wide_acc)
+
+    tall_trunk = tall_stream.trunk()
+    tall_k1    = tall_stream.klargestconncomps(1)
+    tall_k1_trunk = tall_k1.trunk()
+
+    assert issubgraph(tall_trunk, tall_stream)
+    assert issubgraph(tall_k1, tall_stream)
+    assert not issubgraph(tall_trunk, tall_k1)
 
     grid_obj = topo.gen_random(rows=64, columns=64)
     flow_obj = topo.FlowObject(grid_obj)
