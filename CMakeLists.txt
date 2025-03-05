@@ -10,8 +10,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(FetchContent)
 FetchContent_Declare(
   topotoolbox
-  GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG 3458418513a5a92061c18a12bc02659de9ef1667
+  #GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
+  GIT_REPOSITORY https://github.com/Teschl/libtopotoolbox.git
+  #GIT_TAG 3458418513a5a92061c18a12bc02659de9ef1667
+  GIT_TAG prominence
 )
 FetchContent_MakeAvailable(topotoolbox)
 
@@ -30,4 +32,7 @@ target_link_libraries(_stream PRIVATE topotoolbox)
 pybind11_add_module(_graphflood src/lib/graphflood.cpp)
 target_link_libraries(_graphflood PRIVATE topotoolbox)
 
-install(TARGETS _grid _flow _stream _graphflood LIBRARY DESTINATION topotoolbox)
+pybind11_add_module(_morphology src/lib/morphology.cpp)
+target_link_libraries(_morphology PRIVATE topotoolbox)
+
+install(TARGETS _grid _flow _stream _graphflood _morphology LIBRARY DESTINATION topotoolbox)
