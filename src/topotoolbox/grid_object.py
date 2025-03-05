@@ -20,7 +20,7 @@ from rasterio.warp import reproject
 from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
-from . import _grid  # type: ignore
+from . import _grid, _morphology  # type: ignore
 
 __all__ = ['GridObject']
 
@@ -763,9 +763,25 @@ class GridObject():
             shape as the indices array (as returned by np.unravel_index).
         """
         dem = np.nan_to_num(self.z)
-        values, indices = _grid.prominence(dem, tolerance, self.shape)
-        indices = np.unravel_index(indices, dem.shape, order='F')
-        return values, indices
+        p = np.full_like(dem, np.min(dem), order='F')
+
+        prominence = []
+        indices = []
+
+        while not prominence or prominence[-1] > tolerance:
+            diff = dem - p
+            prominence.append(np.max(diff))
+            indices.append(np.unravel_index(np.argmax(diff), self.shape))
+
+            p[indices[-1]] = dem[indices[-1]]
+
+            _morphology.reconstruct(p, dem, self.shape)
+
+        prominence = np.array(prominence)
+        indices = np.array(indices)
+        indices = indices[:, [1, 0]]  # swap columns 0 and 1
+        indices = indices.T  # transpose to get (x, y) instead of (y, x)
+        return prominence, indices
 
     def _gwdt_computecosts(self) -> np.ndarray:
         """
