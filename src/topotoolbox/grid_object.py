@@ -1,7 +1,7 @@
 """This module contains the GridObject class.
 """
 import copy
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -740,7 +740,7 @@ class GridObject():
         result.z = aspect
         return result
 
-    def prominence(self, tolerance: float) -> Tuple[np.ndarray, Tuple]:
+    def prominence(self, tolerance: float) -> Tuple:
         """This function calculates the prominence of peaks in a DEM. The
         prominence is the minimal amount one would need to descend from a peak
         before being able to ascend to a higher peak. The function uses image
@@ -765,7 +765,7 @@ class GridObject():
         dem = np.nan_to_num(self.z)
         p = np.full_like(dem, np.min(dem), order='F')
 
-        prominence = []
+        prominence: List[float] = []
         indices = []
 
         while not prominence or prominence[-1] > tolerance:
@@ -777,11 +777,11 @@ class GridObject():
 
             _morphology.reconstruct(p, dem, self.shape)
 
-        prominence = np.array(prominence)
-        indices = np.array(indices)
-        indices = indices[:, [1, 0]]  # swap columns 0 and 1
-        indices = indices.T  # transpose to get (x, y) instead of (y, x)
-        return prominence, indices
+        prominence_array = np.array(prominence)
+        indices_array = np.array(indices)
+        indices_array = indices_array[:, [1, 0]]  # swap columns 0 and 1
+        indices_array = indices_array.T  # transpose to get (x, y) instead of (y, x)
+        return prominence_array, indices_array
 
     def _gwdt_computecosts(self) -> np.ndarray:
         """
