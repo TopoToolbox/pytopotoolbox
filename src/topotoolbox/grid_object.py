@@ -1,7 +1,7 @@
 """This module contains the GridObject class.
 """
 import copy
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ from rasterio.warp import reproject
 from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
-from . import _grid  # type: ignore
+from . import _grid, _morphology  # type: ignore
 
 __all__ = ['GridObject']
 
@@ -740,6 +740,54 @@ class GridObject():
         result.z = aspect
         return result
 
+    def prominence(self, tolerance: float, use_hybrid=True) -> Tuple:
+        """This function calculates the prominence of peaks in a DEM. The
+        prominence is the minimal amount one would need to descend from a peak
+        before being able to ascend to a higher peak. The function uses image
+        reconstruct (see function imreconstruct) to calculate the prominence.
+        It may take a while to run for large DEMs. The algorithm iteratively
+        finds the next higher prominence and stops if the prominence is less
+        than the tolerance, the second input parameter to the function.
+
+        Parameters
+        ----------
+        tolerance : float
+            The minimum tolerance for the second to last found peak. (meters)
+            Will always find one peak.
+        use_hybrid : bool, optional
+            If True, use the hybrid reconstruction algorithm. Defaults to True.
+
+        Returns
+        -------
+        Tuple[np.ndarray, Tuple]
+            A Tuple containing a ndarray storing the computed prominence and
+            a tuple of ndarray. Each array in the inner tuple has the same
+            shape as the indices array (as returned by np.unravel_index).
+        """
+        dem = np.nan_to_num(self.z)
+        p = np.full_like(dem, np.min(dem), order='F')
+
+        prominence: List[float] = []
+        indices = []
+
+        while not prominence or prominence[-1] > tolerance:
+            diff = dem - p
+            prominence.append(np.max(diff))
+            indices.append(np.unravel_index(np.argmax(diff), self.shape))
+
+            p[indices[-1]] = dem[indices[-1]]
+            if use_hybrid:
+                queue = np.zeros_like(dem, dtype=np.int64, order='F')
+                _morphology.reconstruct_hybrid(p, queue, dem, self.shape)
+            else:
+                _morphology.reconstruct(p, dem, self.shape)
+
+        prominence_array = np.array(prominence)
+        indices_array = np.array(indices)
+        indices_array = indices_array[:, [1, 0]]  # swap columns 0 and 1
+        indices_array = indices_array.T  # transpose to get (x, y) instead of (y, x)
+        return prominence_array, indices_array
+
     def _gwdt_computecosts(self) -> np.ndarray:
         """
         Compute the cost array used in the gradient-weighted distance
@@ -864,7 +912,7 @@ class GridObject():
         """
         if ax is None:
             ax = plt.gca()
-        return ax.imshow(self.z,**kwargs)
+        return ax.imshow(self.z, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
@@ -876,7 +924,7 @@ class GridObject():
         Parameters
         ----------
         seed: optional
-        
+
           The seed used to generate the random permutation of labels.
 
           The seed is passed directly to `numpy.random.default_rng`__.
