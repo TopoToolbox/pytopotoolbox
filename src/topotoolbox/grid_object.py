@@ -740,7 +740,7 @@ class GridObject():
         result.z = aspect
         return result
 
-    def prominence(self, tolerance: float) -> Tuple:
+    def prominence(self, tolerance: float, use_hybrid=True) -> Tuple:
         """This function calculates the prominence of peaks in a DEM. The
         prominence is the minimal amount one would need to descend from a peak
         before being able to ascend to a higher peak. The function uses image
@@ -754,6 +754,8 @@ class GridObject():
         tolerance : float
             The minimum tolerance for the second to last found peak. (meters)
             Will always find one peak.
+        use_hybrid : bool, optional
+            If True, use the hybrid reconstruction algorithm. Defaults to True.
 
         Returns
         -------
@@ -774,8 +776,11 @@ class GridObject():
             indices.append(np.unravel_index(np.argmax(diff), self.shape))
 
             p[indices[-1]] = dem[indices[-1]]
-
-            _morphology.reconstruct(p, dem, self.shape)
+            if use_hybrid:
+                queue = np.zeros_like(dem, dtype=np.int64, order='F')
+                _morphology.reconstruct_hybrid(p, queue, dem, self.shape)
+            else:
+                _morphology.reconstruct(p, dem, self.shape)
 
         prominence_array = np.array(prominence)
         indices_array = np.array(indices)
