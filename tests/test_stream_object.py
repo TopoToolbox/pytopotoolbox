@@ -13,11 +13,11 @@ def issubgraph(S1 : topo.StreamObject, S2 : topo.StreamObject):
 
 @pytest.fixture
 def wide_dem():
-    yield topo.gen_random(rows=128, columns=64)
+    yield topo.gen_random(rows=64, columns=128)
 
 @pytest.fixture
 def tall_dem():
-    yield topo.gen_random(columns=64, rows=128)
+    yield topo.gen_random(rows=128, columns=64)
 
 def test_init(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
