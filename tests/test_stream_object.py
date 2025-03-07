@@ -19,38 +19,7 @@ def fixture_wide_dem():
 def fixture_tall_dem():
     yield topo.gen_random(rows=128, columns=64)
 
-def test_init(tall_dem, wide_dem):
-    tall_flow = topo.FlowObject(tall_dem)
-    tall_stream = topo.StreamObject(tall_flow)
-
-    wide_flow = topo.FlowObject(wide_dem)
-    wide_stream = topo.StreamObject(wide_flow)
-
-    assert (wide_stream.target.size == wide_stream.source.size ==
-            wide_stream.direction.size)
-    assert (tall_stream.target.size == tall_stream.source.size ==
-            tall_stream.direction.size)
-
-    # Ensure that no index in stream exceeds the max possible index in the grid
-    assert np.max(wide_stream.stream) <= wide_stream.shape[0] * wide_stream.shape[1]
-    assert np.max(tall_stream.stream) <= tall_stream.shape[0] * tall_stream.shape[1]
-
-    tall_acc = tall_flow.flow_accumulation()
-    wide_acc = wide_flow.flow_accumulation()
-
-    # Run the chi transforms
-    tall_stream.chitransform(tall_acc)
-    wide_stream.chitransform(wide_acc)
-
-    tall_trunk = tall_stream.trunk()
-    tall_k1    = tall_stream.klargestconncomps(1)
-    tall_k1_trunk = tall_k1.trunk()
-
-    assert issubgraph(tall_trunk, tall_stream)
-    assert issubgraph(tall_k1, tall_stream)
-    assert issubgraph(tall_k1_trunk, tall_k1)
-    assert not issubgraph(tall_trunk, tall_k1)
-
+def test_constructors():
     grid_obj = topo.gen_random(rows=64, columns=64)
     flow_obj = topo.FlowObject(grid_obj)
 
@@ -92,3 +61,63 @@ def test_init(tall_dem, wide_dem):
         assert len(w) > 0
         assert issubclass(w[-1].category, Warning)
         assert "threshold will be ignored" in str(w[-1].message)
+
+def test_streamobject_sizes(tall_dem, wide_dem):
+    tall_flow = topo.FlowObject(tall_dem)
+    tall_stream = topo.StreamObject(tall_flow)
+
+    wide_flow = topo.FlowObject(wide_dem)
+    wide_stream = topo.StreamObject(wide_flow)
+
+    assert (wide_stream.target.size == wide_stream.source.size ==
+            wide_stream.direction.size)
+    assert (tall_stream.target.size == tall_stream.source.size ==
+            tall_stream.direction.size)
+
+    # Ensure that no index in stream exceeds the max possible index in the grid
+    assert np.max(wide_stream.stream) <= wide_stream.shape[0] * wide_stream.shape[1]
+    assert np.max(tall_stream.stream) <= tall_stream.shape[0] * tall_stream.shape[1]
+
+def test_run_chitransform(tall_dem, wide_dem):
+
+    tall_flow = topo.FlowObject(tall_dem)
+    tall_stream = topo.StreamObject(tall_flow)
+
+    wide_flow = topo.FlowObject(wide_dem)
+    wide_stream = topo.StreamObject(wide_flow)
+
+    tall_acc = tall_flow.flow_accumulation()
+    wide_acc = wide_flow.flow_accumulation()
+
+    tall_stream.chitransform(tall_acc)
+    wide_stream.chitransform(wide_acc)
+
+def test_stream_subgraphs(tall_dem, wide_dem):
+    tall_flow = topo.FlowObject(tall_dem)
+    tall_stream = topo.StreamObject(tall_flow)
+
+    tall_trunk = tall_stream.trunk()
+    tall_k1    = tall_stream.klargestconncomps(1)
+    tall_k1_trunk = tall_k1.trunk()
+
+    assert issubgraph(tall_trunk, tall_stream)
+    assert issubgraph(tall_k1, tall_stream)
+    assert issubgraph(tall_k1_trunk, tall_stream)
+    assert issubgraph(tall_k1_trunk, tall_k1)
+    assert not issubgraph(tall_trunk, tall_k1)
+
+    wide_flow = topo.FlowObject(wide_dem)
+    wide_stream = topo.StreamObject(wide_flow)
+
+    wide_trunk = wide_stream.trunk()
+    wide_k1    = wide_stream.klargestconncomps(1)
+    wide_k1_trunk = wide_k1.trunk()
+
+    assert issubgraph(wide_trunk, wide_stream)
+    assert issubgraph(wide_k1, wide_stream)
+    assert issubgraph(wide_k1_trunk, wide_stream)
+    assert issubgraph(wide_k1_trunk, wide_k1)
+    assert not issubgraph(wide_trunk, wide_k1)
+
+    assert not issubgraph(wide_trunk, tall_stream)
+    assert not issubgraph(tall_trunk, wide_stream)
