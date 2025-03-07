@@ -1,22 +1,22 @@
-import pytest
 import warnings
+import pytest
 import numpy as np
 
 import topotoolbox as topo
 
-def issubgraph(S1 : topo.StreamObject, S2 : topo.StreamObject):
-    """Test whether S1 represents a subgraph of S2
+def issubgraph(s1  : topo.StreamObject, s2 : topo.StreamObject):
+    """Test whether s1 represents a subgraph of s2
     """
-    es1 = set(map(tuple,np.stack((S1.stream[S1.source],S1.stream[S1.target]),axis=1)))
-    es2 = set(map(tuple,np.stack((S2.stream[S2.source],S2.stream[S2.target]),axis=1)))
+    es1 = set(map(tuple,np.stack((s1.stream[s1.source],s1.stream[s1.target]),axis=1)))
+    es2 = set(map(tuple,np.stack((s2.stream[s2.source],s2.stream[s2.target]),axis=1)))
     return es1 <= es2
 
-@pytest.fixture
-def wide_dem():
+@pytest.fixture(name="wide_dem")
+def fixture_wide_dem():
     yield topo.gen_random(rows=64, columns=128)
 
-@pytest.fixture
-def tall_dem():
+@pytest.fixture(name="tall_dem")
+def fixture_tall_dem():
     yield topo.gen_random(rows=128, columns=64)
 
 def test_init(tall_dem, wide_dem):
@@ -48,6 +48,7 @@ def test_init(tall_dem, wide_dem):
 
     assert issubgraph(tall_trunk, tall_stream)
     assert issubgraph(tall_k1, tall_stream)
+    assert issubgraph(tall_k1_trunk, tall_k1)
     assert not issubgraph(tall_trunk, tall_k1)
 
     grid_obj = topo.gen_random(rows=64, columns=64)
