@@ -246,6 +246,24 @@ void wrap_gradient8(
     gradient8(output_ptr, dem_ptr, cellsize, use_mp, dims_ptr);
 }
 
+void wrap_hillshade(py::array_t<float> output,
+                    py::array_t<float>nx, py::array_t<float> ny, py::array_t<float> nz,
+                    py::array_t<float> dem,
+                    float azimuth, float altitude, float cellsize,
+                    std::tuple<ptrdiff_t, ptrdiff_t> dims) {
+  
+  float *output_ptr = output.mutable_data();
+  float *nx_ptr = nx.mutable_data();
+  float *ny_ptr = ny.mutable_data();
+  float *nz_ptr = nz.mutable_data();
+  float *dem_ptr = dem.mutable_data();
+
+  std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
+  hillshade(output_ptr, nx_ptr, ny_ptr, nz_ptr,
+            dem_ptr, azimuth, altitude, cellsize,
+            dims_array.data());
+}
+
 // Make wrap_funcname() function available as funcname() to be used by
 // by functions in the pytopotoolbox package
 
@@ -260,4 +278,5 @@ PYBIND11_MODULE(_grid, m) {
     m.def("flow_routing_d8_carve", &wrap_flow_routing_d8_carve);
     m.def("flow_routing_d8_edgelist", &wrap_flow_routing_d8_edgelist);
     m.def("gradient8", &wrap_gradient8);
+    m.def("hillshade", &wrap_hillshade);
 }
