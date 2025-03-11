@@ -131,6 +131,7 @@ def test_identifyflats(square_dem, wide_dem, tall_dem):
                     if flats[i_neighbor, j_neighbor] < flats[i, j]:
                         assert flats[i, j] == 1.0
 
-    def test_excesstopography(square_dem):
-        # TODO: add more tests
-        assert square_dem.excesstopography(threshold='0.1') == TypeError()
+def test_excesstopography(square_dem):
+    # TODO: add more tests
+    with pytest.raises(TypeError):
+        square_dem.excesstopography(threshold='0.1')
