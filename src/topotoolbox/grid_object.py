@@ -15,7 +15,7 @@ from scipy.ndimage import (
     distance_transform_edt
 )
 from scipy.signal import wiener
-from rasterio import CRS
+from rasterio import CRS, Affine
 from rasterio.warp import reproject
 from rasterio.enums import Resampling
 
@@ -44,7 +44,7 @@ class GridObject():
 
         # georeference
         self.bounds = None
-        self.transform = None
+        self.transform = Affine.identity()
         self.crs = None
 
     @property
@@ -787,6 +787,85 @@ class GridObject():
         indices_array = indices_array[:, [1, 0]]  # swap columns 0 and 1
         indices_array = indices_array.T  # transpose to get (x, y) instead of (y, x)
         return prominence_array, indices_array
+
+    def hillshade(self,
+                  azimuth: float = 315.0,
+                  altitude: float = 60.0,
+                  exaggerate: float = 1.0):
+        """Compute a hillshade of a digital elevation model
+
+        Parameters
+        ----------
+        azimuth : float
+            The azimuth angle of the light source measured in degrees
+            clockwise from north. Defaults to 315 degrees.
+        altitude : float
+            The altitude angle of the light source measured in degrees
+            above the horizon. Defaults to 60 degrees.
+        exaggerate : float
+            The amount of vertical exaggeration. Increase to emphasize
+            elevation differences in flat terrain. Defaults to 1.0
+
+        Returns
+        -------
+        GridObject
+            A GridObject containing the resulting hillshade data
+        """
+
+        h = np.zeros_like(self.z)
+        nx = np.zeros_like(self.z)
+        ny = np.zeros_like(self.z)
+        nz = np.zeros_like(self.z)
+
+        # Computing the azimuth angle is a bit tricky
+        gt = self.transform
+
+        # Remove the translation from the geotransform. It is not
+        # needed to rotate the coordinate system, but it makes things
+        # harder to work with.
+        gt = gt.translation(-gt.xoff, -gt.yoff)*gt
+
+        if self.z.flags.f_contiguous:
+            # If the array is column-major, we need to swap the x and
+            # y coordinates, which is achieved with a matrix like
+            #
+            # [[0  -1],
+            #  [-1  0]]
+            #
+            # which we can construct as a permutation followed by a
+            # 180 degree rotation.
+            gt = gt.rotation(180) * gt.permutation() * gt
+
+        # This is the /east/ component of the azimuth vector
+        sx = np.sin(np.deg2rad(azimuth))
+        # This is the /north/ component of the azimuth vector
+        sy = np.cos(np.deg2rad(azimuth))
+
+        # Apply the inverse of the geotransform to convert from
+        # geographic coordinates to image coordinates.
+        dx, dy = ~gt * (sx, sy)
+
+        # And retrieve the azimuth angle.
+        azimuth_radians = np.atan2(dy,dx)
+
+        # NOTE(wkearn): This angle is then immediately used within
+        # hillshade to compute vector components again. It would be
+        # somewhat more efficient and numerically stable to work
+        # directly with the vectors. libtopotoolbox's hillshade should
+        # probably take a vector rather than an angle.
+        #
+        # See Inigo Quilez (2013). Avoiding trigonometry
+        # (https://iquilezles.org/articles/noacos/) for an argument
+        # against using angles in graphics APIs.
+
+        altitude_radians = np.deg2rad(altitude)
+
+        _grid.hillshade(h, nx, ny, nz, exaggerate * self.z,
+                        azimuth_radians, altitude_radians, self.cellsize, self.dims)
+
+        result = copy.copy(self)
+        result.z = h
+        return result
 
     def _gwdt_computecosts(self) -> np.ndarray:
         """

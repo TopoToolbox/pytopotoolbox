@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from rasterio import Affine
 
 import topotoolbox as topo
 
@@ -135,3 +136,30 @@ def test_excesstopography(square_dem):
     # TODO: add more tests
     with pytest.raises(TypeError):
         square_dem.excesstopography(threshold='0.1')
+
+def test_hillshade_order():
+    # The hillshade computed from a column-major array should be
+    # identical to that from a row-major array with the same data.
+
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    demc = topo.GridObject()
+    demc.z = 64 * (opensimplex.noise2array(x,y) + 1)
+    demc.cellsize = 13.0
+    demc.transform = Affine.scale(demc.cellsize)
+
+    # The column-major array gets the same geotransform (following
+    # current practice in pytopotoolbox), but is in a different memory
+    # order.
+    demf = topo.GridObject()
+    demf.z = np.asfortranarray(demc.z)
+    demf.cellsize = 13.0
+    demf.transform = Affine.scale(demf.cellsize)
+    
+    for azimuth in np.arange(0.0,360.0,2.3):
+        hc = demc.hillshade(azimuth=azimuth)
+        hf = demf.hillshade(azimuth=azimuth)
+        assert np.array_equal(hc, hf)
