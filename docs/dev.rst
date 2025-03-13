@@ -64,3 +64,16 @@ have access to the Windows C/C++ toolchain.
 
 2. To ensure the compiler is working with 64-bit architecture, that is necessary for python, **open 'x64 Native Tools Command Prompt for VS 2022'** instead of the '*Developer Command Prompt*' that defaults to 32-bit architecture.
 3. In the opened command prompt, navigate to the pytopotoolbox directory and follow the instructions above for installing the development environment.
+
+Making a release of pytopotoolbox
+---------------------------------
+
+To release a new version of pytopotoolbox:
+
+1. Increase the version number in pyproject.toml depending on whether
+   this is a patch, minor or major release.
+2. Manually draft a release on GitHub. Create a new tag matching the
+   version number in pyproject.toml
+3. Publish the release. This will trigger our release workflow, which
+   will build and upload binary wheels to the GitHub release and to
+   PyPi.
