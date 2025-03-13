@@ -6,6 +6,7 @@ on:
 
 jobs:
   make_sdist:
+    if: github.repository == 'TopoToolbox/pytopotoolbox'
     name: Make SDist
     runs-on: ubuntu-latest
     steps:
@@ -23,6 +24,7 @@ jobs:
           name: cibw-sdist
           path: dist/*.tar.gz
   build_wheels:
+    if: github.repository == 'TopoToolbox/pytopotoolbox'
     name: Wheel on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -53,6 +55,7 @@ jobs:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
   upload_assets:
+    if: github.repository == 'TopoToolbox/pytopotoolbox'
     name: Upload release assets
     needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
@@ -70,6 +73,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
   upload-pypi:
+    if: github.repository == 'TopoToolbox/pytopotoolbox'
     name: Upload release assets to PyPI
     needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
