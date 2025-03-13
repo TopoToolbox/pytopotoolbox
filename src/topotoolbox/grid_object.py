@@ -4,7 +4,9 @@ import copy
 from typing import Tuple, List
 
 import numpy as np
+
 import matplotlib.pyplot as plt
+from matplotlib import colors
 
 from scipy.ndimage import (
     convolve,
@@ -15,6 +17,7 @@ from scipy.ndimage import (
     distance_transform_edt
 )
 from scipy.signal import wiener
+
 from rasterio import CRS, Affine
 from rasterio.warp import reproject
 from rasterio.enums import Resampling
@@ -992,6 +995,111 @@ class GridObject():
         if ax is None:
             ax = plt.gca()
         return ax.imshow(self.z, **kwargs)
+
+    def plot_hs(self, ax=None,
+                elev=None,
+                azimuth=315, altitude=60, exaggerate=1,
+                filter_method=None, filter_size = 3,
+                cmap='terrain', norm = None,
+                blend_mode='soft',
+                **kwargs):
+        """Plot a shaded relief map of the GridObject
+
+        Parameters
+        ----------
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the GridObject. If no axes
+            are given, the current axes are used.
+        elev: GridObject, optional
+            The digital elevation model used for shading. If no DEM is
+            provided, the data GridObject is also used for shading.
+        azimuth: float, optional
+            The azimuth angle of the light source in degrees from
+            North. Defaults to 315 degrees.
+        altitude: float, optional
+            The altitude angle of the light source in degrees above
+            the horizon. Defaults to 60 degrees.
+        exaggerate: float, optional
+            The amount of vertical exaggeration to apply to the
+            elevation. Defaults to 1.
+        filter_method: 'str', optional
+            The method used to filter the DEM before computing the
+            hillshade. The data GridObject is not filtered. This
+            should be one of the methods provided by
+            `GridObject.filter`. Defaults to None, which does not
+            apply a filter.
+        filter_size: int, optional
+            The size of the filter kernel in pixels. Defaults to 3.
+        cmap: colors.Colormap or str or None
+            The colormap to use in coloring the data. Defaults to
+            'terrain'.
+        norm: colors.Normalize, optional
+            The normalization method that scales the color data to the
+            [0,1] interval. Defaults to a linear scaling from the
+            minimum of the data to the maximum.
+        blend_mode: {'multiply', 'overlay', 'soft'}, optional
+            The algorithm used to combine the shaded elevation with
+            the data. Defaults to 'soft'.
+        **kwargs
+            Additional keyword arguments are forwarded to
+            matplotlib.axes.Axes.imshow
+
+        Returns
+        -------
+        matplotlib.image.AxesImage
+            The image constructed by imshow
+
+        Raises
+        ------
+        TypeError
+            The `elev` argument is not a GridObject
+
+        ValueError
+            The `elev` argument is not the same shape as the data
+
+        ValueError
+            A `blend_mode` other than 'multiply', 'overlay' or 'soft' is provided.
+
+        ValueError
+            The `filter_method` or `filter_size` arguments are not
+            accepted by `GridObject.filter`.
+
+        """
+        if ax is None:
+            ax = plt.gca()
+
+        if elev is None:
+            shade = self
+        elif isinstance(elev, GridObject):
+            if not elev.shape == self.shape:
+                err = "elev GridObject must have the same shape as the GridObject."
+                raise ValueError(err) from None
+            shade = elev
+        else:
+            err = "elev must be a GridObject"
+            raise TypeError(err) from None
+
+        if filter_method is not None:
+            shade = shade.filter(method=filter_method,kernelsize=filter_size)
+
+        h = shade.hillshade(azimuth, altitude, exaggerate)
+        cmap = plt.get_cmap(cmap)
+
+        if norm is None:
+            norm = colors.Normalize(vmin=np.nanmin(self.z),vmax=np.nanmax(self.z))
+
+        base = cmap(norm(self.z))
+        top = np.expand_dims(np.clip(h,0,1),2)
+        if blend_mode == "multiply":
+            rgb = base * top
+        elif blend_mode == "overlay":
+            rgb = np.where(base < 0.5, 2*base*top, 1 - 2*(1-base)*(1-top))
+        elif blend_mode == "soft":
+            rgb = (1 - 2*top)*base**2 + 2 * top * base
+        else:
+            raise ValueError("blend_mode not supported") from None
+
+        return ax.imshow(np.clip(rgb,0,1), **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
