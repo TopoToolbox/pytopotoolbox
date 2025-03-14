@@ -301,7 +301,7 @@ class StreamObject():
             adjacency_list[src].append(tgt)
 
         # Depth-first search of the graph
-        visited = np.zeros(self.stream.size, dtype=np.bool)
+        visited = np.zeros(self.stream.size, dtype=bool)
         segments = []
         stack = []
 
