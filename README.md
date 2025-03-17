@@ -30,7 +30,7 @@ Index](https://pypi.org/project/topotoolbox/). With Python version 3.10
 or later and `pip` installed, you can run
 
 ```
-pip install topotoolbox
+pip install --upgrade topotoolbox
 ```
 
 to install the latest release from the Python Package Index. If you
