@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:    
   push:
-    branches: ["main"]
+    branches: ["ci-older-numpy"]
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
@@ -34,6 +34,14 @@ jobs:
         run: |
           python -m pytest
 
+      - name: Build wheel and install it
+        run: |
+          python -m build
+          pip install dist/*.whl
+          
+      - name: Test against oldest supported numpy version
+        run: |
+          pip install numpy==1.23.5
   lint:
     runs-on: ubuntu-latest
     strategy:
