@@ -849,7 +849,7 @@ class GridObject():
         dx, dy = ~gt * (sx, sy)
 
         # And retrieve the azimuth angle.
-        azimuth_radians = np.atan2(dy,dx)
+        azimuth_radians = np.arctan2(dy,dx)
 
         # NOTE(wkearn): This angle is then immediately used within
         # hillshade to compute vector components again. It would be
