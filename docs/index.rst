@@ -12,7 +12,7 @@ TopoToolbox is on PyPI, so you can run
 
 .. code-block:: bash
 
-    pip install topotoolbox
+    pip install --upgrade topotoolbox
 
 to obtain the latest version.
 
