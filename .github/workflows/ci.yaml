@@ -36,7 +36,7 @@ jobs:
 
       - name: Downgrade numpy
         run: |
-          pip install matplotlib scipy rasterio numpy==1.23.5 --upgrade --upgrade-strategy eager
+          pip install matplotlib scipy rasterio "numpy<1.23" --upgrade --upgrade-strategy eager
           pytest
   lint:
     runs-on: ubuntu-latest
