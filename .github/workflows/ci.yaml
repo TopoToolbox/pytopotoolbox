@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:    
   push:
-    branches: ["main"]
+    branches: ["ci-older-numpy"]
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install pytest build
 
       - name: Build and install TopoToolbox
         run: |
@@ -34,6 +34,10 @@ jobs:
         run: |
           python -m pytest
 
+      - name: Downgrade numpy
+        run: |
+          pip install matplotlib scipy rasterio "numpy==1.23.5" --upgrade --upgrade-strategy eager
+          pytest
   lint:
     runs-on: ubuntu-latest
     strategy:
