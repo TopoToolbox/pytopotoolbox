@@ -55,6 +55,15 @@ class StreamObject():
         If the `units` parameter is not 'pixels', 'mapunits', 'm2', or 'km2'.
     ValueError
         If the shape of the threshold does not match the flow object shape.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
+    >>> fd = topotoolbox.FlowObject(dem)
+    >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+    >>> plt.subplots()
+    >>> dem.plot(cmap="terrain")
+    >>> s.plot(color='r')
         """
         if not isinstance(flow, FlowObject):
             err = f"{flow} is not a topotoolbox.FlowObject."
@@ -190,6 +199,15 @@ class StreamObject():
         -------
         np.ndarray, float32
             An edge attribute list with the distance between pixels
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> plt.subplots()
+        >>> dem.plot(cmap="terrain")
+        >>> s.plot(color='r')
         """
         d = np.abs(self.stream[self.source] - self.stream[self.target])
 
@@ -209,6 +227,7 @@ class StreamObject():
         np.ndarray, float32
             A node attribute list with the downstream distances
         """
+        # TODO: Add an example to docstring
 
         d = self.distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
@@ -240,7 +259,11 @@ class StreamObject():
         TypeError
             If `k` does not represent a type of data that can be
             extracted into a node attribute list.
+
+        Example
+        -------
         """
+        # TODO: Add an example to docstring
 
         if isinstance(k, GridObject):
             nal = k.z[np.unravel_index(self.stream, self.shape, order='F')]
@@ -282,7 +305,10 @@ class StreamObject():
         list
             A list of lists of (x,y) pairs.
 
+        Example
+        -------
         """
+        # TODO: Add an example to docstring
         if data is None:
             # pylint: disable=unbalanced-tuple-unpacking
             ys, xs = np.unravel_index(self.stream, self.shape, order='F')
@@ -348,6 +374,8 @@ class StreamObject():
         matplotlib.axes.Axes
             The axes into which the StreamObject has been plotted.
         """
+        # TODO: Add an example to docstring
+
         if ax is None:
             ax = plt.gca()
         collection = LineCollection(self.xy(), **kwargs)
@@ -393,6 +421,8 @@ class StreamObject():
             If `dunit` is not one of 'm' or 'km'.
 
         """
+        # TODO: Add an example to docstring
+
         if ax is None:
             ax = plt.gca()
         z = self.ezgetnal(z)
@@ -570,7 +600,7 @@ class StreamObject():
 
         return result
 
-    def klargestconncomps(self, k = 1) -> 'StreamObject':
+    def klargestconncomps(self, k=1) -> 'StreamObject':
         """Extract the k largest connected components of the stream network
 
         Components are ordered by the number of stream network pixels.
@@ -602,7 +632,8 @@ class StreamObject():
         # connected component.
         acc = np.ones(nv, dtype=np.float32)
         weights = np.ones(ne, dtype=np.float32)
-        _stream.traverse_down_f32_add_mul(acc, weights, self.source, self.target)
+        _stream.traverse_down_f32_add_mul(
+            acc, weights, self.source, self.target)
 
         # Indices of the outlets in a node attribute list
         outlet_indices = np.flatnonzero(outlets)
@@ -640,7 +671,6 @@ class StreamObject():
         result.target = cumsum_index[result.target]
 
         return result
-
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
