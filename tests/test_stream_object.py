@@ -122,6 +122,93 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     assert not issubgraph(wide_trunk, tall_stream)
     assert not issubgraph(tall_trunk, wide_stream)
 
+def test_subgraph(tall_dem, wide_dem):
+    ############
+    # Tall DEM #
+    ############
+
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    d = s.downstream_distance()
+    nal = d > 10
+
+    sub = s.subgraph(nal)
+
+    # The subgraph should have no more vertices than are true in the
+    # node attribute list.
+    assert np.size(sub.stream) <= np.count_nonzero(nal)
+
+    # The subgraph should have no more edges than the original network
+    assert np.size(sub.source) <= np.size(s.source)
+
+    # The nodes of the subgraph should be a subset of the nodes of the
+    # original graph
+    assert set(sub.stream) <= set(s.stream)
+
+    # The edges of the subgraph should be a subset of the edges of the
+    # original graph. This is what issubgraph tests.
+    assert issubgraph(sub, s)
+
+    # Subgraph should be idempotent
+    nal_all = np.ones(s.stream.size,dtype=np.bool)
+    sub_all = s.subgraph(nal_all)
+    assert issubgraph(sub, s)
+    assert np.array_equal(sub_all.stream, s.stream)
+    assert np.array_equal(sub_all.source, s.source)
+    assert np.array_equal(sub_all.target, s.target)
+
+    # Subgraph of an empty subset should be empty
+    nal_none = np.zeros(s.stream.size, dtype=np.bool)
+    sub_none = s.subgraph(nal_none)
+    assert issubgraph(sub, s)
+    assert np.size(sub_none.stream) == 0
+    assert np.size(sub_none.source) == 0
+    assert np.size(sub_none.target) == 0
+
+    ############
+    # Wide DEM #
+    ############
+
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+
+    d = s.downstream_distance()
+    nal = d > 10
+
+    sub = s.subgraph(nal)
+
+    # The subgraph should have no more vertices than are true in the
+    # node attribute list.
+    assert np.size(sub.stream) <= np.count_nonzero(nal)
+
+    # The subgraph should have no more edges than the original network
+    assert np.size(sub.source) <= np.size(s.source)
+
+    # The nodes of the subgraph should be a subset of the nodes of the
+    # original graph
+    assert set(sub.stream) <= set(s.stream)
+
+    # The edges of the subgraph should be a subset of the edges of the
+    # original graph. This is what issubgraph tests.
+    assert issubgraph(sub, s)
+
+    # Subgraph should be idempotent
+    nal_all = np.ones(s.stream.size,dtype=np.bool)
+    sub_all = s.subgraph(nal_all)
+    assert issubgraph(sub, s)
+    assert np.array_equal(sub_all.stream, s.stream)
+    assert np.array_equal(sub_all.source, s.source)
+    assert np.array_equal(sub_all.target, s.target)
+
+    # Subgraph of an empty subset should be empty
+    nal_none = np.zeros(s.stream.size, dtype=np.bool)
+    sub_none = s.subgraph(nal_none)
+    assert issubgraph(sub, s)
+    assert np.size(sub_none.stream) == 0
+    assert np.size(sub_none.source) == 0
+    assert np.size(sub_none.target) == 0
+
 def test_stream_channelheads(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
     s = topo.StreamObject(fd)
@@ -135,7 +222,7 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
-
+    
     channel_heads = s.streampoi("channelheads")
 
     s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])

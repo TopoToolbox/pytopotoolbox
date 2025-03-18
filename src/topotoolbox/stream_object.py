@@ -686,6 +686,42 @@ class StreamObject():
 
         return result
 
+    def subgraph(self, nal):
+        """Extract a subset of the stream network
+
+        Parameters
+        ----------
+        nal: GridObject or np.ndarray
+            A logical node attribute list indicating the desired
+            nodes of the new stream network
+
+        Returns
+        -------
+        StreamObject
+            A StreamObject representing the desired subset of the
+            stream network.
+        """
+
+        nal = self.ezgetnal(nal)
+        nal = nal > 0
+        result = copy.copy(self)
+
+        result.stream = self.stream[nal]
+
+        new_indices = np.cumsum(nal) - 1
+
+        valid_edges = nal[self.source] & nal[self.target]
+
+        result.source = self.source[valid_edges]
+        result.target = self.target[valid_edges]
+
+        result.source = new_indices[result.source]
+        result.target = new_indices[result.target]
+
+        # TODO(wkearn): clean(result)
+        # TODO(wkearn): return indices into the original node attribute list
+        return result
+
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
