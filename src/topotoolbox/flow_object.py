@@ -17,7 +17,7 @@ class FlowObject():
 
     def __init__(self, grid: GridObject,
                  bc: np.ndarray | GridObject | None = None,
-                 hybrid : bool = True):
+                 hybrid: bool = True):
         """The constructor for the FlowObject. Takes a GridObject as input,
         computes flow direction information and saves them as an FlowObject.
 
@@ -40,6 +40,11 @@ class FlowObject():
         -----
         Large intermediate arrays are created during the initialization
         process, which could lead to issues when using very large DEMs.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> flow = topotoolbox.FlowObject(dem)
         """
         dims = grid.shape
         dem = grid.z
@@ -93,7 +98,8 @@ class FlowObject():
 
         source = np.ravel(conncomps)  # source: dtype=int64
         target = np.ravel(back)       # target: dtype=int64
-        edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims)
+        edge_count = _grid.flow_routing_d8_edgelist(
+            source, target, node, direction, dims)
 
         self.path = grid.path
         self.name = grid.name
@@ -138,6 +144,13 @@ class FlowObject():
         ValueError
             If the shape of the `weights` array does not match the shape of the
             flow network grid.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> acc = fd.flow_accumulation()
+        >>> acc.plot(cmap='Blues',norm="log")
         """
         acc = np.zeros(self.shape, dtype=np.float32, order='F')
 
@@ -177,6 +190,13 @@ class FlowObject():
         GridObject
             An integer-valued GridObject with a unique label for each drainage
             basin.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> basins = fd.drainagebasins()
+        >>> basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
         """
         basins = np.zeros(self.shape, dtype=np.int64, order='F')
 
