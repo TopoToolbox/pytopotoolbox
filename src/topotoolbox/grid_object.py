@@ -217,6 +217,12 @@ class GridObject():
         Flats are identified as 1s, sills as 2s, and presills as 5s
         (since they are also flats) in the output grid.
         Only relevant when using raw=True.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> flats, sills = dem.identifyflats()
+        >>> plt.imshow(flats, cmap='terrain')
         """
 
         # Since having lists as default arguments can lead to problems, output
@@ -279,6 +285,12 @@ class GridObject():
         If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
     TypeError
         If `threshold` is not a float, int, GridObject, or np.ndarray.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
+    >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
+    >>> plt.imshow(excess, cmap='terrain')
         """
 
         if method not in ['fsm2d', 'fmm2d']:
@@ -351,6 +363,12 @@ class GridObject():
         ValueError
             If the kernelsize does not match the requirements of this function
             or the selected method is not implemented in the function.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem.filter(method='scharr', kernelsize=3)
+        >>> plt.imshow(dem, cmap='terrain')
         """
 
         valid_methods = ['mean', 'average', 'median',
@@ -422,6 +440,12 @@ class GridObject():
     -------
     GridObject
         A new GridObject with the calculated gradient.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
+    >>> grad = = dem.gradient8()
+    >>> plt.imshow(grad, cmap='terrain')
         """
 
         if multiprocessing:
@@ -480,7 +504,7 @@ class GridObject():
         --------
         >>> dem = topotoolbox.load_dem('tibet')
         >>> curv = dem.curvature()
-        >>> curv.show()
+        >>> plt.imshow(curv, cmap='terrain')
         """
 
         if meanfilt:
@@ -569,6 +593,12 @@ class GridObject():
         ------
         ValueError
             If size, structure and footprint are all None.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dilate = dem.dilate(size=10)
+        >>> plt.imshow(dilate, cmap='terrain')
         """
 
         if size is None and structure is None and footprint is None:
@@ -623,7 +653,14 @@ class GridObject():
         Raises
         ------
         ValueError
-            If size, structure and footprint are all None."""
+            If size, structure and footprint are all None.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> eroded = dem.erode()
+        >>> plt.imshow(eroded, cmap='terrain')
+        """
 
         if size is None and structure is None and footprint is None:
             err = ("Erode requires a structuring element to be specified."
@@ -675,6 +712,12 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the computed evansslope data.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> slope = dem.evansslope()
+        >>> plt.imshow(slope, cmap='terrain')
         """
         dem = self.z.copy()
         # NaN replacement not optional since convolve can't handle NaNs
@@ -724,6 +767,12 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the computed aspect data.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> aspect = dem.aspect()
+        >>> plt.imshow(aspect, cmap='terrain')
         """
 
         grad_y, grad_x = np.gradient(self.z, edge_order=2)
@@ -766,6 +815,14 @@ class GridObject():
             A Tuple containing a ndarray storing the computed prominence and
             a tuple of ndarray. Each array in the inner tuple has the same
             shape as the indices array (as returned by np.unravel_index).
+
+        Examples
+        --------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> prom, idx = dem.prominence(tolerance=90)
+        >>> plt.subplot()
+        >>> plt.imshow(dem, cmap='terrain')
+        >>> plt.plot(idx[0], idx[1], 'ro')
         """
         dem = np.nan_to_num(self.z)
         p = np.full_like(dem, np.min(dem), order='F')
@@ -788,7 +845,8 @@ class GridObject():
         prominence_array = np.array(prominence)
         indices_array = np.array(indices)
         indices_array = indices_array[:, [1, 0]]  # swap columns 0 and 1
-        indices_array = indices_array.T  # transpose to get (x, y) instead of (y, x)
+        # transpose to get (x, y) instead of (y, x)
+        indices_array = indices_array.T
         return prominence_array, indices_array
 
     def hillshade(self,
@@ -813,6 +871,13 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the resulting hillshade data
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> hillshade = dem.hillshade()
+        >>> plt.imshow(hillshade, cmap='gray')
+        >>> plt.imshow(dem, cmap='terrain', alpha=0.2)
         """
 
         h = np.zeros_like(self.z)
@@ -849,7 +914,7 @@ class GridObject():
         dx, dy = ~gt * (sx, sy)
 
         # And retrieve the azimuth angle.
-        azimuth_radians = np.arctan2(dy,dx)
+        azimuth_radians = np.arctan2(dy, dx)
 
         # NOTE(wkearn): This angle is then immediately used within
         # hillshade to compute vector components again. It would be
@@ -992,6 +1057,7 @@ class GridObject():
         matplotlib.image.AxesImage
             The image constructed by imshow
         """
+        # TODO: Add Example to Docstring
         if ax is None:
             ax = plt.gca()
         return ax.imshow(self.z, **kwargs)
@@ -999,8 +1065,8 @@ class GridObject():
     def plot_hs(self, ax=None,
                 elev=None,
                 azimuth=315, altitude=60, exaggerate=1,
-                filter_method=None, filter_size = 3,
-                cmap='terrain', norm = None,
+                filter_method=None, filter_size=3,
+                cmap='terrain', norm=None,
                 blend_mode='soft',
                 **kwargs):
         """Plot a shaded relief map of the GridObject
@@ -1063,8 +1129,8 @@ class GridObject():
         ValueError
             The `filter_method` or `filter_size` arguments are not
             accepted by `GridObject.filter`.
-
         """
+        # TODO: Add Example to Docstring
         if ax is None:
             ax = plt.gca()
 
@@ -1080,16 +1146,17 @@ class GridObject():
             raise TypeError(err) from None
 
         if filter_method is not None:
-            shade = shade.filter(method=filter_method,kernelsize=filter_size)
+            shade = shade.filter(method=filter_method, kernelsize=filter_size)
 
         h = shade.hillshade(azimuth, altitude, exaggerate)
         cmap = plt.get_cmap(cmap)
 
         if norm is None:
-            norm = colors.Normalize(vmin=np.nanmin(self.z),vmax=np.nanmax(self.z))
+            norm = colors.Normalize(vmin=np.nanmin(
+                self.z), vmax=np.nanmax(self.z))
 
         base = cmap(norm(self.z))
-        top = np.expand_dims(np.clip(h,0,1),2)
+        top = np.expand_dims(np.clip(h, 0, 1), 2)
         if blend_mode == "multiply":
             rgb = base * top
         elif blend_mode == "overlay":
@@ -1099,7 +1166,7 @@ class GridObject():
         else:
             raise ValueError("blend_mode not supported") from None
 
-        return ax.imshow(np.clip(rgb,0,1), **kwargs)
+        return ax.imshow(np.clip(rgb, 0, 1), **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
@@ -1123,8 +1190,8 @@ class GridObject():
         -------
         GridObject
           A grid identical to the input, but with randomly reassigned labels.
-
         """
+        # TODO: Add Example to Docstring
         result = copy.copy(self)
 
         labels = self.z
