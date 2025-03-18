@@ -640,6 +640,35 @@ class StreamObject():
         result.target = cumsum_index[result.target]
 
         return result
+    
+    def subgraph(self, nal):
+        """Extract a subgraph from the stream network
+
+        Parameters
+        ----------
+        nal : np.ndarray
+            A boolean array of the same length as the stream network
+            indicating which nodes to keep in the subgraph.
+
+        Returns
+        -------
+        StreamObject
+            A new StreamObject containing only the nodes in the subgraph
+        """
+        result = copy.copy(self)
+        result.stream = self.stream[nal]
+        new_indices = np.cumsum(nal) - 1
+
+        valid_edges = nal[self.source] & nal[self.target]
+
+        result.source = self.source[valid_edges]
+        result.target = self.target[valid_edges]
+
+        result.source = new_indices[result.source]
+        result.target = new_indices[result.target]
+
+        return result 
+       
 
 
     # 'Magic' functions:
