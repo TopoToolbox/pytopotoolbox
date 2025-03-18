@@ -222,7 +222,7 @@ class GridObject():
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> flats, sills = dem.identifyflats()
-        >>> plt.imshow(flats, cmap='terrain')
+        >>> flats.plot(cmap='terrain')
         """
 
         # Since having lists as default arguments can lead to problems, output
@@ -290,7 +290,7 @@ class GridObject():
     -------
     >>> dem = topotoolbox.load_dem('perfectworld')
     >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
-    >>> plt.imshow(excess, cmap='terrain')
+    >>> excess.plot(cmap='terrain')
         """
 
         if method not in ['fsm2d', 'fmm2d']:
@@ -367,8 +367,8 @@ class GridObject():
         Example
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> dem.filter(method='scharr', kernelsize=3)
-        >>> plt.imshow(dem, cmap='terrain')
+        >>> sharr = dem.filter(method='scharr', kernelsize=3)
+        >>> plt.schatt.plot(cmap='terrain')
         """
 
         valid_methods = ['mean', 'average', 'median',
@@ -445,7 +445,7 @@ class GridObject():
     -------
     >>> dem = topotoolbox.load_dem('perfectworld')
     >>> grad = = dem.gradient8()
-    >>> plt.imshow(grad, cmap='terrain')
+    >>> grad.plot(cmap='terrain')
         """
 
         if multiprocessing:
@@ -504,7 +504,7 @@ class GridObject():
         --------
         >>> dem = topotoolbox.load_dem('tibet')
         >>> curv = dem.curvature()
-        >>> plt.imshow(curv, cmap='terrain')
+        >>> curv.plot(cmap='terrain')
         """
 
         if meanfilt:
@@ -598,7 +598,7 @@ class GridObject():
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> dilate = dem.dilate(size=10)
-        >>> plt.imshow(dilate, cmap='terrain')
+        >>> dilate.plot(cmap='terrain')
         """
 
         if size is None and structure is None and footprint is None:
@@ -659,7 +659,7 @@ class GridObject():
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> eroded = dem.erode()
-        >>> plt.imshow(eroded, cmap='terrain')
+        >>> eroded.plot(cmap='terrain')
         """
 
         if size is None and structure is None and footprint is None:
@@ -717,7 +717,7 @@ class GridObject():
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> slope = dem.evansslope()
-        >>> plt.imshow(slope, cmap='terrain')
+        >>> slope.plot(cmap='terrain')
         """
         dem = self.z.copy()
         # NaN replacement not optional since convolve can't handle NaNs
@@ -772,7 +772,7 @@ class GridObject():
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> aspect = dem.aspect()
-        >>> plt.imshow(aspect, cmap='terrain')
+        >>> aspect.plot(cmap='terrain')
         """
 
         grad_y, grad_x = np.gradient(self.z, edge_order=2)
@@ -821,7 +821,7 @@ class GridObject():
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> prom, idx = dem.prominence(tolerance=90)
         >>> plt.subplot()
-        >>> plt.imshow(dem, cmap='terrain')
+        >>> dem.plot(cmap='terrain')
         >>> plt.plot(idx[0], idx[1], 'ro')
         """
         dem = np.nan_to_num(self.z)
@@ -876,8 +876,8 @@ class GridObject():
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> hillshade = dem.hillshade()
-        >>> plt.imshow(hillshade, cmap='gray')
-        >>> plt.imshow(dem, cmap='terrain', alpha=0.2)
+        >>> hillshade.plot(cmap='gray')
+        >>> dem.plot(cmap='terrain', alpha=0.2)
         """
 
         h = np.zeros_like(self.z)
