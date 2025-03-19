@@ -275,6 +275,38 @@ class StreamObject():
 
         return nal
 
+    def streampoi(self, point_type: str):
+        """Extract points of interest from the stream network
+
+        Currently supported points of interest are 'channelheads' or 'outlets'
+
+        Parameters
+        ----------
+        point_type: 'channelheads' or 'outlets'
+            The type of points to select from the stream network
+
+        Returns
+        -------
+        np.ndarray
+            A logical node attribute list indicating the locations of points.
+
+        Raises
+        ------
+        ValueError
+            If an unknown point type is requested.
+        """
+        indegree = np.zeros(self.stream.size, dtype=np.uint8)
+        outdegree = np.zeros(self.stream.size, dtype=np.uint8)
+        _stream.edgelist_degree(indegree, outdegree, self.source, self.target)
+        if point_type == 'channelheads':
+            output = (outdegree > 0) & (indegree == 0)
+        elif point_type == 'outlets':
+            output = (outdegree == 0) & (indegree > 0)
+        else:
+            raise ValueError(f"{point_type} is not currently supported")
+
+        return output
+
     def xy(self, data=None):
         """Compute the x and y coordinates of continuous stream segments
 
