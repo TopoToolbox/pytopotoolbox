@@ -25,9 +25,10 @@ class StreamObject():
 
     def __init__(self, flow: FlowObject, units: str = 'pixels',
                  threshold: int | float | GridObject | np.ndarray = 0,
-                 stream_pixels: GridObject | np.ndarray | None = None) -> None:
-        """
-    Initializes the StreamObject by processing flow accumulation.
+                 stream_pixels: GridObject | np.ndarray | None = None,
+                 channelheads: np.ndarray | None = None
+                 ) -> None:
+        """Initializes the StreamObject by processing flow accumulation.
 
     Parameters
     ----------
@@ -48,6 +49,11 @@ class StreamObject():
         A GridObject or np.ndarray made up of zeros and ones to denote where
         the stream is located. Using this will overwrite any use of the
         threshold argument.
+    channelheads: np.ndarray, optional        
+        An np.ndarray with the linear indices in column-major ('F')
+        order indicating the locations of channel heads. All streams
+        downstream of the indicated channel heads will be returned in
+        the StreamObject.
 
     Raises
     ------
@@ -55,6 +61,7 @@ class StreamObject():
         If the `units` parameter is not 'pixels', 'mapunits', 'm2', or 'km2'.
     ValueError
         If the shape of the threshold does not match the flow object shape.
+
         """
         if not isinstance(flow, FlowObject):
             err = f"{flow} is not a topotoolbox.FlowObject."
@@ -110,6 +117,12 @@ class StreamObject():
                 warn = ("Since stream_pixels have been provided, the "
                         "input for threshold will be ignored.")
                 warnings.warn(warn)
+        elif channelheads is not None:
+            ch = np.zeros(flow.shape,dtype=np.uint32,order='F')
+            ch[np.unravel_index(channelheads, flow.shape, order='F')] = 1
+            edges = np.ones(flow.source.size, dtype=np.uint32)
+            _stream.traverse_down_u32_or_and(ch, edges, flow.source, flow.target)
+            w = (ch > 0).ravel(order='F')
 
         # Create the appropriate threshold matrix based on the threshold input.
         else:
