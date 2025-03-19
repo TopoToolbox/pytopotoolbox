@@ -121,3 +121,32 @@ def test_stream_subgraphs(tall_dem, wide_dem):
 
     assert not issubgraph(wide_trunk, tall_stream)
     assert not issubgraph(tall_trunk, wide_stream)
+
+def test_stream_channelheads(tall_dem, wide_dem):
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    indegree = np.zeros(s.stream.size, dtype=np.uint8)
+    outdegree = np.zeros(s.stream.size, dtype=np.uint8)
+    topo._stream.edgelist_degree(indegree, outdegree, s.source, s.target)
+    channel_heads = (outdegree > 0) & (indegree == 0)
+
+    s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
+
+    assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
+    assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+
+    indegree = np.zeros(s.stream.size, dtype=np.uint8)
+    outdegree = np.zeros(s.stream.size, dtype=np.uint8)
+    topo._stream.edgelist_degree(indegree, outdegree, s.source, s.target)
+    channel_heads = (outdegree > 0) & (indegree == 0)
+
+    s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
+
+    assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
+    assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
+    
