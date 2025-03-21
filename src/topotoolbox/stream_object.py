@@ -278,11 +278,12 @@ class StreamObject():
     def streampoi(self, point_type: str):
         """Extract points of interest from the stream network
 
-        Currently supported points of interest are 'channelheads' or 'outlets'
+        Currently supported points of interest are 'channelheads',
+        'outlets' and 'confluences'
 
         Parameters
         ----------
-        point_type: 'channelheads' or 'outlets'
+        point_type: 'channelheads' or 'outlets' or 'confluences'
             The type of points to select from the stream network
 
         Returns
@@ -302,6 +303,8 @@ class StreamObject():
             output = (outdegree > 0) & (indegree == 0)
         elif point_type == 'outlets':
             output = (outdegree == 0) & (indegree > 0)
+        elif point_type == 'confluences':
+            output = indegree > 1
         else:
             raise ValueError(f"{point_type} is not currently supported")
 
