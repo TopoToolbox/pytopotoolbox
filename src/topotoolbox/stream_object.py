@@ -319,11 +319,7 @@ class StreamObject():
            A tuple of two node attribute lists representing the
            desired x and y values for each pixel in the stream
            network. If this argument is not supplied, the returned x
-           and y values are the indices of the pixel in the DEM in the
-           second and first dimension respectively. This reversal of
-           dimensions corresponds to the orientation used by pyplot's
-           `imshow`, and allows plotting the stream network over a
-           corresponding GridObject.
+           and y values are the geographic coordinates of the node.
 
         Returns
         -------
@@ -333,7 +329,8 @@ class StreamObject():
         """
         if data is None:
             # pylint: disable=unbalanced-tuple-unpacking
-            ys, xs = np.unravel_index(self.stream, self.shape, order='F')
+            j, i = np.unravel_index(self.stream, self.shape, order='F')
+            xs, ys = self.transform * np.vstack((i,j))
         else:
             xs, ys = data
 

@@ -81,6 +81,17 @@ class GridObject():
         raise TypeError(
             "Grid is not stored as a contiguous row- or column-major array")
 
+    @property
+    def extent(self):
+        """The bounding box of the grid in the order needed for plotting
+
+        Returns
+        -------
+        tuple
+            The bounding box in the order (left, right, bottom, top)
+        """
+        return (self.bounds.left, self.bounds.right, self.bounds.bottom, self.bounds.top)
+
     def reproject(self,
                   crs: 'CRS',
                   resolution: 'float | None' = None,
@@ -974,7 +985,7 @@ class GridObject():
         print(f"maximum z-value: {np.nanmax(self.z)}")
         print(f"minimum z-value: {np.nanmin(self.z)}")
 
-    def plot(self, ax=None, **kwargs):
+    def plot(self, ax=None, extent=None, **kwargs):
         """Plot the GridObject
 
         Parameters
@@ -982,6 +993,11 @@ class GridObject():
         ax: matplotlib.axes.Axes, optional
             The axes in which to plot the GridObject. If no axes
             are given, the current axes are used.
+
+        extent: floats (left, right, bottom, top), optional        
+            The bounding box used to set the axis limits. If no extent
+            is supplied, defaults to self.extent, which plots the
+            GridObject in geographic coordinates.
 
         **kwargs
             Additional keyword arguments are forwarded to
@@ -991,10 +1007,15 @@ class GridObject():
         -------
         matplotlib.image.AxesImage
             The image constructed by imshow
+
         """
         if ax is None:
             ax = plt.gca()
-        return ax.imshow(self.z, **kwargs)
+
+        if extent is None:
+            extent = self.extent
+
+        return ax.imshow(self.z, extent=extent, **kwargs)
 
     def plot_hs(self, ax=None,
                 elev=None,
@@ -1002,6 +1023,7 @@ class GridObject():
                 filter_method=None, filter_size = 3,
                 cmap='terrain', norm = None,
                 blend_mode='soft',
+                extent=None,
                 **kwargs):
         """Plot a shaded relief map of the GridObject
 
@@ -1040,6 +1062,9 @@ class GridObject():
         blend_mode: {'multiply', 'overlay', 'soft'}, optional
             The algorithm used to combine the shaded elevation with
             the data. Defaults to 'soft'.
+       extent: floats (left, right, bottom, top), optional        
+            The bounding box used to set the axis limits. If no extent
+            is supplied, defaults to self.extent
         **kwargs
             Additional keyword arguments are forwarded to
             matplotlib.axes.Axes.imshow
@@ -1099,7 +1124,10 @@ class GridObject():
         else:
             raise ValueError("blend_mode not supported") from None
 
-        return ax.imshow(np.clip(rgb,0,1), **kwargs)
+        if extent is None:
+            extent = self.extent
+
+        return ax.imshow(np.clip(rgb,0,1), extent=extent, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
