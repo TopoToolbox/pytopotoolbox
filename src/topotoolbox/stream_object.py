@@ -601,18 +601,7 @@ class StreamObject():
             trunks[self.source[r]] = trunks[self.target[r]
                                             ] and max_neighbor[self.source[r]]
 
-        result = copy.copy(self)
-        result.stream = self.stream[trunks]
-        cumsum_index = np.cumsum(trunks) - 1
-
-        trunks = trunks[self.source] & trunks[self.target]
-
-        result.source = self.source[trunks]
-        result.target = self.target[trunks]
-
-        result.source = cumsum_index[result.source]
-        result.target = cumsum_index[result.target]
-
+        result = self.subgraph(trunks)
         return result
 
     def klargestconncomps(self, k = 1) -> 'StreamObject':
@@ -668,22 +657,7 @@ class StreamObject():
         # Convert to boolean array so we can index with it
         conncomps_mask = conncomps > 0
 
-        # NOTE(wkearn): this (copied from our `trunk` implementation)
-        # is equivalent to `subgraph`, a STREAMobj method for
-        # extracting a new StreamObject based on a logical node
-        # attribute list.
-        result = copy.copy(self)
-        result.stream = self.stream[conncomps_mask]
-        cumsum_index = np.cumsum(conncomps_mask) - 1
-
-        conncomps_mask = conncomps_mask[self.source] & conncomps_mask[self.target]
-
-        result.source = self.source[conncomps_mask]
-        result.target = self.target[conncomps_mask]
-
-        result.source = cumsum_index[result.source]
-        result.target = cumsum_index[result.target]
-
+        result = self.subgraph(conncomps_mask)
         return result
 
     def subgraph(self, nal):
