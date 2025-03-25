@@ -250,6 +250,22 @@ class FlowObject():
 
         return np.nonzero(np.ravel(ch,order='F'))[0]
 
+    def distance(self):
+        """Compute the distance between each node in the flow network
+
+        Returns
+        -------
+        np.ndarray
+            An array (edge attribute list) with the interpixel
+            distance. This will be either cellsize or sqrt(2)*cellsize
+        """
+        d = np.abs(self.source - self.target)
+        dist = self.cellsize * np.where(
+            (d == self.strides[0]) | (d == self.strides[1]),
+            np.float32(1.0),
+            np.sqrt(np.float32(2.0)))
+        return dist
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
