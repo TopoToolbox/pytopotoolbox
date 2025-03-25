@@ -1,3 +1,4 @@
+import copy
 import pytest
 
 import numpy as np
@@ -66,3 +67,22 @@ def test_flowpathextract(wide_dem):
     idxs = fd.flowpathextract(s.stream[ch][0])
     assert np.array_equal(s2.stream, idxs)
 
+
+def test_imposemin(wide_dem):
+    original_dem = wide_dem.z.copy()
+    fd = topo.FlowObject(wide_dem)
+
+    for minimum_slope in [0.0,0.001,0.01,0.1]:
+        min_dem = topo.imposemin(fd, wide_dem, minimum_slope)
+
+        # The carved dem should not be above the original
+        assert np.all(min_dem.z <= wide_dem)
+
+        # The gradient along the flow network should be greater than or
+        # equal to the defined slope within some numerical error
+        g = (min_dem.z[np.unravel_index(fd.source,fd.shape,order='F')] -
+             min_dem.z[np.unravel_index(fd.target,fd.shape,order='F')])/fd.distance()
+        assert np.all(g >= minimum_slope - 1e-6)
+
+        # imposemin should not modify the original array
+        assert np.array_equal(original_dem, wide_dem.z)

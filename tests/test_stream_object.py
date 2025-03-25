@@ -273,3 +273,42 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
+def test_stream_imposemin(tall_dem, wide_dem):
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    original_z = s.ezgetnal(tall_dem)
+
+    for minimum_slope in [0.0,0.001,0.01,0.1]:
+        minz = topo.imposemin(s, tall_dem, minimum_slope)
+
+        # imposemin should not modify the original array
+        assert np.array_equal(original_z, s.ezgetnal(tall_dem))
+
+        # The carved dem should not be above the original
+        assert np.all(minz <= s.ezgetnal(tall_dem))
+
+        # The gradient along the flow network should be greater than or
+        # equal to the defined slope within some numerical error
+        g = (minz[s.source] - minz[s.target])/s.distance()
+        assert np.all(g >= minimum_slope - 1e-6)
+
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+
+    original_z = s.ezgetnal(wide_dem)
+
+    for minimum_slope in [0.0,0.001,0.01,0.1]:
+        minz = topo.imposemin(s, wide_dem, minimum_slope)
+
+        # imposemin should not modify the original array
+        assert np.array_equal(original_z, s.ezgetnal(wide_dem))
+
+        # The carved dem should not be above the original
+        assert np.all(minz <= s.ezgetnal(wide_dem))
+
+        # The gradient along the flow network should be greater than or
+        # equal to the defined slope within some numerical error
+        g = (minz[s.source] - minz[s.target])/s.distance()
+        assert np.all(g >= minimum_slope - 1e-6)

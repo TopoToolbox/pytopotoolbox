@@ -5,3 +5,4 @@ from .flow_object import FlowObject
 from .stream_object import StreamObject
 from .graphflood import *
 from .utils import *
+from .stream_functions import *
