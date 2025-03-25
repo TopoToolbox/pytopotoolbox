@@ -1,15 +1,12 @@
 """Functions for working with flow networks
 
-These functions apply to both StreamObjects and FlowObjects
+These functions often apply to both StreamObjects and FlowObjects.
 """
 import copy
 
 # pylint: disable=no-name-in-module
 from . import _stream  # type: ignore
-
-from .stream_object import StreamObject
-from .flow_object import FlowObject
-from .flow_object import GridObject
+from . import StreamObject, FlowObject, GridObject
 
 def imposemin(s, dem, minimum_slope=0.0):
     """Minima imposition along a drainage network
