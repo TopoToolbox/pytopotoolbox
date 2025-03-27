@@ -1184,15 +1184,12 @@ class GridObject():
 
         rows, columns = data.shape
 
-        if data.flags.f_contiguous:
-            columns, rows = data.shape
-
         if self.columns != columns or self.rows != rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
         result = copy.deepcopy(self)
 
-        result.z = np.array(data, order='F', copy=True)
+        result.z = np.array(data, copy=True)
 
         return result
 
