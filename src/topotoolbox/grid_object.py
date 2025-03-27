@@ -1182,13 +1182,12 @@ class GridObject():
 
         """
 
-        if data.flags.c_contiguous:
-            rows, columns = data.shape
+        rows, columns = data.shape
 
         if data.flags.f_contiguous:
             columns, rows = data.shape
 
-        if self.columns != data.shape[1] or self.rows != data.shape[0]:
+        if self.columns != columns or self.rows != rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
         result = copy.deepcopy(self)
@@ -1209,7 +1208,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        dem.z = (self.z == other.z)
+        dem.z = self.z == other.z
 
         return dem
 
@@ -1222,8 +1221,8 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        dem.z = (self.z != other.z)
-        
+        dem.z = self.z != other.z
+
         return dem
 
     def __gt__(self, other):
@@ -1235,7 +1234,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        dem.z = (self.z > other.z)
+        dem.z = self.z > other.z
 
         return dem
 
@@ -1248,7 +1247,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        dem.z = (self.z < other.z)
+        dem.z = self.z < other.z
 
         return dem
 
@@ -1261,7 +1260,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        dem.z = (self.z >= other.z)
+        dem.z = self.z >= other.z
 
         return dem
 
@@ -1274,7 +1273,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        dem.z = (self.z <= other.z)
+        dem.z = self.z <= other.z
 
         return dem
 
@@ -1329,7 +1328,8 @@ class GridObject():
 
         # Check for invalid values
         if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
-            raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
+            error = "Invalid cell value. 'and' can only compare True (1) and False (0) values."
+            raise ValueError(error)
 
         # Perform element-wise bitwise AND operation
         dem.z = np.logical_and(self.z, other.z)
@@ -1347,7 +1347,8 @@ class GridObject():
 
         # Check for invalid values
         if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
-            raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
+            error = "Invalid cell value. 'and' can only compare True (1) and False (0) values."
+            raise ValueError(error)
 
         # Perform element-wise bitwise OR operation
         dem.z = np.logical_or(self.z, other.z)
@@ -1365,7 +1366,8 @@ class GridObject():
 
         # Check for invalid values
         if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
-            raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
+            error = "Invalid cell value. 'and' can only compare True (1) and False (0) values."
+            raise ValueError(error)
 
         # Perform element-wise bitwise XOR operation
         dem.z = np.logical_xor(self.z, other.z)
