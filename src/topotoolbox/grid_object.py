@@ -1162,6 +1162,41 @@ class GridObject():
 
         return result
 
+    def duplicate_with_new_data(self, data : np.ndarray) -> 'GridObject':
+        """Duplicate a GridObject with different data
+
+        This function is helpful when one wants to create a GridObject from
+        a numpy array with the exact same properties (e.g. crs, ...) but
+        different data
+
+        Parameters
+        ----------
+        data: np.ndarray
+
+          The new data (needs to be in the same shape than the current GridObject)
+
+        Returns
+        -------
+        GridObject
+          A grid identical to the input, but with new data.
+
+        """
+
+        if data.flags.c_contiguous:
+            rows, columns = data.shape
+
+        if data.flags.f_contiguous:
+            columns, rows = data.shape
+
+        if self.columns != data.shape[1] or self.rows != data.shape[0]:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        result = copy.deepcopy(self)
+
+        result.z = np.array(data, order='F', copy=True)
+
+        return result
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
@@ -1174,10 +1209,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] == other.z[x][y]
+        dem.z = (self.z == other.z)
 
         return dem
 
@@ -1190,11 +1222,8 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] != other.z[x][y]
-
+        dem.z = (self.z != other.z)
+        
         return dem
 
     def __gt__(self, other):
@@ -1206,10 +1235,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] > other.z[x][y]
+        dem.z = (self.z > other.z)
 
         return dem
 
@@ -1222,10 +1248,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] < other.z[x][y]
+        dem.z = (self.z < other.z)
 
         return dem
 
@@ -1238,10 +1261,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] >= other.z[x][y]
+        dem.z = (self.z >= other.z)
 
         return dem
 
@@ -1254,10 +1274,7 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] <= other.z[x][y]
+        dem.z = (self.z <= other.z)
 
         return dem
 
@@ -1310,17 +1327,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
+        # Check for invalid values
+        if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
+            raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
 
-                if (self.z[x][y] not in [0, 1]
-                        or other.z[x][y] not in [0, 1]):
-
-                    raise ValueError(
-                        "Invalid cell value. 'and' can only compare " +
-                        "True (1) and False (0) values.")
-
-                dem.z[x][y] = (int(self.z[x][y]) & int(other.z[x][y]))
+        # Perform element-wise bitwise AND operation
+        dem.z = self.z & other.z
 
         return dem
 
@@ -1333,17 +1345,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
+        # Check for invalid values
+        if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
+            raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
 
-                if (self.z[x][y] not in [0, 1]
-                        or other.z[x][y] not in [0, 1]):
-
-                    raise ValueError(
-                        "Invalid cell value. 'or' can only compare True (1)" +
-                        " and False (0) values.")
-
-                dem.z[x][y] = (int(self.z[x][y]) | int(other.z[x][y]))
+        # Perform element-wise bitwise OR operation
+        dem.z = self.z | other.z
 
         return dem
 
@@ -1356,17 +1363,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
+        # Check for invalid values
+        if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
+            raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
 
-                if (self.z[x][y] not in [0, 1]
-                        or other.z[x][y] not in [0, 1]):
-
-                    raise ValueError(
-                        "Invalid cell value. 'xor' can only compare True (1)" +
-                        " and False (0) values.")
-
-                dem.z[x][y] = (int(self.z[x][y]) ^ int(other.z[x][y]))
+        # Perform element-wise bitwise XOR operation
+        dem.z = self.z ^ other.z
 
         return dem
 
@@ -1393,3 +1395,27 @@ class GridObject():
 
     def __str__(self):
         return str(self.z)
+
+
+    def __repr__(self):
+
+        # Determine the coordinate system
+        str_coord = ''
+        if self.crs is not None and self.crs.is_projected:
+            str_coord = f'coordinate system (Projected): {self.crs}'
+        elif self.crs is not None and self.crs.is_geographic:
+            str_coord = f'coordinate system (Geographic): {self.crs}'
+        else:
+            str_coord = f'coordinate system: {self.crs}'
+
+        return f"""name: {self.name}
+        path: {self.path}
+        rows: {self.rows}
+        cols: {self.columns}
+        cellsize: {self.cellsize}
+        bounds: {self.bounds}
+        transform: {self.transform}
+        {str_coord}
+        maximum z-value: {np.nanmax(self.z)}
+        minimum z-value: {np.nanmin(self.z)}
+        """
