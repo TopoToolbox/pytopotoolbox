@@ -1332,7 +1332,7 @@ class GridObject():
             raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
 
         # Perform element-wise bitwise AND operation
-        dem.z = self.z & other.z
+        dem.z = np.logical_and(self.z, other.z)
 
         return dem
 
@@ -1350,7 +1350,7 @@ class GridObject():
             raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
 
         # Perform element-wise bitwise OR operation
-        dem.z = self.z | other.z
+        dem.z = np.logical_or(self.z, other.z)
 
         return dem
 
@@ -1368,7 +1368,7 @@ class GridObject():
             raise ValueError("Invalid cell value. 'and' can only compare True (1) and False (0) values.")
 
         # Perform element-wise bitwise XOR operation
-        dem.z = self.z ^ other.z
+        dem.z = np.logical_xor(self.z, other.z)
 
         return dem
 
