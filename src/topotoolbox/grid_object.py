@@ -1,6 +1,6 @@
 """This module contains the GridObject class.
 """
-import copy
+import copy as cp
 from typing import Tuple, List
 
 import numpy as np
@@ -197,7 +197,7 @@ class GridObject():
             dem[nans] = np.nan
             output[nans] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = output
 
         return result
@@ -246,13 +246,13 @@ class GridObject():
 
         result = []
         if 'flats' in output:
-            flats = copy.copy(self)
+            flats = cp.copy(self)
             flats.z = np.zeros_like(flats.z, order='F')
             flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
             result.append(flats)
 
         if 'sills' in output:
-            sills = copy.copy(self)
+            sills = cp.copy(self)
             sills.z = np.zeros_like(sills.z, order='F')
             sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
             result.append(sills)
@@ -333,7 +333,7 @@ class GridObject():
                                          threshold_slopes, cellsize,
                                          self.shape)
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = excess
 
         return result
@@ -408,7 +408,7 @@ class GridObject():
         # Keep NaNs like they are in self.z
         filtered[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = filtered
         return result
 
@@ -444,7 +444,7 @@ class GridObject():
         output = np.zeros_like(dem)
 
         _grid.gradient8(output, dem, self.cellsize, use_mp, self.shape)
-        result = copy.copy(self)
+        result = cp.copy(self)
 
         if unit == 'radian':
             output = np.arctan(output)
@@ -547,7 +547,7 @@ class GridObject():
         # Keep NaNs like they are in dem
         curvature[np.isnan(dem)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = curvature
         return result
 
@@ -600,7 +600,7 @@ class GridObject():
         # Keep NaNs like they are in dem
         dilated[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = dilated
         return result
 
@@ -654,7 +654,7 @@ class GridObject():
         # Keep NaNs like they are in dem
         eroded[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = eroded
         return result
 
@@ -706,8 +706,8 @@ class GridObject():
         fy = convolve(dem, ky, mode=mode)
 
         if partial_derivatives:
-            result_kx = copy.copy(self)
-            result_ky = copy.copy(self)
+            result_kx = cp.copy(self)
+            result_ky = cp.copy(self)
             result_kx.z = kx
             result_ky.z = ky
             return result_kx, result_ky
@@ -715,7 +715,7 @@ class GridObject():
         slope = np.sqrt(fx**2 + fy**2)
         slope[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = slope
         return result
 
@@ -750,7 +750,7 @@ class GridObject():
             aspect = aspclass[aspedges]
             aspect = aspect.astype(np.int8)
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = aspect
         return result
 
@@ -877,7 +877,7 @@ class GridObject():
         _grid.hillshade(h, nx, ny, nz, exaggerate * self.z,
                         azimuth_radians, altitude_radians, self.cellsize, self.dims)
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = h
         return result
 
@@ -1153,7 +1153,7 @@ class GridObject():
           A grid identical to the input, but with randomly reassigned labels.
 
         """
-        result = copy.copy(self)
+        result = cp.copy(self)
 
         labels = self.z
         u, indices = np.unique(labels, return_inverse=True)
@@ -1166,7 +1166,7 @@ class GridObject():
     # ------------------------------------------------------------------------
 
     def __eq__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1182,7 +1182,7 @@ class GridObject():
         return dem
 
     def __ne__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1198,7 +1198,7 @@ class GridObject():
         return dem
 
     def __gt__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1214,7 +1214,7 @@ class GridObject():
         return dem
 
     def __lt__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1230,7 +1230,7 @@ class GridObject():
         return dem
 
     def __ge__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1246,7 +1246,7 @@ class GridObject():
         return dem
 
     def __le__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1262,7 +1262,7 @@ class GridObject():
         return dem
 
     def __add__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z + other.z
@@ -1272,7 +1272,7 @@ class GridObject():
         return dem
 
     def __sub__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z - other.z
@@ -1282,7 +1282,7 @@ class GridObject():
         return dem
 
     def __mul__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z * other.z
@@ -1292,7 +1292,7 @@ class GridObject():
         return dem
 
     def __div__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z / other.z
@@ -1302,7 +1302,7 @@ class GridObject():
         return dem
 
     def __and__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1325,7 +1325,7 @@ class GridObject():
         return dem
 
     def __or__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1348,7 +1348,7 @@ class GridObject():
         return dem
 
     def __xor__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1388,8 +1388,8 @@ class GridObject():
 
         self.z[index] = value
 
-    def __array__(self):
-        return self.z
+    def __array__(self, dtype=None, copy=None):
+        return np.array(self.z, dtype=dtype, copy=copy)
 
     def __str__(self):
         return str(self.z)
