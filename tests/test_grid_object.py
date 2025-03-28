@@ -144,7 +144,8 @@ def test_excesstopography_order():
     y = np.arange(0,256)
 
     dem_C = topo.GridObject()
-    dem_C.z = 64 * (opensimplex.noise2array(x,y) + 1)
+    dem_C.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
+    dem_C.cellsize = 13.0
 
     assert dem_C.shape[0] == 256
     assert dem_C.shape[1] == 128
@@ -155,6 +156,7 @@ def test_excesstopography_order():
 
     dem_F = topo.GridObject()
     dem_F.z = np.asfortranarray(dem_C.z)
+    dem_F.cellsize = 13.0
 
     assert dem_F.shape[0] == 256
     assert dem_F.shape[1] == 128
