@@ -1187,7 +1187,7 @@ class GridObject():
         if self.columns != columns or self.rows != rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        result = copy.deepcopy(self)
+        result = cp.deepcopy(self)
 
         result.z = np.array(data, copy=True)
 
