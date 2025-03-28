@@ -77,7 +77,7 @@ def test_fillsinks_order():
     y = np.arange(0,256)
 
     dem_C = topo.GridObject()
-    dem_C.z = 64 * (opensimplex.noise2array(x,y) + 1)
+    dem_C.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
 
     assert dem_C.shape[0] == 256
     assert dem_C.shape[1] == 128
