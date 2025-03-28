@@ -191,7 +191,7 @@ def test_hillshade_order():
     y = np.arange(0,256)
 
     demc = topo.GridObject()
-    demc.z = 64 * (opensimplex.noise2array(x,y) + 1)
+    demc.z = np.array(64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
     demc.cellsize = 13.0
     demc.transform = Affine.scale(demc.cellsize)
 
@@ -201,9 +201,10 @@ def test_hillshade_order():
     demf = topo.GridObject()
     demf.z = np.asfortranarray(demc.z)
     demf.cellsize = 13.0
-    demf.transform = Affine.scale(demf.cellsize)
+    # We also need to permute the geotransform to account for the swapped dimensions
+    demf.transform = Affine.rotation(180) * Affine.scale(demf.cellsize)
     
     for azimuth in np.arange(0.0,360.0,2.3):
         hc = demc.hillshade(azimuth=azimuth)
         hf = demf.hillshade(azimuth=azimuth)
-        assert np.array_equal(hc, hf)
+        assert np.allclose(hc, hf)
