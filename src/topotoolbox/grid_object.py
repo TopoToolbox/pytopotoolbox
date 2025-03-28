@@ -263,33 +263,33 @@ class GridObject():
             self, threshold: "float | int | np.ndarray | GridObject" = 0.2,
             method: str = 'fsm2d',) -> 'GridObject':
         """
-    Compute the two-dimensional excess topography using the specified method.
+        Compute the two-dimensional excess topography using the specified method.
 
-    Parameters
-    ----------
-    threshold : float, int, GridObject, or np.ndarray, optional
-        Threshold value or array to determine slope limits, by default 0.2.
-        If a float or int, the same threshold is applied to the entire DEM.
-        If a GridObject or np.ndarray, it must match the shape of the DEM.
-    method : str, optional
-        Method to compute the excess topography, by default 'fsm2d'.
-        Options are:
+        Parameters
+        ----------
+        threshold : float, int, GridObject, or np.ndarray, optional
+            Threshold value or array to determine slope limits, by default 0.2.
+            If a float or int, the same threshold is applied to the entire DEM.
+            If a GridObject or np.ndarray, it must match the shape of the DEM.
+        method : str, optional
+            Method to compute the excess topography, by default 'fsm2d'.
+            Options are:
 
-        - 'fsm2d': Uses the fast sweeping method.
-        - 'fmm2d': Uses the fast marching method.
+            - 'fsm2d': Uses the fast sweeping method.
+            - 'fmm2d': Uses the fast marching method.
 
-    Returns
-    -------
-    GridObject
-        A new GridObject with the computed excess topography.
+        Returns
+        -------
+        GridObject
+            A new GridObject with the computed excess topography.
 
-    Raises
-    ------
-    ValueError
-        If `method` is not one of ['fsm2d', 'fmm2d'].
-        If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
-    TypeError
-        If `threshold` is not a float, int, GridObject, or np.ndarray.
+        Raises
+        ------
+        ValueError
+            If `method` is not one of ['fsm2d', 'fmm2d'].
+            If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
+        TypeError
+            If `threshold` is not a float, int, GridObject, or np.ndarray.
         """
 
         if method not in ['fsm2d', 'fmm2d']:
@@ -297,15 +297,14 @@ class GridObject():
                    " 'fsm2d' and 'fmm2d'.")
             raise ValueError(err) from None
 
-        dem = self.z
+        dem = np.asarray(self, dtype=np.float32)
 
         if isinstance(threshold, (float, int)):
-            threshold_slopes = np.full(
-                dem.shape, threshold, order='F', dtype=np.float32)
+            threshold_slopes = np.full_like(dem, threshold)
         elif isinstance(threshold, GridObject):
-            threshold_slopes = threshold.z
+            threshold_slopes = np.asarray(threshold, dtype=np.float32)
         elif isinstance(threshold, np.ndarray):
-            threshold_slopes = threshold
+            threshold_slopes = np.asarray(threshold, dtype=np.float32)
         else:
             err = "Threshold must be a float, int, GridObject, or np.ndarray."
             raise TypeError(err) from None
@@ -313,17 +312,13 @@ class GridObject():
         if not dem.shape == threshold_slopes.shape:
             err = "Threshold array must have the same shape as the DEM."
             raise ValueError(err) from None
-        if not threshold_slopes.flags['F_CONTIGUOUS']:
-            threshold_slopes = np.asfortranarray(threshold)
-        if not np.issubdtype(threshold_slopes.dtype, np.float32):
-            threshold_slopes = threshold_slopes.astype(np.float32)
 
         excess = np.zeros_like(dem)
         cellsize = self.cellsize
 
         if method == 'fsm2d':
             _grid.excesstopography_fsm2d(
-                excess, dem, threshold_slopes, cellsize, self.shape)
+                excess, dem, threshold_slopes, cellsize, self.dims)
 
         elif method == 'fmm2d':
             heap = np.zeros_like(dem, dtype=np.int64)
@@ -331,7 +326,7 @@ class GridObject():
 
             _grid.excesstopography_fmm2d(excess, heap, back, dem,
                                          threshold_slopes, cellsize,
-                                         self.shape)
+                                         self.dims)
 
         result = cp.copy(self)
         result.z = excess
