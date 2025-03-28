@@ -81,7 +81,7 @@ To release a new version of pytopotoolbox:
 Pre-Commit Hooks
 ----------------
 
-We use `pre-commit <https://pre-commit.com/>`_ to run linters and
+We suggest using `pre-commit <https://pre-commit.com/>`_ to run linters and
 formatting checks before committing changes. This way, there will be no
 suprises when the CI pipeline runs the same checks. If you installed the
 requirements.txt pre-commit should already be installed. If not, run:
@@ -108,4 +108,12 @@ If you want to run the pre-commit checks manually, run:
 
    pre-commit run --all-files
 
-You don't need to install pre-commit to run the checks manually.
+The pre-commit-config contains the following hooks:
+
+- Trims trailing whitespace at end of lines
+- Ensures files end with a newline and only one
+- Validates YAML files for syntax correctness
+- Prevents accidentally committing large files
+- Running pylint
+- Running mypy 
+- Running nbstripout to clean metadata from notebooks

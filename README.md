@@ -29,7 +29,7 @@ TopoToolbox is available in the [Python Package
 Index](https://pypi.org/project/topotoolbox/). With Python version 3.10
 or later and `pip` installed, you can run
 
-```
+```bash
 pip install --upgrade topotoolbox
 ```
 
