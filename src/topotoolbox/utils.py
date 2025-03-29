@@ -34,9 +34,9 @@ def write_tif(dem: GridObject, path: str) -> None:
     TypeError
         If `dem` is not an instance of GridObject.
 
-    Examples
-    --------
-    >>> dem = topotoolbox.load_dem('taiwan')
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
     >>> topotoolbox.write_tif(dem, 'dem.tif')
     """
 
@@ -57,6 +57,7 @@ def write_tif(dem: GridObject, path: str) -> None:
     ) as dataset:
         dataset.write(dem.z, 1)
 
+
 def read_tif(path: str) -> GridObject:
     """Generate a new GridObject from a .tif file.
 
@@ -69,6 +70,10 @@ def read_tif(path: str) -> GridObject:
     -------
     GridObject
         A new GridObject of the .tif file.
+
+    Example
+    -------
+    >>> dem = topotoolbox.read_tif('dem.tif')
     """
 
     grid = GridObject()
@@ -124,6 +129,11 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
     -------
     GridObject
         An instance of GridObject with randomly generated values.
+
+    Example
+    -------
+    >>> dem = topotoolbox.gen_random(seed=8192)
+    >>> dem.plot(cmap='terrain')
     """
     try:
         import opensimplex as simplex  # pylint: disable=C0415
@@ -169,6 +179,11 @@ def gen_random_bool(
     -------
     GridObject
         An instance of GridObject with randomly generated Boolean values.
+
+    Example
+    -------
+    >>> dem = topotoolbox.gen_random_bool()
+    >>> dem.plot(cmap='grey')
     """
     bool_array = np.empty((rows, columns), dtype=np.float32)
 
@@ -194,6 +209,10 @@ def get_dem_names() -> list[str]:
     -------
     list[str]
         A list of strings, where each string is the name of a DEM.
+
+    Example
+    -------
+    >>> print(topotoolbox.get_dem_names(dem))
     """
     with urlopen(DEM_NAMES) as dem_names:
         dem_names = dem_names.read().decode()
@@ -216,6 +235,11 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
     -------
     GridObject
         A GridObject generated from the downloaded DEM.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('taiwan')
+    >>> dem.plot(cmap='terrain')
     """
     if dem not in get_dem_names():
         err = ("Selected DEM has to be selected from the provided examples." +
@@ -246,6 +270,10 @@ def get_save_location() -> str:
     -------
     str
         Filepath to file saved in cache.
+
+    Example
+    -------
+    >>> print(topotoolbox.get_save_location())
     """
     system = sys.platform
 
@@ -281,6 +309,10 @@ def clear_cache(filename: str | None = None) -> None:
     filename : str, optional
         Add a filename if only one specific file is to be deleted.
         Defaults to None.
+
+    Example
+    -------
+    >>> topotoolbox.clear_cache()
     """
     path = get_save_location()
 
@@ -305,6 +337,10 @@ def get_cache_contents() -> (list[str] | None):
     list[str]
         List of all files in the TopoToolbox cache. If cache does
         not exist, None is returned.
+
+    Example
+    -------
+    >>> print(topotoolbox.get_cache_contents())
     """
     path = get_save_location()
 
