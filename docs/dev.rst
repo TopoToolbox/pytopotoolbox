@@ -65,8 +65,8 @@ have access to the Windows C/C++ toolchain.
 2. To ensure the compiler is working with 64-bit architecture, that is necessary for python, **open 'x64 Native Tools Command Prompt for VS 2022'** instead of the '*Developer Command Prompt*' that defaults to 32-bit architecture.
 3. In the opened command prompt, navigate to the pytopotoolbox directory and follow the instructions above for installing the development environment.
 
-Creating a new release
-----------------------
+Creating a new release of pytopotoolbox
+---------------------------------------
 
 To release a new version of pytopotoolbox:
 
@@ -115,5 +115,5 @@ The pre-commit-config contains the following hooks:
 - Validates YAML files for syntax correctness
 - Prevents accidentally committing large files
 - Running pylint
-- Running mypy 
+- Running mypy
 - Running nbstripout to clean metadata from notebooks
