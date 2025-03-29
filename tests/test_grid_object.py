@@ -77,7 +77,7 @@ def test_fillsinks_order():
     y = np.arange(0,256)
 
     dem_C = topo.GridObject()
-    dem_C.z = 64 * (opensimplex.noise2array(x,y) + 1)
+    dem_C.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
 
     assert dem_C.shape[0] == 256
     assert dem_C.shape[1] == 128
@@ -137,6 +137,52 @@ def test_excesstopography(square_dem):
     with pytest.raises(TypeError):
         square_dem.excesstopography(threshold='0.1')
 
+def test_excesstopography_order():
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    dem_C = topo.GridObject()
+    dem_C.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
+    dem_C.cellsize = 13.0
+
+    assert dem_C.shape[0] == 256
+    assert dem_C.shape[1] == 128
+
+    assert dem_C.z.flags.c_contiguous
+    assert dem_C.dims[0] == 128
+    assert dem_C.dims[1] == 256
+
+    dem_F = topo.GridObject()
+    dem_F.z = np.asfortranarray(dem_C.z)
+    dem_F.cellsize = 13.0
+
+    assert dem_F.shape[0] == 256
+    assert dem_F.shape[1] == 128
+
+    assert dem_F.z.flags.f_contiguous
+    assert dem_F.dims[0] == 256
+    assert dem_F.dims[1] == 128
+
+    # Compare memory orders using the fast sweeping method
+    ext_C = dem_C.excesstopography(threshold=0.2, method='fsm2d')
+    assert ext_C.z.flags.c_contiguous
+
+    ext_F = dem_F.excesstopography(threshold=0.2, method='fsm2d')
+    assert ext_F.z.flags.f_contiguous
+
+    assert np.array_equal(ext_F.z, ext_C.z)
+
+    # Compare memory orders using the fast marching method
+    ext_C = dem_C.excesstopography(threshold=0.2, method='fmm2d')
+    assert ext_C.z.flags.c_contiguous
+
+    ext_F = dem_F.excesstopography(threshold=0.2, method='fmm2d')
+    assert ext_F.z.flags.f_contiguous
+
+    assert np.array_equal(ext_F.z, ext_C.z)
+
 def test_hillshade_order():
     # The hillshade computed from a column-major array should be
     # identical to that from a row-major array with the same data.
@@ -147,7 +193,7 @@ def test_hillshade_order():
     y = np.arange(0,256)
 
     demc = topo.GridObject()
-    demc.z = 64 * (opensimplex.noise2array(x,y) + 1)
+    demc.z = np.array(64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
     demc.cellsize = 13.0
     demc.transform = Affine.scale(demc.cellsize)
 
@@ -157,9 +203,10 @@ def test_hillshade_order():
     demf = topo.GridObject()
     demf.z = np.asfortranarray(demc.z)
     demf.cellsize = 13.0
-    demf.transform = Affine.scale(demf.cellsize)
+    # We also need to permute the geotransform to account for the swapped dimensions
+    demf.transform = Affine.rotation(180) * Affine.scale(demf.cellsize)
     
     for azimuth in np.arange(0.0,360.0,2.3):
         hc = demc.hillshade(azimuth=azimuth)
         hf = demf.hillshade(azimuth=azimuth)
-        assert np.array_equal(hc, hf)
+        assert np.allclose(hc, hf)

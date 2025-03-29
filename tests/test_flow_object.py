@@ -22,3 +22,13 @@ def test_flowobject(wide_dem):
     # Ensure that FlowObject does not modify the original DEM
     assert np.all(dem.z == original_dem)
 
+def test_flowpathextract(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    ch = s.streampoi('channelheads')
+
+    s2 = topo.StreamObject(fd, channelheads=s.stream[ch][0:1])
+
+    idxs = fd.flowpathextract(s.stream[ch][0])
+    assert np.array_equal(s2.stream, idxs)
+

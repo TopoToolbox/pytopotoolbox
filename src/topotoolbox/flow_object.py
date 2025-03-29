@@ -5,6 +5,7 @@ import numpy as np
 # pylint: disable=no-name-in-module
 from . import _grid  # type: ignore
 from . import _flow  # type: ignore
+from . import _stream  # type: ignore
 from .grid_object import GridObject
 
 __all__ = ['FlowObject']
@@ -214,6 +215,30 @@ class FlowObject():
         result.crs = self.crs
 
         return result
+
+    def flowpathextract(self, idx: int):
+        """Extract linear indices of a single flowpath in a DEM
+
+        The flow path downstream of idx is extracted from the flow
+        directions recorded in FlowObject.
+
+        Parameters
+        ----------
+        idx: int
+            The column-major linear index of the starting pixel of the flowpath.
+
+        Returns
+        -------
+        np.ndarray        
+            An array containing column-major linear indices into the
+            DEM identifying the flow path.
+        """
+        ch = np.zeros(self.shape,dtype=np.uint32,order='F')
+        ch[np.unravel_index(idx, self.shape, order='F')] = 1
+        edges = np.ones(self.source.size, dtype=np.uint32)
+        _stream.traverse_down_u32_or_and(ch, edges, self.source, self.target)
+
+        return np.nonzero(np.ravel(ch,order='F'))[0]
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------

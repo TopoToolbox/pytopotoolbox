@@ -25,9 +25,10 @@ class StreamObject():
 
     def __init__(self, flow: FlowObject, units: str = 'pixels',
                  threshold: int | float | GridObject | np.ndarray = 0,
-                 stream_pixels: GridObject | np.ndarray | None = None) -> None:
-        """
-    Initializes the StreamObject by processing flow accumulation.
+                 stream_pixels: GridObject | np.ndarray | None = None,
+                 channelheads: np.ndarray | None = None
+                 ) -> None:
+        """Initializes the StreamObject by processing flow accumulation.
 
     Parameters
     ----------
@@ -48,6 +49,11 @@ class StreamObject():
         A GridObject or np.ndarray made up of zeros and ones to denote where
         the stream is located. Using this will overwrite any use of the
         threshold argument.
+    channelheads: np.ndarray, optional        
+        An np.ndarray with the linear indices in column-major ('F')
+        order indicating the locations of channel heads. All streams
+        downstream of the indicated channel heads will be returned in
+        the StreamObject.
 
     Raises
     ------
@@ -119,6 +125,12 @@ class StreamObject():
                 warn = ("Since stream_pixels have been provided, the "
                         "input for threshold will be ignored.")
                 warnings.warn(warn)
+        elif channelheads is not None:
+            ch = np.zeros(flow.shape,dtype=np.uint32,order='F')
+            ch[np.unravel_index(channelheads, flow.shape, order='F')] = 1
+            edges = np.ones(flow.source.size, dtype=np.uint32)
+            _stream.traverse_down_u32_or_and(ch, edges, flow.source, flow.target)
+            w = (ch > 0).ravel(order='F')
 
         # Create the appropriate threshold matrix based on the threshold input.
         else:
@@ -285,6 +297,41 @@ class StreamObject():
 
         return nal
 
+    def streampoi(self, point_type: str):
+        """Extract points of interest from the stream network
+
+        Currently supported points of interest are 'channelheads',
+        'outlets' and 'confluences'
+
+        Parameters
+        ----------
+        point_type: 'channelheads' or 'outlets' or 'confluences'
+            The type of points to select from the stream network
+
+        Returns
+        -------
+        np.ndarray
+            A logical node attribute list indicating the locations of points.
+
+        Raises
+        ------
+        ValueError
+            If an unknown point type is requested.
+        """
+        indegree = np.zeros(self.stream.size, dtype=np.uint8)
+        outdegree = np.zeros(self.stream.size, dtype=np.uint8)
+        _stream.edgelist_degree(indegree, outdegree, self.source, self.target)
+        if point_type == 'channelheads':
+            output = (outdegree > 0) & (indegree == 0)
+        elif point_type == 'outlets':
+            output = (outdegree == 0) & (indegree > 0)
+        elif point_type == 'confluences':
+            output = indegree > 1
+        else:
+            raise ValueError(f"{point_type} is not currently supported")
+
+        return output
+
     def xy(self, data=None):
         """Compute the x and y coordinates of continuous stream segments
 
@@ -294,11 +341,7 @@ class StreamObject():
            A tuple of two node attribute lists representing the
            desired x and y values for each pixel in the stream
            network. If this argument is not supplied, the returned x
-           and y values are the indices of the pixel in the DEM in the
-           second and first dimension respectively. This reversal of
-           dimensions corresponds to the orientation used by pyplot's
-           `imshow`, and allows plotting the stream network over a
-           corresponding GridObject.
+           and y values are the geographic coordinates of the node.
 
         Returns
         -------
@@ -311,7 +354,8 @@ class StreamObject():
         # TODO: Add an example to docstring
         if data is None:
             # pylint: disable=unbalanced-tuple-unpacking
-            ys, xs = np.unravel_index(self.stream, self.shape, order='F')
+            j, i = np.unravel_index(self.stream, self.shape, order='F')
+            xs, ys = self.transform * np.vstack((i,j))
         else:
             xs, ys = data
 
@@ -586,18 +630,7 @@ class StreamObject():
             trunks[self.source[r]] = trunks[self.target[r]
                                             ] and max_neighbor[self.source[r]]
 
-        result = copy.copy(self)
-        result.stream = self.stream[trunks]
-        cumsum_index = np.cumsum(trunks) - 1
-
-        trunks = trunks[self.source] & trunks[self.target]
-
-        result.source = self.source[trunks]
-        result.target = self.target[trunks]
-
-        result.source = cumsum_index[result.source]
-        result.target = cumsum_index[result.target]
-
+        result = self.subgraph(trunks)
         return result
 
     def klargestconncomps(self, k=1) -> 'StreamObject':
@@ -654,22 +687,43 @@ class StreamObject():
         # Convert to boolean array so we can index with it
         conncomps_mask = conncomps > 0
 
-        # NOTE(wkearn): this (copied from our `trunk` implementation)
-        # is equivalent to `subgraph`, a STREAMobj method for
-        # extracting a new StreamObject based on a logical node
-        # attribute list.
+        result = self.subgraph(conncomps_mask)
+        return result
+
+    def subgraph(self, nal):
+        """Extract a subset of the stream network
+
+        Parameters
+        ----------
+        nal: GridObject or np.ndarray
+            A logical node attribute list indicating the desired
+            nodes of the new stream network
+
+        Returns
+        -------
+        StreamObject
+            A StreamObject representing the desired subset of the
+            stream network.
+        """
+
+        nal = self.ezgetnal(nal)
+        nal = nal > 0
         result = copy.copy(self)
-        result.stream = self.stream[conncomps_mask]
-        cumsum_index = np.cumsum(conncomps_mask) - 1
 
-        conncomps_mask = conncomps_mask[self.source] & conncomps_mask[self.target]
+        result.stream = self.stream[nal]
 
-        result.source = self.source[conncomps_mask]
-        result.target = self.target[conncomps_mask]
+        new_indices = np.cumsum(nal) - 1
 
-        result.source = cumsum_index[result.source]
-        result.target = cumsum_index[result.target]
+        valid_edges = nal[self.source] & nal[self.target]
 
+        result.source = self.source[valid_edges]
+        result.target = self.target[valid_edges]
+
+        result.source = new_indices[result.source]
+        result.target = new_indices[result.target]
+
+        # TODO(wkearn): clean(result)
+        # TODO(wkearn): return indices into the original node attribute list
         return result
 
     # 'Magic' functions:

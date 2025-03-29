@@ -1,6 +1,6 @@
 """This module contains the GridObject class.
 """
-import copy
+import copy as cp
 from typing import Tuple, List
 
 import numpy as np
@@ -80,6 +80,17 @@ class GridObject():
 
         raise TypeError(
             "Grid is not stored as a contiguous row- or column-major array")
+
+    @property
+    def extent(self):
+        """The bounding box of the grid in the order needed for plotting
+
+        Returns
+        -------
+        tuple
+            The bounding box in the order (left, right, bottom, top)
+        """
+        return (self.bounds.left, self.bounds.right, self.bounds.bottom, self.bounds.top)
 
     def reproject(self,
                   crs: 'CRS',
@@ -186,7 +197,7 @@ class GridObject():
             dem[nans] = np.nan
             output[nans] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = output
 
         return result
@@ -241,13 +252,13 @@ class GridObject():
 
         result = []
         if 'flats' in output:
-            flats = copy.copy(self)
+            flats = cp.copy(self)
             flats.z = np.zeros_like(flats.z, order='F')
             flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
             result.append(flats)
 
         if 'sills' in output:
-            sills = copy.copy(self)
+            sills = cp.copy(self)
             sills.z = np.zeros_like(sills.z, order='F')
             sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
             result.append(sills)
@@ -258,39 +269,39 @@ class GridObject():
             self, threshold: "float | int | np.ndarray | GridObject" = 0.2,
             method: str = 'fsm2d',) -> 'GridObject':
         """
-    Compute the two-dimensional excess topography using the specified method.
+        Compute the two-dimensional excess topography using the specified method.
 
-    Parameters
-    ----------
-    threshold : float, int, GridObject, or np.ndarray, optional
-        Threshold value or array to determine slope limits, by default 0.2.
-        If a float or int, the same threshold is applied to the entire DEM.
-        If a GridObject or np.ndarray, it must match the shape of the DEM.
-    method : str, optional
-        Method to compute the excess topography, by default 'fsm2d'.
-        Options are:
+        Parameters
+        ----------
+        threshold : float, int, GridObject, or np.ndarray, optional
+            Threshold value or array to determine slope limits, by default 0.2.
+            If a float or int, the same threshold is applied to the entire DEM.
+            If a GridObject or np.ndarray, it must match the shape of the DEM.
+        method : str, optional
+            Method to compute the excess topography, by default 'fsm2d'.
+            Options are:
 
-        - 'fsm2d': Uses the fast sweeping method.
-        - 'fmm2d': Uses the fast marching method.
+            - 'fsm2d': Uses the fast sweeping method.
+            - 'fmm2d': Uses the fast marching method.
 
-    Returns
-    -------
-    GridObject
-        A new GridObject with the computed excess topography.
+        Returns
+        -------
+        GridObject
+            A new GridObject with the computed excess topography.
 
-    Raises
-    ------
-    ValueError
-        If `method` is not one of ['fsm2d', 'fmm2d'].
-        If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
-    TypeError
-        If `threshold` is not a float, int, GridObject, or np.ndarray.
+        Raises
+        ------
+        ValueError
+            If `method` is not one of ['fsm2d', 'fmm2d'].
+            If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
+        TypeError
+            If `threshold` is not a float, int, GridObject, or np.ndarray.
 
-    Example
-    -------
-    >>> dem = topotoolbox.load_dem('perfectworld')
-    >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
-    >>> excess.plot(cmap='terrain')
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
+        >>> excess.plot(cmap='terrain')
         """
 
         if method not in ['fsm2d', 'fmm2d']:
@@ -298,15 +309,14 @@ class GridObject():
                    " 'fsm2d' and 'fmm2d'.")
             raise ValueError(err) from None
 
-        dem = self.z
+        dem = np.asarray(self, dtype=np.float32)
 
         if isinstance(threshold, (float, int)):
-            threshold_slopes = np.full(
-                dem.shape, threshold, order='F', dtype=np.float32)
+            threshold_slopes = np.full_like(dem, threshold)
         elif isinstance(threshold, GridObject):
-            threshold_slopes = threshold.z
+            threshold_slopes = np.asarray(threshold, dtype=np.float32)
         elif isinstance(threshold, np.ndarray):
-            threshold_slopes = threshold
+            threshold_slopes = np.asarray(threshold, dtype=np.float32)
         else:
             err = "Threshold must be a float, int, GridObject, or np.ndarray."
             raise TypeError(err) from None
@@ -314,17 +324,13 @@ class GridObject():
         if not dem.shape == threshold_slopes.shape:
             err = "Threshold array must have the same shape as the DEM."
             raise ValueError(err) from None
-        if not threshold_slopes.flags['F_CONTIGUOUS']:
-            threshold_slopes = np.asfortranarray(threshold)
-        if not np.issubdtype(threshold_slopes.dtype, np.float32):
-            threshold_slopes = threshold_slopes.astype(np.float32)
 
         excess = np.zeros_like(dem)
         cellsize = self.cellsize
 
         if method == 'fsm2d':
             _grid.excesstopography_fsm2d(
-                excess, dem, threshold_slopes, cellsize, self.shape)
+                excess, dem, threshold_slopes, cellsize, self.dims)
 
         elif method == 'fmm2d':
             heap = np.zeros_like(dem, dtype=np.int64)
@@ -332,9 +338,9 @@ class GridObject():
 
             _grid.excesstopography_fmm2d(excess, heap, back, dem,
                                          threshold_slopes, cellsize,
-                                         self.shape)
+                                         self.dims)
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = excess
 
         return result
@@ -415,7 +421,7 @@ class GridObject():
         # Keep NaNs like they are in self.z
         filtered[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = filtered
         return result
 
@@ -457,7 +463,7 @@ class GridObject():
         output = np.zeros_like(dem)
 
         _grid.gradient8(output, dem, self.cellsize, use_mp, self.shape)
-        result = copy.copy(self)
+        result = cp.copy(self)
 
         if unit == 'radian':
             output = np.arctan(output)
@@ -560,7 +566,7 @@ class GridObject():
         # Keep NaNs like they are in dem
         curvature[np.isnan(dem)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = curvature
         return result
 
@@ -619,7 +625,7 @@ class GridObject():
         # Keep NaNs like they are in dem
         dilated[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = dilated
         return result
 
@@ -680,7 +686,7 @@ class GridObject():
         # Keep NaNs like they are in dem
         eroded[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = eroded
         return result
 
@@ -738,8 +744,8 @@ class GridObject():
         fy = convolve(dem, ky, mode=mode)
 
         if partial_derivatives:
-            result_kx = copy.copy(self)
-            result_ky = copy.copy(self)
+            result_kx = cp.copy(self)
+            result_ky = cp.copy(self)
             result_kx.z = kx
             result_ky.z = ky
             return result_kx, result_ky
@@ -747,7 +753,7 @@ class GridObject():
         slope = np.sqrt(fx**2 + fy**2)
         slope[np.isnan(self.z)] = np.nan
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = slope
         return result
 
@@ -788,7 +794,7 @@ class GridObject():
             aspect = aspclass[aspedges]
             aspect = aspect.astype(np.int8)
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = aspect
         return result
 
@@ -931,7 +937,7 @@ class GridObject():
         _grid.hillshade(h, nx, ny, nz, exaggerate * self.z,
                         azimuth_radians, altitude_radians, self.cellsize, self.dims)
 
-        result = copy.copy(self)
+        result = cp.copy(self)
         result.z = h
         return result
 
@@ -1039,7 +1045,7 @@ class GridObject():
         print(f"maximum z-value: {np.nanmax(self.z)}")
         print(f"minimum z-value: {np.nanmin(self.z)}")
 
-    def plot(self, ax=None, **kwargs):
+    def plot(self, ax=None, extent=None, **kwargs):
         """Plot the GridObject
 
         Parameters
@@ -1047,6 +1053,11 @@ class GridObject():
         ax: matplotlib.axes.Axes, optional
             The axes in which to plot the GridObject. If no axes
             are given, the current axes are used.
+
+        extent: floats (left, right, bottom, top), optional        
+            The bounding box used to set the axis limits. If no extent
+            is supplied, defaults to self.extent, which plots the
+            GridObject in geographic coordinates.
 
         **kwargs
             Additional keyword arguments are forwarded to
@@ -1056,11 +1067,16 @@ class GridObject():
         -------
         matplotlib.image.AxesImage
             The image constructed by imshow
+
         """
         # TODO: Add Example to Docstring
         if ax is None:
             ax = plt.gca()
-        return ax.imshow(self.z, **kwargs)
+
+        if extent is None:
+            extent = self.extent
+
+        return ax.imshow(self.z, extent=extent, **kwargs)
 
     def plot_hs(self, ax=None,
                 elev=None,
@@ -1068,6 +1084,7 @@ class GridObject():
                 filter_method=None, filter_size=3,
                 cmap='terrain', norm=None,
                 blend_mode='soft',
+                extent=None,
                 **kwargs):
         """Plot a shaded relief map of the GridObject
 
@@ -1106,6 +1123,9 @@ class GridObject():
         blend_mode: {'multiply', 'overlay', 'soft'}, optional
             The algorithm used to combine the shaded elevation with
             the data. Defaults to 'soft'.
+       extent: floats (left, right, bottom, top), optional        
+            The bounding box used to set the axis limits. If no extent
+            is supplied, defaults to self.extent
         **kwargs
             Additional keyword arguments are forwarded to
             matplotlib.axes.Axes.imshow
@@ -1166,7 +1186,10 @@ class GridObject():
         else:
             raise ValueError("blend_mode not supported") from None
 
-        return ax.imshow(np.clip(rgb, 0, 1), **kwargs)
+        if extent is None:
+            extent = self.extent
+
+        return ax.imshow(np.clip(rgb,0,1), extent=extent, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
@@ -1191,8 +1214,7 @@ class GridObject():
         GridObject
           A grid identical to the input, but with randomly reassigned labels.
         """
-        # TODO: Add Example to Docstring
-        result = copy.copy(self)
+        result = cp.copy(self)
 
         labels = self.z
         u, indices = np.unique(labels, return_inverse=True)
@@ -1201,11 +1223,42 @@ class GridObject():
 
         return result
 
+    def duplicate_with_new_data(self, data : np.ndarray) -> 'GridObject':
+        """Duplicate a GridObject with different data
+
+        This function is helpful when one wants to create a GridObject from
+        a numpy array with the exact same properties (e.g. crs, ...) but
+        different data
+
+        Parameters
+        ----------
+        data: np.ndarray
+
+          The new data (needs to be in the same shape than the current GridObject)
+
+        Returns
+        -------
+        GridObject
+          A grid identical to the input, but with new data.
+
+        """
+
+        rows, columns = data.shape
+
+        if self.columns != columns or self.rows != rows:
+            raise ValueError("Both GridObjects have to be the same size.")
+
+        result = cp.deepcopy(self)
+
+        result.z = np.array(data, copy=True)
+
+        return result
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
     def __eq__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1213,15 +1266,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] == other.z[x][y]
+        dem.z = self.z == other.z
 
         return dem
 
     def __ne__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1229,15 +1279,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] != other.z[x][y]
+        dem.z = self.z != other.z
 
         return dem
 
     def __gt__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1245,15 +1292,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] > other.z[x][y]
+        dem.z = self.z > other.z
 
         return dem
 
     def __lt__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1261,15 +1305,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] < other.z[x][y]
+        dem.z = self.z < other.z
 
         return dem
 
     def __ge__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1277,15 +1318,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] >= other.z[x][y]
+        dem.z = self.z >= other.z
 
         return dem
 
     def __le__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1293,15 +1331,12 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
-
-                dem.z[x][y] = self.z[x][y] <= other.z[x][y]
+        dem.z = self.z <= other.z
 
         return dem
 
     def __add__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z + other.z
@@ -1311,7 +1346,7 @@ class GridObject():
         return dem
 
     def __sub__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z - other.z
@@ -1321,7 +1356,7 @@ class GridObject():
         return dem
 
     def __mul__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z * other.z
@@ -1331,7 +1366,7 @@ class GridObject():
         return dem
 
     def __div__(self, other):
-        dem = copy.copy(self)
+        dem = cp.copy(self)
 
         if isinstance(other, self.__class__):
             dem.z = self.z / other.z
@@ -1341,7 +1376,7 @@ class GridObject():
         return dem
 
     def __and__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1349,22 +1384,18 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
+        # Check for invalid values
+        if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
+            error = "Invalid cell value. 'and' can only compare True (1) and False (0) values."
+            raise ValueError(error)
 
-                if (self.z[x][y] not in [0, 1]
-                        or other.z[x][y] not in [0, 1]):
-
-                    raise ValueError(
-                        "Invalid cell value. 'and' can only compare " +
-                        "True (1) and False (0) values.")
-
-                dem.z[x][y] = (int(self.z[x][y]) & int(other.z[x][y]))
+        # Perform element-wise bitwise AND operation
+        dem.z = np.logical_and(self.z, other.z)
 
         return dem
 
     def __or__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1372,22 +1403,18 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
+        # Check for invalid values
+        if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
+            error = "Invalid cell value. 'and' can only compare True (1) and False (0) values."
+            raise ValueError(error)
 
-                if (self.z[x][y] not in [0, 1]
-                        or other.z[x][y] not in [0, 1]):
-
-                    raise ValueError(
-                        "Invalid cell value. 'or' can only compare True (1)" +
-                        " and False (0) values.")
-
-                dem.z[x][y] = (int(self.z[x][y]) | int(other.z[x][y]))
+        # Perform element-wise bitwise OR operation
+        dem.z = np.logical_or(self.z, other.z)
 
         return dem
 
     def __xor__(self, other):
-        dem = copy.deepcopy(self)
+        dem = cp.deepcopy(self)
 
         if not isinstance(other, self.__class__):
             raise TypeError("Can only compare two GridObjects.")
@@ -1395,17 +1422,13 @@ class GridObject():
         if self.columns != other.columns or self.rows != other.rows:
             raise ValueError("Both GridObjects have to be the same size.")
 
-        for x in range(0, self.columns):
-            for y in range(0, self.rows):
+        # Check for invalid values
+        if np.any((self.z != 0) & (self.z != 1)) or np.any((other.z != 0) & (other.z != 1)):
+            error = "Invalid cell value. 'and' can only compare True (1) and False (0) values."
+            raise ValueError(error)
 
-                if (self.z[x][y] not in [0, 1]
-                        or other.z[x][y] not in [0, 1]):
-
-                    raise ValueError(
-                        "Invalid cell value. 'xor' can only compare True (1)" +
-                        " and False (0) values.")
-
-                dem.z[x][y] = (int(self.z[x][y]) ^ int(other.z[x][y]))
+        # Perform element-wise bitwise XOR operation
+        dem.z = np.logical_xor(self.z, other.z)
 
         return dem
 
@@ -1427,8 +1450,39 @@ class GridObject():
 
         self.z[index] = value
 
-    def __array__(self):
-        return self.z
+    def __array__(self, dtype=None, copy=None):
+        try:
+            # If we are using Numpy v1.x, this will copy-if-needed
+            # when copy=False.
+            return np.array(self.z, dtype=dtype, copy=copy)
+        except ValueError:
+            # If np.array fails because copy=None and we are using an
+            # older version of Numpy, use asarray to copy-if-needed.
+            return np.asarray(self.z, dtype=dtype)
 
     def __str__(self):
         return str(self.z)
+
+
+    def __repr__(self):
+
+        # Determine the coordinate system
+        str_coord = ''
+        if self.crs is not None and self.crs.is_projected:
+            str_coord = f'coordinate system (Projected): {self.crs}'
+        elif self.crs is not None and self.crs.is_geographic:
+            str_coord = f'coordinate system (Geographic): {self.crs}'
+        else:
+            str_coord = f'coordinate system: {self.crs}'
+
+        return f"""name: {self.name}
+        path: {self.path}
+        rows: {self.rows}
+        cols: {self.columns}
+        cellsize: {self.cellsize}
+        bounds: {self.bounds}
+        transform: {self.transform}
+        {str_coord}
+        maximum z-value: {np.nanmax(self.z)}
+        minimum z-value: {np.nanmin(self.z)}
+        """
