@@ -31,6 +31,9 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
         filled_dem = dem.fillsinks(hybrid=False)
         filled_dem_hybrid = dem.fillsinks(hybrid=True)
 
+        assert topo.validate_alignment(dem, filled_dem)
+        assert topo.validate_alignment(dem, filled_dem_hybrid)
+
         # Ensure that DEM has not been modified by fillsinks
         assert np.all(original_dem == dem.z)
 
@@ -103,11 +106,17 @@ def test_fillsinks_order():
     assert filled_F.z.flags.f_contiguous
    
     assert np.array_equal(filled_F.z, filled_C.z)
+
+    assert topo.validate_alignment(dem_F, filled_F)
+    assert topo.validate_alignment(dem_C, filled_C)
     
 def test_identifyflats(square_dem, wide_dem, tall_dem):
     # TODO: add more tests
     for dem in [square_dem, wide_dem, tall_dem]:
         sills, flats = dem.identifyflats()
+
+        assert topo.validate_alignment(dem, sills)
+        assert topo.validate_alignment(dem, flats)
 
         for i in range(dem.shape[0]):
             for j in range(dem.shape[1]):
@@ -183,6 +192,9 @@ def test_excesstopography_order():
 
     assert np.array_equal(ext_F.z, ext_C.z)
 
+    assert topo.validate_alignment(dem_F, ext_F)
+    assert topo.validate_alignment(dem_C, ext_C)
+
 def test_hillshade_order():
     # The hillshade computed from a column-major array should be
     # identical to that from a row-major array with the same data.
@@ -210,3 +222,6 @@ def test_hillshade_order():
         hc = demc.hillshade(azimuth=azimuth)
         hf = demf.hillshade(azimuth=azimuth)
         assert np.allclose(hc, hf)
+
+        assert topo.validate_alignment(demc, hc)
+        assert topo.validate_alignment(demf, hf)

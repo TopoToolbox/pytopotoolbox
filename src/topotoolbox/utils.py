@@ -12,7 +12,8 @@ import numpy as np
 from .grid_object import GridObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
-           "gen_random_bool", "get_cache_contents", "clear_cache"]
+           "gen_random_bool", "get_cache_contents", "clear_cache",
+           "validate_alignment"]
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
 DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
@@ -313,3 +314,24 @@ def get_cache_contents() -> (list[str] | None):
 
     print("Cache directory does not exist.")
     return None
+
+def validate_alignment(s1, s2) -> bool:
+    """Check whether two TopoToolbox objects are aligned
+
+    Parameters
+    ----------
+    s1 : GridObject | FlowObject | StreamObject
+        The first object to check
+
+    s2 : GridObject | FlowObject | StreamObject
+        The second object to check
+
+    Returns
+    -------
+    bool
+       True if the two objects are aligned, False otherwise
+    """
+    return (s1.shape == s2.shape
+            and s1.bounds == s2.bounds
+            and s1.transform == s2.transform
+            and s1.crs == s2.crs)
