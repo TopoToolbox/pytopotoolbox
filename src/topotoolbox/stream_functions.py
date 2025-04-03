@@ -8,7 +8,6 @@ import numpy as np
 
 # pylint: disable=no-name-in-module
 from . import _stream  # type: ignore
-from . import StreamObject, FlowObject, GridObject
 
 def imposemin(s, dem, minimum_slope=0.0):
     """Minima imposition along a drainage network
