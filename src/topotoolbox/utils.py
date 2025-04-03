@@ -5,7 +5,7 @@ import os
 import random
 from shutil import rmtree
 from urllib.request import urlopen, urlretrieve
-import requests
+import urllib.error
 
 import rasterio
 import numpy as np
@@ -429,22 +429,18 @@ def load_open_topography(south: float, north: float, west: float, east: float,
                f"&east={east}"
                f"&outputFormat=GTiff"
                f"&API_Key={api_key}")
-        response = requests.get(url, stream=True, timeout=60)
-        if response.status_code == 200:
-            # Cache the DEM
-            with open(cache_path, 'wb') as f:
-                # 1 MB chunks (1024 * 1024 bytes)
-                for chunk in response.iter_content(chunk_size=1_048_576):
-                    f.write(chunk)
-        else:
+
+        try:
+            urlretrieve(url, cache_path)
+        except urllib.error.HTTPError as e:
             error_dict = {
                 204: "Bad Data",
                 400: "Bad Request",
                 401: "Unauthorized (Check API key)",
                 500: "Internal Server Error"
             }
-            code = response.status_code
-            err = f"Error: {code} - {error_dict[code]}"
+            code = e.code
+            err = f"Error: {code} - {error_dict.get(code, 'Unknown Error')}"
             raise ConnectionError(err) from None
 
     if save_path:
@@ -483,6 +479,6 @@ def validate_alignment(s1, s2) -> bool:
        True if the two objects are aligned, False otherwise
     """
     return (s1.shape == s2.shape) and all(
-        (not hasattr(s1,attr) or not hasattr(s2,attr))
-            or (getattr(s1,attr) == getattr(s2,attr))
-            for attr in ["bounds", "crs", "transform"])
+        (not hasattr(s1, attr) or not hasattr(s2, attr))
+        or (getattr(s1, attr) == getattr(s2, attr))
+        for attr in ["bounds", "crs", "transform"])
