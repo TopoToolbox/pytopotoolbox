@@ -318,12 +318,17 @@ def get_cache_contents() -> (list[str] | None):
 def validate_alignment(s1, s2) -> bool:
     """Check whether two TopoToolbox objects are aligned
 
+    `validate_alignment` checks that the two objects have the same
+    `shape` attribute and, if coordinate information is available, the
+    same coordinate system given by the attributes `bounds`, `crs`
+    and `transform`.
+
     Parameters
     ----------
-    s1 : GridObject | FlowObject | StreamObject
+    s1 : np.ndarray | GridObject | FlowObject | StreamObject
         The first object to check
 
-    s2 : GridObject | FlowObject | StreamObject
+    s2 : np.ndarray | GridObject | FlowObject | StreamObject
         The second object to check
 
     Returns
@@ -331,7 +336,7 @@ def validate_alignment(s1, s2) -> bool:
     bool
        True if the two objects are aligned, False otherwise
     """
-    return (s1.shape == s2.shape
-            and s1.bounds == s2.bounds
-            and s1.transform == s2.transform
-            and s1.crs == s2.crs)
+    return (s1.shape == s2.shape) and all(
+        (not hasattr(s1,attr) or not hasattr(s2,attr))
+            or (getattr(s1,attr) == getattr(s2,attr))
+            for attr in ["bounds", "crs", "transform"])
