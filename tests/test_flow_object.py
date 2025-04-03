@@ -86,3 +86,14 @@ def test_imposemin(wide_dem):
 
         # imposemin should not modify the original array
         assert np.array_equal(original_dem, wide_dem.z)
+
+def test_imposemin_f64(wide_dem):
+    original_dem = np.array(wide_dem, dtype=np.float64)
+
+    fd = topo.FlowObject(wide_dem)
+
+    z = np.array(wide_dem, dtype=np.float64)
+
+    # The np.float64 type is not supported
+    with pytest.raises(ValueError):
+        min_dem = topo.imposemin(fd, z, 0.001)
