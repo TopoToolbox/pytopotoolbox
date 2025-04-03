@@ -4,6 +4,8 @@ These functions often apply to both StreamObjects and FlowObjects.
 """
 import copy
 
+import numpy as np
+
 # pylint: disable=no-name-in-module
 from . import _stream  # type: ignore
 from . import StreamObject, FlowObject, GridObject
@@ -38,30 +40,10 @@ def imposemin(s, dem, minimum_slope=0.0):
         The elevations with the minimum downward gradient imposed. If
         `dem` is a GridObject, a GridObject is returned. Otherwise an
         array of the same shape as `dem` is returned.
-
-    Raises
-    ------
-    TypeError
-        If s is neither a FlowObject nor a StreamObject
     """
-    # We need to pass an array to the libtopotoolbox traversal, but
-    # the return type depends on the types of s and dem, so we need
-    # this slightly complicated arrangement of copies and views to
-    # ensure we fill a new array (not the old one), and can return a
-    # GridObject when necessary.
-    if isinstance(s, StreamObject):
-        result = s.ezgetnal(dem).copy()
-        z = result.view()
-    elif isinstance(s, FlowObject):
-        # TODO(wkearn): check alignment
-        if isinstance(dem, GridObject):
-            result = copy.deepcopy(dem)
-            z = result.z.view()
-        else:
-            result = dem.copy()
-            z = result.view()
-    else:
-        raise TypeError(f"{s} must be either a FlowObject or a StreamObject")
+    result = copy.deepcopy(s.ezgetnal(dem))
+
+    z = np.asarray(result, dtype=np.float32, copy=False)
 
     d = -s.distance() * minimum_slope
     _stream.traverse_down_f32_min_add(z, d, s.source, s.target)
