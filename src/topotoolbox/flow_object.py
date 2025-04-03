@@ -7,6 +7,7 @@ from . import _grid  # type: ignore
 from . import _flow  # type: ignore
 from . import _stream  # type: ignore
 from .grid_object import GridObject
+from .utils import validate_alignment
 
 __all__ = ['FlowObject']
 
@@ -114,6 +115,35 @@ class FlowObject():
         self.bounds = grid.bounds
         self.transform = grid.transform
         self.crs = grid.crs
+
+    def ezgetnal(self, k):
+        """Retrieve a node attribute list
+
+        Parameters
+        ----------
+        k : GridObject or np.ndarray or scalar        
+            The object from which node values will be extracted. If
+            `k` is a `GridObject` or an `ndarray` with the same shape
+            as this `FlowObject`, then it is returned. If it is a
+            scalar, an `ndarray` with the appropriate shape, filled
+            with `k`, is returned.
+
+        Returns
+        -------
+        GridObject or np.ndarray
+
+        Raises
+        ------
+        ValueError
+            The supplied input is not aligned with the FlowObject.
+
+        """
+        if np.isscalar(k):
+            return np.full(self.shape, k)
+        if not validate_alignment(self, k):
+            raise ValueError("Input is not properly aligned to the FlowObject")
+
+        return k
 
     def flow_accumulation(self, weights: np.ndarray | float = 1.0):
         """Computes the flow accumulation for a given flow network using
