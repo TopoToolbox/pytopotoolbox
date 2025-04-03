@@ -42,7 +42,7 @@ def imposemin(s, dem, minimum_slope=0.0):
     """
     result = copy.deepcopy(s.ezgetnal(dem))
 
-    z = np.asarray(result, dtype=np.float32, copy=False)
+    z = np.array(result, dtype=np.float32, copy=False)
 
     d = -s.distance() * minimum_slope
     _stream.traverse_down_f32_min_add(z, d, s.source, s.target)
