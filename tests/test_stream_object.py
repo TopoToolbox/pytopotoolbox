@@ -66,8 +66,17 @@ def test_streamobject_sizes(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
     tall_stream = topo.StreamObject(tall_flow)
 
+    assert topo.validate_alignment(tall_dem, tall_flow)
+    assert topo.validate_alignment(tall_dem, tall_stream)
+
     wide_flow = topo.FlowObject(wide_dem)
     wide_stream = topo.StreamObject(wide_flow)
+
+    assert topo.validate_alignment(wide_dem, wide_flow)
+    assert topo.validate_alignment(wide_dem, wide_stream)
+
+    assert not topo.validate_alignment(wide_dem, tall_flow)
+    assert not topo.validate_alignment(wide_dem, tall_stream)
 
     assert (wide_stream.target.size == wide_stream.source.size ==
             wide_stream.direction.size)
@@ -106,6 +115,10 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     assert issubgraph(tall_k1_trunk, tall_k1)
     assert not issubgraph(tall_trunk, tall_k1)
 
+    assert topo.validate_alignment(tall_trunk, tall_stream)
+    assert topo.validate_alignment(tall_k1, tall_stream)
+    assert topo.validate_alignment(tall_k1_trunk, tall_stream)
+
     wide_flow = topo.FlowObject(wide_dem)
     wide_stream = topo.StreamObject(wide_flow)
 
@@ -118,6 +131,10 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     assert issubgraph(wide_k1_trunk, wide_stream)
     assert issubgraph(wide_k1_trunk, wide_k1)
     assert not issubgraph(wide_trunk, wide_k1)
+
+    assert topo.validate_alignment(wide_trunk, wide_stream)
+    assert topo.validate_alignment(wide_k1, wide_stream)
+    assert topo.validate_alignment(wide_k1_trunk, wide_stream)
 
     assert not issubgraph(wide_trunk, tall_stream)
     assert not issubgraph(tall_trunk, wide_stream)
@@ -213,19 +230,27 @@ def test_stream_channelheads(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
     s = topo.StreamObject(fd)
 
+    assert topo.validate_alignment(fd, s)
+
     channel_heads = s.streampoi("channelheads")
 
     s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
+
+    assert topo.validate_alignment(fd, s2)
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
 
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
+
+    assert topo.validate_alignment(fd, s)
     
     channel_heads = s.streampoi("channelheads")
 
     s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
+
+    assert topo.validate_alignment(fd, s2)
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
