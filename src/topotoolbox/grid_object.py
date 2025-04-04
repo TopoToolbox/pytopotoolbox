@@ -19,7 +19,8 @@ from scipy.ndimage import (
 from scipy.signal import wiener
 
 from rasterio import CRS, Affine
-from rasterio.warp import reproject
+from rasterio.coords import BoundingBox
+from rasterio.warp import reproject, transform_bounds
 from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
@@ -137,6 +138,9 @@ class GridObject():
         # Get cellsize from transform in case we did not specify one
         if dst.transform is not None:
             dst.cellsize = abs(dst.transform[0])
+
+        if self.bounds:
+            dst.bounds = BoundingBox(*transform_bounds(self.crs, dst.crs, *self.bounds))
 
         return dst
 
