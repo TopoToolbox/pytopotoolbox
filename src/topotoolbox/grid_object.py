@@ -19,7 +19,8 @@ from scipy.ndimage import (
 from scipy.signal import wiener
 
 from rasterio import CRS, Affine
-from rasterio.warp import reproject
+from rasterio.coords import BoundingBox
+from rasterio.warp import reproject, transform_bounds
 from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
@@ -90,7 +91,10 @@ class GridObject():
         tuple
             The bounding box in the order (left, right, bottom, top)
         """
-        return (self.bounds.left, self.bounds.right, self.bounds.bottom, self.bounds.top)
+        if self.bounds:
+            return (self.bounds.left, self.bounds.right, self.bounds.bottom, self.bounds.top)
+
+        return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
 
     def reproject(self,
                   crs: 'CRS',
@@ -137,6 +141,9 @@ class GridObject():
         # Get cellsize from transform in case we did not specify one
         if dst.transform is not None:
             dst.cellsize = abs(dst.transform[0])
+
+        if self.bounds:
+            dst.bounds = BoundingBox(*transform_bounds(self.crs, dst.crs, *self.bounds))
 
         return dst
 
