@@ -93,8 +93,8 @@ class GridObject():
         """
         if self.bounds:
             return (self.bounds.left, self.bounds.right, self.bounds.bottom, self.bounds.top)
-        else:
-            return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
+
+        return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
 
     def reproject(self,
                   crs: 'CRS',
