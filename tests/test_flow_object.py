@@ -26,6 +26,30 @@ def test_flowobject(wide_dem):
     # Ensure that FlowObject does not modify the original DEM
     assert np.all(dem.z == original_dem)
 
+def test_ezgetnal(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+
+    z = fd.ezgetnal(wide_dem)
+    z2 = fd.ezgetnal(z.z)
+    z3 = fd.ezgetnal(wide_dem, dtype=np.float64)
+
+    assert isinstance(z, topo.GridObject)
+    assert isinstance(z2, np.ndarray)
+    assert isinstance(z3, topo.GridObject)
+
+    # ezgetnal is idempotent
+    assert np.array_equal(z, wide_dem)
+    assert np.array_equal(z.z, z2)
+    assert np.array_equal(z3, wide_dem)
+
+    # ezgetnal should always return a copy
+    assert z is not wide_dem
+    assert z2 is not z.z
+    assert z3 is not wide_dem
+
+    # ezgetnal with dtype should return array of that dtype
+    assert z3.z.dtype is np.dtype(np.float64)
+
 def test_flowpathextract(wide_dem):
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)

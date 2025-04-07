@@ -1417,15 +1417,11 @@ class GridObject():
 
         self.z[index] = value
 
+    # pylint: disable=unused-argument
     def __array__(self, dtype=None, copy=None):
-        try:
-            # If we are using Numpy v1.x, this will copy-if-needed
-            # when copy=False.
-            return np.array(self.z, dtype=dtype, copy=copy)
-        except ValueError:
-            # If np.array fails because copy=None and we are using an
-            # older version of Numpy, use asarray to copy-if-needed.
-            return np.asarray(self.z, dtype=dtype)
+        if copy:
+            return self.z.copy()
+        return self.z
 
     def __str__(self):
         return str(self.z)
