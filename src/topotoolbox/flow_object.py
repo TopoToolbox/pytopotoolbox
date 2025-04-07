@@ -1,5 +1,6 @@
 """This module contains the FlowObject class.
 """
+import copy
 import numpy as np
 
 # pylint: disable=no-name-in-module
@@ -124,7 +125,7 @@ class FlowObject():
         k : GridObject or np.ndarray or scalar        
             The object from which node values will be extracted. If
             `k` is a `GridObject` or an `ndarray` with the same shape
-            as this `FlowObject`, then it is returned. If it is a
+            as this `FlowObject`, then a copy is returned. If it is a
             scalar, an `ndarray` with the appropriate shape, filled
             with `k`, is returned.
 
@@ -143,7 +144,9 @@ class FlowObject():
         if not validate_alignment(self, k):
             raise ValueError("Input is not properly aligned to the FlowObject")
 
-        return k
+        # Make sure we return a copy
+        # deepcopy is needed to copy the metadata if k is a GridObject
+        return copy.deepcopy(k)
 
     def flow_accumulation(self, weights: np.ndarray | float = 1.0):
         """Computes the flow accumulation for a given flow network using

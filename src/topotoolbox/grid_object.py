@@ -1417,11 +1417,11 @@ class GridObject():
 
         self.z[index] = value
 
+    # pylint: disable=unused-argument
     def __array__(self, dtype=None, copy=None):
         if copy:
             return self.z.copy()
-        else:
-            return self.z
+        return self.z
 
     def __str__(self):
         return str(self.z)

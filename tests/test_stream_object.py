@@ -139,6 +139,19 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     assert not issubgraph(wide_trunk, tall_stream)
     assert not issubgraph(tall_trunk, wide_stream)
 
+def test_ezgetnal(tall_dem):
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    z = s.ezgetnal(tall_dem)
+    z2 = s.ezgetnal(z)
+
+    # ezgetnal should be idempotent
+    assert np.array_equal(z, z2)
+
+    # ezgetnal should always return a copy
+    assert z is not z2
+
 def test_subgraph(tall_dem, wide_dem):
     ############
     # Tall DEM #

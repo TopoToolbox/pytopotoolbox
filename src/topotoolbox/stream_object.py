@@ -10,11 +10,12 @@ from matplotlib.collections import LineCollection
 from scipy.sparse import csr_matrix
 
 from .flow_object import FlowObject
+from .grid_object import GridObject
+from .utils import validate_alignment
 
 # pylint: disable=no-name-in-module
 from . import _flow  # type: ignore
 from . import _stream  # type: ignore
-from .grid_object import GridObject
 
 _all_ = ['StreamObject']
 
@@ -229,8 +230,7 @@ class StreamObject():
 
         return dds
 
-    def ezgetnal(self,
-                 k: GridObject | np.ndarray | float):
+    def ezgetnal(self, k):
         """Retrieve a node attribute list from k
 
         Parameters
@@ -241,37 +241,38 @@ class StreamObject():
             shape as the underlying DEM of this `StreamObject`, the
             node values will be extracted from the grid by
             indexing. If `k` is an array with the same shape as the
-            node attribute list, `ezgetnal` returns `k`. If `k` is a
-            scalar value, `ezgetnal` returns an array of the right
-            shape filled with `k`.
+            node attribute list, `ezgetnal` returns a copy of `k`. If
+            `k` is a scalar value, `ezgetnal` returns an array of the
+            right shape filled with `k`.
+
+        Returns
+        -------
+        np.ndarray
+            The resulting array will always be a copy of the input
+            array.
 
         Raises
         ------
         ValueError
             If `k` does not have the right shape to be indexed by the
             `StreamObject`.
-        TypeError
-            If `k` does not represent a type of data that can be
-            extracted into a node attribute list.
-        """
 
-        if isinstance(k, GridObject):
-            nal = k.z[np.unravel_index(self.stream, self.shape, order='F')]
-        elif isinstance(k, np.ndarray):
-            if k.shape == self.shape:
-                # We have passed an ndarray with the same shape as the
-                # corresponding GridObject, index into it
-                nal = k[np.unravel_index(self.stream, self.shape, order='F')]
-            elif k.shape == self.stream.shape:
-                # k is already a node attribute list
-                nal = k
-            else:
-                raise ValueError(f"{k} is not of the appropriate shape")
-        elif np.isscalar(k):
+        """
+        if np.isscalar(k):
             nal = np.full(self.stream.shape, k)
         else:
-            raise TypeError(
-                f"{k} is not a supported source for a node attribute list")
+            if validate_alignment(self, k):
+                # k is a GridObject or ndarray with the right shape
+                # and georeferencing
+                # Advanced indexing of k will always return a copy
+                nal = k[np.unravel_index(self.stream, self.shape, order='F')]
+            elif hasattr(k,"shape") and self.stream.shape == k.shape:
+                # k is already a node attribute list
+                # Make sure that we return a copy
+                # The explicit call to copy is necessary to avoid type errors
+                nal = copy.deepcopy(k)
+            else:
+                raise ValueError(f"{k} is not a node attribute list of the appropriate shape.")
 
         return nal
 
