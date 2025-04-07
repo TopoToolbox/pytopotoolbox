@@ -2,8 +2,6 @@
 
 These functions often apply to both StreamObjects and FlowObjects.
 """
-import copy
-
 import numpy as np
 
 # pylint: disable=no-name-in-module
@@ -23,7 +21,9 @@ def imposemin(s, dem, minimum_slope=0.0):
         shape. If s is a StreamObject, this should be a GridObject or
         a 2D array of the shape of the DEM from which the StreamObject
         was derived or a 1D array (a node attribute list) with as many
-        entries as there are nodes in the stream network.
+        entries as there are nodes in the stream network. The element
+        type of the array can be any numerical type, but it will be
+        converted into float32, so some precision may be lost.
 
     minimum_slope : float, optional
         The minimum downward gradient (expressed as a positive
@@ -37,14 +37,14 @@ def imposemin(s, dem, minimum_slope=0.0):
     -------
     GridObject | np.ndarray
         The elevations with the minimum downward gradient imposed. If
-        `dem` is a GridObject, a GridObject is returned. Otherwise an
-        array of the same shape as `dem` is returned.
-    """
-    result = copy.deepcopy(s.ezgetnal(dem))
+        `dem` is a GridObject, a GridObject is returned. Otherwise a
+        single-precision floating point array of the same shape as
+        `dem` is returned.
 
-    z = np.array(result, dtype=np.float32, copy=False)
+    """
+    result = s.ezgetnal(dem, dtype=np.float32) # This returns a copy
 
     d = -s.distance() * minimum_slope
-    _stream.traverse_down_f32_min_add(z, d, s.source, s.target)
+    _stream.traverse_down_f32_min_add(result, d, s.source, s.target)
 
     return result

@@ -72,6 +72,12 @@ def test_imposemin(wide_dem):
     original_dem = wide_dem.z.copy()
     fd = topo.FlowObject(wide_dem)
 
+    g0 = (wide_dem.z[np.unravel_index(fd.source,fd.shape,order='F')] -
+             wide_dem.z[np.unravel_index(fd.target,fd.shape,order='F')])/fd.distance()
+
+    # Make sure that the test array has slopes less than the imposed minimum
+    assert not np.all(g0 >= 0.1 - 1e-6)
+
     for minimum_slope in [0.0,0.001,0.01,0.1]:
         min_dem = topo.imposemin(fd, wide_dem, minimum_slope)
 
@@ -94,6 +100,14 @@ def test_imposemin_f64(wide_dem):
 
     z = np.array(wide_dem, dtype=np.float64)
 
-    # The np.float64 type is not supported
-    with pytest.raises(ValueError):
-        min_dem = topo.imposemin(fd, z, 0.001)
+    min_dem = topo.imposemin(fd, z, 0.001)
+
+    assert np.all(min_dem <= z)
+
+    g = (min_dem[np.unravel_index(fd.source,fd.shape,order='F')] -
+         min_dem[np.unravel_index(fd.target,fd.shape,order='F')])/fd.distance()
+    assert np.all(g >= 0.001 - 1e-6)
+
+    # imposemin should not modify the original array
+    assert np.array_equal(original_dem, z)
+    
