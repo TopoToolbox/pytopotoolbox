@@ -98,7 +98,7 @@ def test_imposemin_f64(wide_dem):
 
     fd = topo.FlowObject(wide_dem)
 
-    z = np.array(wide_dem, dtype=np.float64)
+    z = np.array(wide_dem.z, dtype=np.float64)
 
     min_dem = topo.imposemin(fd, z, 0.001)
 
