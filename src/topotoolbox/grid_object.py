@@ -96,6 +96,32 @@ class GridObject():
 
         return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
 
+    def astype(self, dtype):
+        """Copy of the GridObject, cast to specified type
+
+        Parameters
+        ----------
+        dtype: str or np.dtype
+            The numpy data type to which the GridObject is cast
+
+        Returns
+        -------
+        GridObject
+            A copy of the original GridObject with the given data type
+        """
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
+        result.z = self.z.astype(dtype, copy=True)
+
+        result.cellsize = self.cellsize
+
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.crs = self.crs
+
+        return result
+
     def reproject(self,
                   crs: 'CRS',
                   resolution: 'float | None' = None,
