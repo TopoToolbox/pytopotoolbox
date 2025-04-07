@@ -230,7 +230,7 @@ class StreamObject():
 
         return dds
 
-    def ezgetnal(self, k):
+    def ezgetnal(self, k, dtype=None):
         """Retrieve a node attribute list from k
 
         Parameters
@@ -259,18 +259,19 @@ class StreamObject():
 
         """
         if np.isscalar(k):
-            nal = np.full(self.stream.shape, k)
+            nal = np.full(self.stream.shape, k, dtype=None)
         else:
             if validate_alignment(self, k):
                 # k is a GridObject or ndarray with the right shape
                 # and georeferencing
                 # Advanced indexing of k will always return a copy
                 nal = k[np.unravel_index(self.stream, self.shape, order='F')]
+
+                # We use copy=False in astype to avoid copying that copy if possible
+                nal = nal.astype(dtype, copy=False)
             elif hasattr(k,"shape") and self.stream.shape == k.shape:
                 # k is already a node attribute list
-                # Make sure that we return a copy
-                # The explicit call to copy is necessary to avoid type errors
-                nal = copy.deepcopy(k)
+                nal = np.array(k, dtype=dtype, copy=True)
             else:
                 raise ValueError(f"{k} is not a node attribute list of the appropriate shape.")
 

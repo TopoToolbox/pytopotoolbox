@@ -145,12 +145,18 @@ def test_ezgetnal(tall_dem):
 
     z = s.ezgetnal(tall_dem)
     z2 = s.ezgetnal(z)
+    z3 = s.ezgetnal(z, dtype=np.float64)
 
     # ezgetnal should be idempotent
     assert np.array_equal(z, z2)
+    assert np.array_equal(z, z3)
 
     # ezgetnal should always return a copy
     assert z is not z2
+    assert z is not z3
+
+    # ezgetnal with the dtype argument should return array of that type
+    assert z3.dtype is np.dtype(np.float64)
 
 def test_subgraph(tall_dem, wide_dem):
     ############

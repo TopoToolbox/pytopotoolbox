@@ -1,6 +1,5 @@
 """This module contains the FlowObject class.
 """
-import copy
 import numpy as np
 
 # pylint: disable=no-name-in-module
@@ -117,7 +116,7 @@ class FlowObject():
         self.transform = grid.transform
         self.crs = grid.crs
 
-    def ezgetnal(self, k):
+    def ezgetnal(self, k, dtype=None):
         """Retrieve a node attribute list
 
         Parameters
@@ -140,13 +139,11 @@ class FlowObject():
 
         """
         if np.isscalar(k):
-            return np.full(self.shape, k)
+            return np.full(self.shape, k, dtype=dtype)
         if not validate_alignment(self, k):
             raise ValueError("Input is not properly aligned to the FlowObject")
 
-        # Make sure we return a copy
-        # deepcopy is needed to copy the metadata if k is a GridObject
-        return copy.deepcopy(k)
+        return k.astype(dtype)
 
     def flow_accumulation(self, weights: np.ndarray | float = 1.0):
         """Computes the flow accumulation for a given flow network using
