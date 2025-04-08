@@ -263,3 +263,14 @@ def test_aspect_order(order_dems):
     faspect = fdem.aspect()
 
     assert np.array_equal(caspect, faspect)
+
+
+def test_prominence(order_dems):
+    cdem, fdem = order_dems
+
+    cp, (cx, cy) = cdem.prominence(10.0)
+    fp, (fx, fy) = fdem.prominence(10.0)
+
+    assert np.array_equal(cp, fp)
+    assert np.array_equal(cx, fx)
+    assert np.array_equal(cy, fy)
