@@ -332,3 +332,41 @@ def test_curvature_order():
         fcurv = fdem.curvature(ctype=ctype)
 
         assert np.array_equal(ccurv, fcurv)
+
+def test_dilate_order():
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    cdilated = cdem.dilate((3,3))
+    fdilated = fdem.dilate((3,3))
+
+    assert np.array_equal(cdilated, fdilated)
+
+def test_erode_order():
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    cdilated = cdem.erode((3,3))
+    fdilated = fdem.erode((3,3))
+
+    assert np.array_equal(cdilated, fdilated)
