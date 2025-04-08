@@ -261,3 +261,24 @@ def test_hillshade_order():
 
         assert topo.validate_alignment(demc, hc)
         assert topo.validate_alignment(demf, hf)
+
+def test_filter_order():
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    for method in ['mean','average','median',
+                   'sobel','scharr','wiener','std']:
+        cfiltered = cdem.filter(method=method)
+        ffiltered = fdem.filter(method=method)
+
+        assert np.array_equal(cfiltered, ffiltered)
