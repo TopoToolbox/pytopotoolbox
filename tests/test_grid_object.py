@@ -282,3 +282,33 @@ def test_filter_order():
         ffiltered = fdem.filter(method=method)
 
         assert np.array_equal(cfiltered, ffiltered)
+
+def test_gradient8_order():
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    cgradient = cdem.gradient8(multiprocessing=True)
+    fgradient = fdem.gradient8(multiprocessing=True)
+
+    assert np.array_equal(cgradient, fgradient)
+
+    assert cgradient.z.flags.c_contiguous
+    assert fgradient.z.flags.f_contiguous
+
+    cgradient = cdem.gradient8(multiprocessing=False)
+    fgradient = fdem.gradient8(multiprocessing=False)
+
+    assert np.array_equal(cgradient, fgradient)
+
+    assert cgradient.z.flags.c_contiguous
+    assert fgradient.z.flags.f_contiguous
