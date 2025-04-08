@@ -269,24 +269,24 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = self.z.astype(np.float32, order='F')
+        dem = np.asarray(self,dtype=np.float32)
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
-        _grid.identifyflats(output_grid, dem, self.shape)
+        _grid.identifyflats(output_grid, dem, self.dims)
 
         if raw:
-            return tuple(output_grid)
+            return (output_grid,)
 
         result = []
         if 'flats' in output:
             flats = cp.copy(self)
-            flats.z = np.zeros_like(flats.z, order='F')
+            flats.z = np.zeros_like(flats.z)
             flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
             result.append(flats)
 
         if 'sills' in output:
             sills = cp.copy(self)
-            sills.z = np.zeros_like(sills.z, order='F')
+            sills.z = np.zeros_like(sills.z)
             sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
             result.append(sills)
 
@@ -921,7 +921,7 @@ class GridObject():
             A 2D array of costs corresponding to each grid cell in the DEM.
         """
         dem = self.z
-        flats = self.identifyflats(raw=True)
+        flats = self.identifyflats(raw=True)[0]
         filled_dem = self.fillsinks().z
         dims = self.shape
         costs = np.zeros_like(dem, dtype=np.float32, order='F')
@@ -941,7 +941,7 @@ class GridObject():
             A 2D array representing the GWDT distances for each grid cell.
         """
         costs = self._gwdt_computecosts()
-        flats = self.identifyflats(raw=True)
+        flats = self.identifyflats(raw=True)[0]
         dims = self.shape
         dist = np.zeros_like(flats, dtype=np.float32, order='F')
         prev = np.zeros_like(flats, dtype=np.int64, order='F')
@@ -966,7 +966,7 @@ class GridObject():
         """
         filled_dem = self.fillsinks().z
         dist = self._gwdt()
-        flats = self.identifyflats(raw=True)
+        flats = self.identifyflats(raw=True)[0]
         dims = self.shape
         source = np.zeros_like(flats, dtype=np.int64, order='F')
         direction = np.zeros_like(flats, dtype=np.uint8, order='F')
