@@ -247,3 +247,19 @@ def test_erode_order(order_dems):
     feroded = fdem.erode((3,3))
 
     assert np.array_equal(ceroded, feroded)
+
+def test_evansslope_order(order_dems):
+    cdem, fdem = order_dems
+
+    cslope = cdem.evansslope()
+    fslope = fdem.evansslope()
+
+    assert np.array_equal(cslope, fslope)
+
+def test_aspect_order(order_dems):
+    cdem, fdem = order_dems
+
+    caspect = cdem.aspect()
+    faspect = fdem.aspect()
+
+    assert np.array_equal(caspect, faspect)
