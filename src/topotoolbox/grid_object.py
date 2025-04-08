@@ -4,6 +4,7 @@ import copy as cp
 from typing import Tuple, List
 
 import numpy as np
+import numpy.typing as npt
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -42,7 +43,7 @@ class GridObject():
         self.name = ''
 
         # raster metadata
-        self.z = np.empty((), order='F', dtype=np.float32)
+        self.z: npt.NDArray = np.empty((), order='F', dtype=np.float32)
 
         self.cellsize = 0.0  # in meters if crs.is_projected == True
 
@@ -477,7 +478,7 @@ class GridObject():
         if unit == 'radian':
             output = np.arctan(output)
         elif unit == 'degree':
-            output = np.arctan(output) * (180.0 / np.pi)
+            output = np.rad2deg(np.arctan(output))
         elif unit == 'sine':
             output = np.sin(np.arctan(output))
         elif unit == 'percent':
