@@ -469,10 +469,10 @@ class GridObject():
         else:
             use_mp = 0
 
-        dem = self.z.astype(np.float32, order='F')
+        dem = np.asarray(self.z, dtype=np.float32)
         output = np.zeros_like(dem)
 
-        _grid.gradient8(output, dem, self.cellsize, use_mp, self.shape)
+        _grid.gradient8(output, dem, self.cellsize, use_mp, self.dims)
         result = cp.copy(self)
 
         if unit == 'radian':
