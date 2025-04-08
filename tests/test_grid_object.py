@@ -297,8 +297,16 @@ def test_gradient8_order():
     fdem.z = np.asfortranarray(cdem.z)
     fdem.cellsize = 13.0
 
-    cgradient = cdem.gradient8()
-    fgradient = fdem.gradient8()
+    cgradient = cdem.gradient8(multiprocessing=True)
+    fgradient = fdem.gradient8(multiprocessing=True)
+
+    assert np.array_equal(cgradient, fgradient)
+
+    assert cgradient.z.flags.c_contiguous
+    assert fgradient.z.flags.f_contiguous
+
+    cgradient = cdem.gradient8(multiprocessing=False)
+    fgradient = fdem.gradient8(multiprocessing=False)
 
     assert np.array_equal(cgradient, fgradient)
 
