@@ -8,6 +8,7 @@ API Documentation
    topotoolbox.GridObject
    topotoolbox.FlowObject
    topotoolbox.StreamObject
+   topotoolbox.stream_functions
    topotoolbox.run_graphflood
    topotoolbox.read_tif
    topotoolbox.write_tif
