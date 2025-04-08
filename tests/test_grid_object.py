@@ -141,6 +141,42 @@ def test_identifyflats(square_dem, wide_dem, tall_dem):
                     if flats[i_neighbor, j_neighbor] < flats[i, j]:
                         assert flats[i, j] == 1.0
 
+def test_identifyflats_order():
+    opensimplex.seed(12)
+
+    x = np.arange(0, 128)
+    y = np.arange(0, 256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(64 * (opensimplex.noise2array(x,y) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+    cdem_filled = cdem.fillsinks()
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+    fdem_filled = fdem.fillsinks()
+
+    craw = cdem_filled.identifyflats(raw=True)[0]
+    fraw = fdem_filled.identifyflats(raw=True)[0]
+
+    assert np.array_equal(craw, fraw)
+
+    #assert craw.flags.c_contiguous
+    #assert fraw.flags.f_contiguous
+
+    cflats, csills = cdem_filled.identifyflats()
+    fflats, fsills = fdem_filled.identifyflats()
+
+    assert np.array_equal(cflats, fflats)
+    assert np.array_equal(csills, fsills)
+
+    assert cflats.z.flags.c_contiguous
+    assert csills.z.flags.c_contiguous
+    
+    assert fflats.z.flags.f_contiguous
+    assert fsills.z.flags.f_contiguous
+    
 def test_excesstopography(square_dem):
     # TODO: add more tests
     with pytest.raises(TypeError):
