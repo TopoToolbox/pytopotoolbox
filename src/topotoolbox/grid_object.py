@@ -808,22 +808,29 @@ class GridObject():
             shape as the indices array (as returned by np.unravel_index).
         """
         dem = np.nan_to_num(self.z)
-        p = np.full_like(dem, np.min(dem), order='F')
+        p = np.full_like(dem, np.min(dem))
 
         prominence: List[float] = []
         indices = []
 
+        queue = np.zeros_like(dem, dtype=np.int64)
+
         while not prominence or prominence[-1] > tolerance:
             diff = dem - p
             prominence.append(np.max(diff))
+
+            # By default argmax returns indices into the row-major
+            # flattened array even if the array is not
+            # row-major. However, unravel_index unravels by default in
+            # row-major order, so the resulting pair of indices are
+            # valid regardless of the memory order.
             indices.append(np.unravel_index(np.argmax(diff), self.shape))
 
             p[indices[-1]] = dem[indices[-1]]
             if use_hybrid:
-                queue = np.zeros_like(dem, dtype=np.int64, order='F')
-                _morphology.reconstruct_hybrid(p, queue, dem, self.shape)
+                _morphology.reconstruct_hybrid(p, queue, dem, self.dims)
             else:
-                _morphology.reconstruct(p, dem, self.shape)
+                _morphology.reconstruct(p, dem, self.dims)
 
         prominence_array = np.array(prominence)
         indices_array = np.array(indices)
