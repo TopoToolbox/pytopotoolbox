@@ -269,10 +269,10 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = self.z.astype(np.float32, order='F')
+        dem = np.asarray(self,dtype=np.float32)
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
-        _grid.identifyflats(output_grid, dem, self.shape)
+        _grid.identifyflats(output_grid, dem, self.dims)
 
         if raw:
             return (output_grid,)
@@ -280,13 +280,13 @@ class GridObject():
         result = []
         if 'flats' in output:
             flats = cp.copy(self)
-            flats.z = np.zeros_like(flats.z, order='F')
+            flats.z = np.zeros_like(flats.z)
             flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
             result.append(flats)
 
         if 'sills' in output:
             sills = cp.copy(self)
-            sills.z = np.zeros_like(sills.z, order='F')
+            sills.z = np.zeros_like(sills.z)
             sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
             result.append(sills)
 

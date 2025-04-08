@@ -162,8 +162,8 @@ def test_identifyflats_order():
 
     assert np.array_equal(craw, fraw)
 
-    #assert craw.flags.c_contiguous
-    #assert fraw.flags.f_contiguous
+    assert craw.flags.c_contiguous
+    assert fraw.flags.f_contiguous
 
     cflats, csills = cdem_filled.identifyflats()
     fflats, fsills = fdem_filled.identifyflats()
