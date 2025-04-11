@@ -2,11 +2,30 @@ import copy
 import pytest
 
 import numpy as np
+import opensimplex
+
 import topotoolbox as topo
 
 @pytest.fixture
 def wide_dem():
     return topo.gen_random(rows=64, columns=128, seed=12)
+
+@pytest.fixture
+def order_dems():
+    opensimplex.seed(12)
+
+    x = np.arange(0,128)
+    y = np.arange(0,256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    return [cdem, fdem]
 
 def test_flowobject(wide_dem):
     dem = wide_dem
@@ -26,6 +45,26 @@ def test_flowobject(wide_dem):
 
     # Ensure that FlowObject does not modify the original DEM
     assert np.all(dem.z == original_dem)
+
+def test_flowobject_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    # cfd and ffd should be isomorphic graphs. However, their labels
+    # will differ because of the different memory orders, and their
+    # topological sorts may differ because the two flow direction
+    # arrays are looped over in different orders.
+
+    # We can construct the isomorphism by recomputing the linear
+    # indices of the row-major array in the column-major ordering.
+    idxmap = np.ravel_multi_index(np.unravel_index(np.arange(0, np.prod(cfd.shape)), cfd.shape, order='C'), ffd.shape, order='F')
+
+    # Now test whether the edge sets are identical
+    cedges = set(map(tuple, np.stack((idxmap[cfd.source], idxmap[cfd.target]), axis=1)))
+    fedges = set(map(tuple, np.stack((ffd.source, ffd.target), axis=1)))
+    assert cedges == fedges
 
 def test_ezgetnal(wide_dem):
     fd = topo.FlowObject(wide_dem)
