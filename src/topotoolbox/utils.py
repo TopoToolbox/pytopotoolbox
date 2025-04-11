@@ -344,15 +344,18 @@ def read_from_cache(filename: str) -> GridObject:
 
 
 def load_open_topography(south: float, north: float, west: float, east: float,
-                         dem_type: str = "SRTMGL3", overwrite: bool = False,
-                         save_path: str | None = None,
-                         api_key: str = "demoapikeyot2021") -> GridObject:
+                         api_key: str | None = None, dem_type: str = "SRTMGL3",
+                         api_path: str | None = None, overwrite: bool = False,
+                         save_path: str | None = None
+                         ) -> GridObject:
     """Download a DEM from Open Topography. The DEM is downloaded as a
     GeoTIFF file and saved in the cache directory. The DEM is then
-    read into a GridObject. To overwrite an existing Downloaded DEM, use
-    the overwrite parameter. To save the DEM to a different location,
-    use the save_path parameter. The API key is required for accessing
-    the Open Topography API. The default API key is the demo key.
+    read into a GridObject. The DEMs come in geographic coordinates (WGS84).
+    The API key is required for accessing the OpenTopography API
+    (opentopography.org). To avoid having to pass the API key as an argument,
+    save it in .opentopography.txt in the working or home directory. To
+    overwrite an existing downloaded DEM, use the overwrite parameter. To save
+    the DEM to a different location, use the save_path parameter.
 
     Parameters
     ----------
@@ -364,6 +367,15 @@ def load_open_topography(south: float, north: float, west: float, east: float,
         WGS 84 bounding box west coordinates
     east : float
         WGS 84 bounding box east coordinates
+    api_key : str | None
+        The API key is needed to access the Open Topography API. To get an API
+        key, visit opentopography.org, log in, navigate to MyOpenTopoDashboard
+        and request a new API key. This argument is used to pass the
+        API key directly as a string. By default None.
+    api_path : str | None
+        The path to a file that contains the API key. If provided, the API key
+        will be read from the file. The file should contain only the API key
+        without any additional text or formatting. By default None.
     dem_type : str, optional
         Choose one of the available global raster types, by default "SRTMGL3"
 
@@ -385,12 +397,9 @@ def load_open_topography(south: float, north: float, west: float, east: float,
         If True cached DEM will be overwritten if it has the same bounds
         and dem_type, by default False
     save_path : str | None, optional
-        If provided, the downloadad GeoTIFF will be saved to this path. Like
-        this `"path/to/file.tif"` for example. By default None
-    api_key : str, optional
-        The API key for Open Topography. This is required to access the API.
-        If not provided, the demo key with limeted functionality will be used, 
-        by default "demoapikeyot2021"
+        If provided, the downloaded GeoTIFF will be saved to this path. Like
+        this `"path/to/file.tif"` for example. If it is None, files will
+        be saved in cache. By default None
 
     Returns
     -------
@@ -408,19 +417,66 @@ def load_open_topography(south: float, north: float, west: float, east: float,
     -------
     dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
                     east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
+    dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
     im = dem.plot(cmap="terrain")
     plt.show()
     """
+
+    # Check if an API key is provided
+    if api_key is str:
+        api = api_key
+    elif api_path is str:
+        try:
+            # since encoding is not predefined, use unspecified encoding
+            # pylint: disable=unspecified-encoding
+            with open(str(api_path), 'r') as file:
+                api = file.read().strip()
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"API key file not found: {api_path}") from None
+        except PermissionError:
+            raise PermissionError(
+                f"Cannot read API key file: {api_path}") from None
+    else:
+        # Since no API key was provided, try defaults:
+        if os.path.exists(os.path.abspath('.opentopography.txt')):
+            try:
+                # pylint: disable=unspecified-encoding
+                with open(os.path.abspath(".opentopography.txt"), 'r') as file:
+                    api = file.read().strip()
+            except (FileNotFoundError, PermissionError):
+                pass
+        elif os.path.exists(os.path.expanduser('~/.opentopography.txt')):
+            try:
+                # pylint: disable=unspecified-encoding
+                with open(os.path.expanduser("~/.opentopograpy.txt"), 'r') as file:
+                    api = file.read().strip()
+            except (FileNotFoundError, PermissionError):
+                pass
+        else:
+            # No API key has been passed or found
+            err = ("Neither api_key, api_env or api_path have been provided. "
+                   "Default environment variable 'OPENTOPOGRAPHY_API_KEY' or "
+                   "file '~/.opentopograpy.txt' are not set. Use"
+                   " api_key='demoapikeyot2022' as the demo key.")
+            raise ValueError(err) from None
 
     if dem_type not in OPEN_TOPO_DATASETS:
         raise ValueError(
             f"Invalid DEM type. Available types are: {OPEN_TOPO_DATASETS}")
 
-    # Assemble the cache path. Create unique/Identifiable name for the GeoTIFF
+    # Assemble the cache path. Create unique/identifiable name for the GeoTIFF
     dem = f"OpenTopo_{south}_{north}_{west}_{east}_{dem_type}"
-    cache_path = os.path.join(get_save_location(), f"{dem}.tif")
 
-    if not os.path.exists(cache_path) or overwrite:
+    # if no save_path is provided, use the cache path
+    if save_path is None:
+        save_path = os.path.join(get_save_location(), f"{dem}.tif")
+    elif os.path.exists(save_path) and not overwrite:
+        err = (f"File {save_path} already exists. Use overwrite=True to "
+               "overwrite and the file.")
+        raise FileExistsError(err)
+
+    if not os.path.exists(save_path) or overwrite:
         url = (f"{OPEN_TOPO_SOURCE}"
                f"?demtype={dem_type}"
                f"&south={south}"
@@ -428,33 +484,29 @@ def load_open_topography(south: float, north: float, west: float, east: float,
                f"&west={west}"
                f"&east={east}"
                f"&outputFormat=GTiff"
-               f"&API_Key={api_key}")
+               f"&API_Key={api}")
 
         try:
-            urlretrieve(url, cache_path)
+            urlretrieve(url, save_path)
         except urllib.error.HTTPError as e:
+            if e.code == 401:
+                err = ("Error: 401 - Unauthorized. Check your API key. "
+                       "If you don't have one, use this guide to generate one:"
+                       " https://opentopography.org/blog/introducing-api-keys"
+                       "-access-opentopography-global-datasets")
+                raise ConnectionError(err) from None
+
             error_dict = {
                 204: "Bad Data",
                 400: "Bad Request",
-                401: "Unauthorized (Check API key)",
                 500: "Internal Server Error"
             }
             code = e.code
             err = f"Error: {code} - {error_dict.get(code, 'Unknown Error')}"
             raise ConnectionError(err) from None
 
-    if save_path:
-        # Copy cached file to specified save path
-        with open(cache_path, 'rb') as src, open(save_path, 'wb') as target:
-            while True:
-                # 1 MB chunks
-                chunk = src.read(1_048_576)
-                if not chunk:
-                    break
-                target.write(chunk)
-
-    grid_object = read_tif(cache_path)
-    return grid_object
+    grid_obj = read_tif(save_path)
+    return grid_obj
 
 
 def validate_alignment(s1, s2) -> bool:
