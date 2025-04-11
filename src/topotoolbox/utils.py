@@ -423,9 +423,9 @@ def load_open_topography(south: float, north: float, west: float, east: float,
     """
 
     # Check if an API key is provided
-    if api_key is str:
+    if isinstance(api_key, str):
         api = api_key
-    elif api_path is str:
+    elif isinstance(api_path, str):
         try:
             # since encoding is not predefined, use unspecified encoding
             # pylint: disable=unspecified-encoding
@@ -449,7 +449,7 @@ def load_open_topography(south: float, north: float, west: float, east: float,
         elif os.path.exists(os.path.expanduser('~/.opentopography.txt')):
             try:
                 # pylint: disable=unspecified-encoding
-                with open(os.path.expanduser("~/.opentopograpy.txt"), 'r') as file:
+                with open(os.path.expanduser("~/.opentopography.txt"), 'r') as file:
                     api = file.read().strip()
             except (FileNotFoundError, PermissionError):
                 pass
@@ -457,7 +457,7 @@ def load_open_topography(south: float, north: float, west: float, east: float,
             # No API key has been passed or found
             err = ("Neither api_key, api_env or api_path have been provided. "
                    "Default environment variable 'OPENTOPOGRAPHY_API_KEY' or "
-                   "file '~/.opentopograpy.txt' are not set. Use"
+                   "file '~/.opentopography.txt' are not set. Use"
                    " api_key='demoapikeyot2022' as the demo key.")
             raise ValueError(err) from None
 
