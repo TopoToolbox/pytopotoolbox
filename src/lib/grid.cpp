@@ -197,7 +197,9 @@ void wrap_flow_routing_d8_carve(
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
 
-    flow_routing_d8_carve(node_ptr, direction_ptr, dem_ptr, dist_ptr, flats_ptr, dims_ptr);
+    unsigned int order = (direction.flags() & py::array::c_style) ? 1 : 0;
+
+    flow_routing_d8_carve(node_ptr, direction_ptr, dem_ptr, dist_ptr, flats_ptr, dims_ptr, order);
 }
 
 // wrap_flow_routing_d8_edgelist:
@@ -223,7 +225,10 @@ ptrdiff_t wrap_flow_routing_d8_edgelist(
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-    return flow_routing_d8_edgelist(source_ptr, target_ptr, node_ptr, direction_ptr, dims_ptr);
+
+    unsigned int order = (direction.flags() & py::array::c_style) ? 1 : 0;
+
+    return flow_routing_d8_edgelist(source_ptr, target_ptr, node_ptr, direction_ptr, dims_ptr, order);
 }
 
 // wrap_gradient8:
