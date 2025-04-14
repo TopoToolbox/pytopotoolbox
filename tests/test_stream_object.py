@@ -155,6 +155,8 @@ def test_ezgetnal(tall_dem):
     assert z is not z2
     assert z is not z3
 
+    assert z.dtype == tall_dem.z.dtype
+    assert z2.dtype == tall_dem.z.dtype
     # ezgetnal with the dtype argument should return array of that type
     assert z3.dtype is np.dtype(np.float64)
 
