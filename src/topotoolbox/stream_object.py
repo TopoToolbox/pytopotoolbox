@@ -268,7 +268,7 @@ class StreamObject():
                 nal = k[np.unravel_index(self.stream, self.shape, order='F')]
 
                 # We use copy=False in astype to avoid copying that copy if possible
-                nal = nal.astype(dtype, copy=False)
+                nal = nal.astype(dtype or nal.dtype, copy=False)
             elif hasattr(k,"shape") and self.stream.shape == k.shape:
                 # k is already a node attribute list
                 nal = np.array(k, dtype=dtype, copy=True)
@@ -443,8 +443,8 @@ class StreamObject():
         if ax is None:
             ax = plt.gca()
         z = self.ezgetnal(z)
-        dist = np.zeros_like(z)
-        a = np.ones_like(z)
+        dist = np.zeros_like(z, dtype=np.float32)
+        a = np.ones_like(z, dtype=np.float32)
 
         # Compute upstream distance using streamquad_trapz_f32
         # Another traversal might be more efficient in the future
