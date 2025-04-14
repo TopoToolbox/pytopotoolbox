@@ -6,19 +6,22 @@ import opensimplex
 
 import topotoolbox as topo
 
+
 @pytest.fixture
 def wide_dem():
     return topo.gen_random(rows=64, columns=128, seed=12)
+
 
 @pytest.fixture
 def order_dems():
     opensimplex.seed(12)
 
-    x = np.arange(0,128)
-    y = np.arange(0,256)
+    x = np.arange(0, 128)
+    y = np.arange(0, 256)
 
     cdem = topo.GridObject()
-    cdem.z = np.array(64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
+    cdem.z = np.array(
+        64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
     cdem.cellsize = 13.0
 
     fdem = topo.GridObject()
@@ -27,10 +30,11 @@ def order_dems():
 
     return [cdem, fdem]
 
+
 def test_flowobject(wide_dem):
     dem = wide_dem
     original_dem = dem.z.copy()
-    fd = topo.FlowObject(dem);
+    fd = topo.FlowObject(dem)
 
     assert topo.validate_alignment(dem, fd)
 
@@ -46,6 +50,7 @@ def test_flowobject(wide_dem):
     # Ensure that FlowObject does not modify the original DEM
     assert np.all(dem.z == original_dem)
 
+
 def test_flowobject_order(order_dems):
     cdem, fdem = order_dems
 
@@ -59,12 +64,15 @@ def test_flowobject_order(order_dems):
 
     # We can construct the isomorphism by recomputing the linear
     # indices of the row-major array in the column-major ordering.
-    idxmap = np.ravel_multi_index(np.unravel_index(np.arange(0, np.prod(cfd.shape)), cfd.shape, order='C'), ffd.shape, order='F')
+    idxmap = np.ravel_multi_index(np.unravel_index(
+        np.arange(0, np.prod(cfd.shape)), cfd.shape, order='C'), ffd.shape, order='F')
 
     # Now test whether the edge sets are identical
-    cedges = set(map(tuple, np.stack((idxmap[cfd.source], idxmap[cfd.target]), axis=1)))
+    cedges = set(
+        map(tuple, np.stack((idxmap[cfd.source], idxmap[cfd.target]), axis=1)))
     fedges = set(map(tuple, np.stack((ffd.source, ffd.target), axis=1)))
     assert cedges == fedges
+
 
 def test_ezgetnal(wide_dem):
     fd = topo.FlowObject(wide_dem)
@@ -90,6 +98,7 @@ def test_ezgetnal(wide_dem):
     # ezgetnal with dtype should return array of that dtype
     assert z3.z.dtype is np.dtype(np.float64)
 
+
 def test_flowpathextract(wide_dem):
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
@@ -111,13 +120,13 @@ def test_imposemin(wide_dem):
     original_dem = wide_dem.z.copy()
     fd = topo.FlowObject(wide_dem)
 
-    g0 = (wide_dem.z[np.unravel_index(fd.source,fd.shape,order='F')] -
-             wide_dem.z[np.unravel_index(fd.target,fd.shape,order='F')])/fd.distance()
+    g0 = (wide_dem.z[np.unravel_index(fd.source, fd.shape, order='F')] -
+          wide_dem.z[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
 
     # Make sure that the test array has slopes less than the imposed minimum
     assert not np.all(g0 >= 0.1 - 1e-6)
 
-    for minimum_slope in [0.0,0.001,0.01,0.1]:
+    for minimum_slope in [0.0, 0.001, 0.01, 0.1]:
         min_dem = topo.imposemin(fd, wide_dem, minimum_slope)
 
         # The carved dem should not be above the original
@@ -125,12 +134,13 @@ def test_imposemin(wide_dem):
 
         # The gradient along the flow network should be greater than or
         # equal to the defined slope within some numerical error
-        g = (min_dem.z[np.unravel_index(fd.source,fd.shape,order='F')] -
-             min_dem.z[np.unravel_index(fd.target,fd.shape,order='F')])/fd.distance()
+        g = (min_dem.z[np.unravel_index(fd.source, fd.shape, order='F')] -
+             min_dem.z[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
         assert np.all(g >= minimum_slope - 1e-6)
 
         # imposemin should not modify the original array
         assert np.array_equal(original_dem, wide_dem.z)
+
 
 def test_imposemin_f64(wide_dem):
     original_dem = np.array(wide_dem, dtype=np.float64)
@@ -143,10 +153,9 @@ def test_imposemin_f64(wide_dem):
 
     assert np.all(min_dem <= z)
 
-    g = (min_dem[np.unravel_index(fd.source,fd.shape,order='F')] -
-         min_dem[np.unravel_index(fd.target,fd.shape,order='F')])/fd.distance()
+    g = (min_dem[np.unravel_index(fd.source, fd.shape, order='F')] -
+         min_dem[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
     assert np.all(g >= 0.001 - 1e-6)
 
     # imposemin should not modify the original array
     assert np.array_equal(original_dem, z)
-    

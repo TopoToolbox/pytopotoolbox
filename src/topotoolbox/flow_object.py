@@ -19,7 +19,7 @@ class FlowObject():
 
     def __init__(self, grid: GridObject,
                  bc: np.ndarray | GridObject | None = None,
-                 hybrid : bool = True):
+                 hybrid: bool = True):
         """The constructor for the FlowObject. Takes a GridObject as input,
         computes flow direction information and saves them as an FlowObject.
 
@@ -96,7 +96,8 @@ class FlowObject():
         # because we only need a block of contiguous memory interpreted as a 1D array.
         source = np.ravel(conncomps)  # source: dtype=int64
         target = np.ravel(back)       # target: dtype=int64
-        edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims)
+        edge_count = _grid.flow_routing_d8_edgelist(
+            source, target, node, direction, dims)
 
         self.path = grid.path
         self.name = grid.name
@@ -243,12 +244,12 @@ class FlowObject():
             An array containing column-major linear indices into the
             DEM identifying the flow path.
         """
-        ch = np.zeros(self.shape,dtype=np.uint32,order='F')
+        ch = np.zeros(self.shape, dtype=np.uint32, order='F')
         ch[np.unravel_index(idx, self.shape, order='F')] = 1
         edges = np.ones(self.source.size, dtype=np.uint32)
         _stream.traverse_down_u32_or_and(ch, edges, self.source, self.target)
 
-        return np.nonzero(np.ravel(ch,order='F'))[0]
+        return np.nonzero(np.ravel(ch, order='F'))[0]
 
     def distance(self):
         """Compute the distance between each node in the flow network
