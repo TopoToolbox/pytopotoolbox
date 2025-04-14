@@ -19,7 +19,7 @@ class FlowObject():
 
     def __init__(self, grid: GridObject,
                  bc: np.ndarray | GridObject | None = None,
-                 hybrid : bool = True):
+                 hybrid: bool = True):
         """The constructor for the FlowObject. Takes a GridObject as input,
         computes flow direction information and saves them as an FlowObject.
 
@@ -43,10 +43,10 @@ class FlowObject():
         Large intermediate arrays are created during the initialization
         process, which could lead to issues when using very large DEMs.
         """
-        dims = grid.shape
-        dem = grid.z
+        dims = grid.dims
+        dem = np.asarray(grid, dtype=np.float32)
 
-        filled_dem = np.zeros_like(dem, dtype=np.float32, order='F')
+        filled_dem = np.zeros_like(dem, dtype=np.float32)
         restore_nans = False
         if bc is None:
             bc = np.ones_like(dem, dtype=np.uint8)
@@ -57,15 +57,14 @@ class FlowObject():
             bc[nans] = 1
             restore_nans = True
 
-        if bc.shape != dims:
+        if not validate_alignment(grid, bc):
             err = ("The shape of the provided boundary conditions does not "
                    f"match the shape of the DEM. {dims}")
             raise ValueError(err)from None
 
-        if isinstance(bc, GridObject):
-            bc = bc.z
+        bc = np.asarray(bc, dtype=np.uint8)
 
-        queue = np.zeros_like(dem, dtype=np.int64, order='F')
+        queue = np.zeros_like(dem, dtype=np.int64)
         if hybrid:
             _grid.fillsinks_hybrid(filled_dem, queue, dem, bc, dims)
         else:
@@ -75,33 +74,35 @@ class FlowObject():
             dem[nans] = np.nan
             filled_dem[nans] = np.nan
 
-        flats = np.zeros_like(dem, dtype=np.int32, order='F')
+        flats = np.zeros_like(dem, dtype=np.int32)
         _grid.identifyflats(flats, filled_dem, dims)
 
-        costs = np.zeros_like(dem, dtype=np.float32, order='F')
-        conncomps = np.zeros_like(dem, dtype=np.int64, order='F')
+        costs = np.zeros_like(dem, dtype=np.float32)
+        conncomps = np.zeros_like(dem, dtype=np.int64)
         _grid.gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
 
-        dist = np.zeros_like(flats, dtype=np.float32, order='F')
+        dist = np.zeros_like(flats, dtype=np.float32)
         prev = conncomps  # prev: dtype=np.int64
         heap = queue      # heap: dtype=np.int64
-        back = np.zeros_like(flats, dtype=np.int64, order='F')
+        back = np.zeros_like(flats, dtype=np.int64)
         _grid.gwdt(dist, prev, costs, flats, heap, back, dims)
 
         node = heap  # node: dtype=np.int64
-        direction = np.zeros_like(dem, dtype=np.uint8, order='F')
+        direction = np.zeros_like(dem, dtype=np.uint8)
         _grid.flow_routing_d8_carve(
             node, direction, filled_dem, dist, flats, dims)
 
+        # ravel is used here to flatten the arrays. The memory order should not matter
+        # because we only need a block of contiguous memory interpreted as a 1D array.
         source = np.ravel(conncomps)  # source: dtype=int64
         target = np.ravel(back)       # target: dtype=int64
-        edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims)
+        edge_count = _grid.flow_routing_d8_edgelist(
+            source, target, node, direction, dims)
 
         self.path = grid.path
         self.name = grid.name
 
         # raster metadata
-
         self.direction = direction  # dtype=np.unit8
 
         self.source = source[0:edge_count]  # dtype=np.int64
@@ -243,12 +244,12 @@ class FlowObject():
             An array containing column-major linear indices into the
             DEM identifying the flow path.
         """
-        ch = np.zeros(self.shape,dtype=np.uint32,order='F')
+        ch = np.zeros(self.shape, dtype=np.uint32, order='F')
         ch[np.unravel_index(idx, self.shape, order='F')] = 1
         edges = np.ones(self.source.size, dtype=np.uint32)
         _stream.traverse_down_u32_or_and(ch, edges, self.source, self.target)
 
-        return np.nonzero(np.ravel(ch,order='F'))[0]
+        return np.nonzero(np.ravel(ch, order='F'))[0]
 
     def distance(self):
         """Compute the distance between each node in the flow network
