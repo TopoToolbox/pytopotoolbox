@@ -66,8 +66,17 @@ def test_streamobject_sizes(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
     tall_stream = topo.StreamObject(tall_flow)
 
+    assert topo.validate_alignment(tall_dem, tall_flow)
+    assert topo.validate_alignment(tall_dem, tall_stream)
+
     wide_flow = topo.FlowObject(wide_dem)
     wide_stream = topo.StreamObject(wide_flow)
+
+    assert topo.validate_alignment(wide_dem, wide_flow)
+    assert topo.validate_alignment(wide_dem, wide_stream)
+
+    assert not topo.validate_alignment(wide_dem, tall_flow)
+    assert not topo.validate_alignment(wide_dem, tall_stream)
 
     assert (wide_stream.target.size == wide_stream.source.size ==
             wide_stream.direction.size)
@@ -106,6 +115,10 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     assert issubgraph(tall_k1_trunk, tall_k1)
     assert not issubgraph(tall_trunk, tall_k1)
 
+    assert topo.validate_alignment(tall_trunk, tall_stream)
+    assert topo.validate_alignment(tall_k1, tall_stream)
+    assert topo.validate_alignment(tall_k1_trunk, tall_stream)
+
     wide_flow = topo.FlowObject(wide_dem)
     wide_stream = topo.StreamObject(wide_flow)
 
@@ -119,8 +132,33 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     assert issubgraph(wide_k1_trunk, wide_k1)
     assert not issubgraph(wide_trunk, wide_k1)
 
+    assert topo.validate_alignment(wide_trunk, wide_stream)
+    assert topo.validate_alignment(wide_k1, wide_stream)
+    assert topo.validate_alignment(wide_k1_trunk, wide_stream)
+
     assert not issubgraph(wide_trunk, tall_stream)
     assert not issubgraph(tall_trunk, wide_stream)
+
+def test_ezgetnal(tall_dem):
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    z = s.ezgetnal(tall_dem)
+    z2 = s.ezgetnal(z)
+    z3 = s.ezgetnal(z, dtype=np.float64)
+
+    # ezgetnal should be idempotent
+    assert np.array_equal(z, z2)
+    assert np.array_equal(z, z3)
+
+    # ezgetnal should always return a copy
+    assert z is not z2
+    assert z is not z3
+
+    assert z.dtype == tall_dem.z.dtype
+    assert z2.dtype == tall_dem.z.dtype
+    # ezgetnal with the dtype argument should return array of that type
+    assert z3.dtype is np.dtype(np.float64)
 
 def test_subgraph(tall_dem, wide_dem):
     ############
@@ -213,19 +251,66 @@ def test_stream_channelheads(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
     s = topo.StreamObject(fd)
 
+    assert topo.validate_alignment(fd, s)
+
     channel_heads = s.streampoi("channelheads")
 
     s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
+
+    assert topo.validate_alignment(fd, s2)
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
 
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
+
+    assert topo.validate_alignment(fd, s)
     
     channel_heads = s.streampoi("channelheads")
 
     s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
 
+    assert topo.validate_alignment(fd, s2)
+
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
+def test_stream_imposemin(tall_dem, wide_dem):
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    original_z = s.ezgetnal(tall_dem)
+
+    for minimum_slope in [0.0,0.001,0.01,0.1]:
+        minz = topo.imposemin(s, tall_dem, minimum_slope)
+
+        # imposemin should not modify the original array
+        assert np.array_equal(original_z, s.ezgetnal(tall_dem))
+
+        # The carved dem should not be above the original
+        assert np.all(minz <= s.ezgetnal(tall_dem))
+
+        # The gradient along the flow network should be greater than or
+        # equal to the defined slope within some numerical error
+        g = (minz[s.source] - minz[s.target])/s.distance()
+        assert np.all(g >= minimum_slope - 1e-6)
+
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+
+    original_z = s.ezgetnal(wide_dem)
+
+    for minimum_slope in [0.0,0.001,0.01,0.1]:
+        minz = topo.imposemin(s, wide_dem, minimum_slope)
+
+        # imposemin should not modify the original array
+        assert np.array_equal(original_z, s.ezgetnal(wide_dem))
+
+        # The carved dem should not be above the original
+        assert np.all(minz <= s.ezgetnal(wide_dem))
+
+        # The gradient along the flow network should be greater than or
+        # equal to the defined slope within some numerical error
+        g = (minz[s.source] - minz[s.target])/s.distance()
+        assert np.all(g >= minimum_slope - 1e-6)

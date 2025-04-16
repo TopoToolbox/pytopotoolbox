@@ -4,6 +4,7 @@ import copy as cp
 from typing import Tuple, List
 
 import numpy as np
+import numpy.typing as npt
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -19,7 +20,8 @@ from scipy.ndimage import (
 from scipy.signal import wiener
 
 from rasterio import CRS, Affine
-from rasterio.warp import reproject
+from rasterio.coords import BoundingBox
+from rasterio.warp import reproject, transform_bounds
 from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
@@ -41,7 +43,7 @@ class GridObject():
         self.name = ''
 
         # raster metadata
-        self.z = np.empty((), order='F', dtype=np.float32)
+        self.z: npt.NDArray = np.empty((), order='F', dtype=np.float32)
 
         self.cellsize = 0.0  # in meters if crs.is_projected == True
 
@@ -90,7 +92,36 @@ class GridObject():
         tuple
             The bounding box in the order (left, right, bottom, top)
         """
-        return (self.bounds.left, self.bounds.right, self.bounds.bottom, self.bounds.top)
+        if self.bounds:
+            return (self.bounds.left, self.bounds.right, self.bounds.bottom, self.bounds.top)
+
+        return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
+
+    def astype(self, dtype):
+        """Copy of the GridObject, cast to specified type
+
+        Parameters
+        ----------
+        dtype: str or np.dtype
+            The numpy data type to which the GridObject is cast
+
+        Returns
+        -------
+        GridObject
+            A copy of the original GridObject with the given data type
+        """
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
+        result.z = self.z.astype(dtype, copy=True)
+
+        result.cellsize = self.cellsize
+
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.crs = self.crs
+
+        return result
 
     def reproject(self,
                   crs: 'CRS',
@@ -137,6 +168,9 @@ class GridObject():
         # Get cellsize from transform in case we did not specify one
         if dst.transform is not None:
             dst.cellsize = abs(dst.transform[0])
+
+        if self.bounds:
+            dst.bounds = BoundingBox(*transform_bounds(self.crs, dst.crs, *self.bounds))
 
         return dst
 
@@ -242,24 +276,24 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = self.z.astype(np.float32, order='F')
+        dem = np.asarray(self,dtype=np.float32)
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
-        _grid.identifyflats(output_grid, dem, self.shape)
+        _grid.identifyflats(output_grid, dem, self.dims)
 
         if raw:
-            return tuple(output_grid)
+            return (output_grid,)
 
         result = []
         if 'flats' in output:
             flats = cp.copy(self)
-            flats.z = np.zeros_like(flats.z, order='F')
+            flats.z = np.zeros_like(flats.z)
             flats.z = np.where((output_grid & 1) == 1, 1, flats.z)
             result.append(flats)
 
         if 'sills' in output:
             sills = cp.copy(self)
-            sills.z = np.zeros_like(sills.z, order='F')
+            sills.z = np.zeros_like(sills.z)
             sills.z = np.where((output_grid & 2) == 2, 1, sills.z)
             result.append(sills)
 
@@ -459,16 +493,16 @@ class GridObject():
         else:
             use_mp = 0
 
-        dem = self.z.astype(np.float32, order='F')
+        dem = np.asarray(self.z, dtype=np.float32)
         output = np.zeros_like(dem)
 
-        _grid.gradient8(output, dem, self.cellsize, use_mp, self.shape)
+        _grid.gradient8(output, dem, self.cellsize, use_mp, self.dims)
         result = cp.copy(self)
 
         if unit == 'radian':
             output = np.arctan(output)
         elif unit == 'degree':
-            output = np.arctan(output) * (180.0 / np.pi)
+            output = np.rad2deg(np.arctan(output))
         elif unit == 'sine':
             output = np.sin(np.arctan(output))
         elif unit == 'percent':
@@ -831,22 +865,29 @@ class GridObject():
         >>> plt.plot(idx[0], idx[1], 'ro')
         """
         dem = np.nan_to_num(self.z)
-        p = np.full_like(dem, np.min(dem), order='F')
+        p = np.full_like(dem, np.min(dem))
 
         prominence: List[float] = []
         indices = []
 
+        queue = np.zeros_like(dem, dtype=np.int64)
+
         while not prominence or prominence[-1] > tolerance:
             diff = dem - p
             prominence.append(np.max(diff))
+
+            # By default argmax returns indices into the row-major
+            # flattened array even if the array is not
+            # row-major. However, unravel_index unravels by default in
+            # row-major order, so the resulting pair of indices are
+            # valid regardless of the memory order.
             indices.append(np.unravel_index(np.argmax(diff), self.shape))
 
             p[indices[-1]] = dem[indices[-1]]
             if use_hybrid:
-                queue = np.zeros_like(dem, dtype=np.int64, order='F')
-                _morphology.reconstruct_hybrid(p, queue, dem, self.shape)
+                _morphology.reconstruct_hybrid(p, queue, dem, self.dims)
             else:
-                _morphology.reconstruct(p, dem, self.shape)
+                _morphology.reconstruct(p, dem, self.dims)
 
         prominence_array = np.array(prominence)
         indices_array = np.array(indices)
@@ -953,7 +994,7 @@ class GridObject():
             A 2D array of costs corresponding to each grid cell in the DEM.
         """
         dem = self.z
-        flats = self.identifyflats(raw=True)
+        flats = self.identifyflats(raw=True)[0]
         filled_dem = self.fillsinks().z
         dims = self.shape
         costs = np.zeros_like(dem, dtype=np.float32, order='F')
@@ -973,7 +1014,7 @@ class GridObject():
             A 2D array representing the GWDT distances for each grid cell.
         """
         costs = self._gwdt_computecosts()
-        flats = self.identifyflats(raw=True)
+        flats = self.identifyflats(raw=True)[0]
         dims = self.shape
         dist = np.zeros_like(flats, dtype=np.float32, order='F')
         prev = np.zeros_like(flats, dtype=np.int64, order='F')
@@ -998,7 +1039,7 @@ class GridObject():
         """
         filled_dem = self.fillsinks().z
         dist = self._gwdt()
-        flats = self.identifyflats(raw=True)
+        flats = self.identifyflats(raw=True)[0]
         dims = self.shape
         source = np.zeros_like(flats, dtype=np.int64, order='F')
         direction = np.zeros_like(flats, dtype=np.uint8, order='F')
@@ -1450,15 +1491,11 @@ class GridObject():
 
         self.z[index] = value
 
+    # pylint: disable=unused-argument
     def __array__(self, dtype=None, copy=None):
-        try:
-            # If we are using Numpy v1.x, this will copy-if-needed
-            # when copy=False.
-            return np.array(self.z, dtype=dtype, copy=copy)
-        except ValueError:
-            # If np.array fails because copy=None and we are using an
-            # older version of Numpy, use asarray to copy-if-needed.
-            return np.asarray(self.z, dtype=dtype)
+        if copy:
+            return self.z.copy()
+        return self.z
 
     def __str__(self):
         return str(self.z)
