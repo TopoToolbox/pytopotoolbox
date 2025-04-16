@@ -10,19 +10,31 @@ repos:
     rev: 0.8.1
     hooks:
       - id: nbstripout
-  - repo: https://github.com/PyCQA/pylint
-    rev: v3.3.1
+  - repo: local
     hooks:
       - id: pylint
-        name: Run pylint
-        entry: pylint --rcfile=pyproject.toml
-        args: [src/topotoolbox/]
+        name: pylint
+        entry: pylint
+        language: system
         types: [python]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
+        exclude: |  # Exclude test/ and docs/
+          (?x)^(
+            tests/|
+            docs/
+          )
+        args:
+          [
+            "-rn",
+            "-sn",
+            "--rcfile=pyproject.toml",
+          ]
       - id: mypy
-        name: Run type checks
-        entry: mypy --ignore-missing-imports
-        args: [src/topotoolbox/]
+        name: mypy
+        entry: mypy
+        language: system
         types: [python]
+        args:
+          [
+            "--ignore-missing-imports",
+            "--config-file=pyproject.toml",
+          ]
