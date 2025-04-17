@@ -170,7 +170,8 @@ class GridObject():
             dst.cellsize = abs(dst.transform[0])
 
         if self.bounds:
-            dst.bounds = BoundingBox(*transform_bounds(self.crs, dst.crs, *self.bounds))
+            dst.bounds = BoundingBox(
+                *transform_bounds(self.crs, dst.crs, *self.bounds))
 
         return dst
 
@@ -197,8 +198,10 @@ class GridObject():
         GridObject
             The filled DEM.
 
+        Example
+        -------
+        # TODO: Add example
         """
-
         dem = self.z.astype(np.float32)
         output = np.zeros_like(dem)
 
@@ -276,7 +279,7 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = np.asarray(self,dtype=np.float32)
+        dem = np.asarray(self, dtype=np.float32)
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
         _grid.identifyflats(output_grid, dem, self.dims)
@@ -622,7 +625,7 @@ class GridObject():
             Non-zero elements define the neighborhood over which the erosion
             is applied. Defaults to None
         structure : np.ndarray of ints, optional
-            A array defining the structuring element used for the erosion. 
+            A array defining the structuring element used for the erosion.
             This defines the connectivity of the elements. Defaults to None
 
         Returns
@@ -682,7 +685,7 @@ class GridObject():
             Non-zero elements define the neighborhood over which the erosion
             is applied. Defaults to None
         structure : np.ndarray of ints, optional
-            A array defining the structuring element used for the erosion. 
+            A array defining the structuring element used for the erosion.
             This defines the connectivity of the elements. Defaults to None
 
         Returns
@@ -794,7 +797,7 @@ class GridObject():
     def aspect(self, classify: bool = False) -> 'GridObject':
         """Aspect returns the slope exposition of each cell in a digital
         elevation model in degrees. In contrast to the second output of
-        gradient8 which returns the steepest slope direction, aspect 
+        gradient8 which returns the steepest slope direction, aspect
         returns the angle of the slope.
 
         Parameters
@@ -1095,7 +1098,7 @@ class GridObject():
             The axes in which to plot the GridObject. If no axes
             are given, the current axes are used.
 
-        extent: floats (left, right, bottom, top), optional        
+        extent: floats (left, right, bottom, top), optional
             The bounding box used to set the axis limits. If no extent
             is supplied, defaults to self.extent, which plots the
             GridObject in geographic coordinates.
@@ -1109,8 +1112,10 @@ class GridObject():
         matplotlib.image.AxesImage
             The image constructed by imshow
 
+        Example
+        -------
+        # TODO: Add Example
         """
-        # TODO: Add Example to Docstring
         if ax is None:
             ax = plt.gca()
 
@@ -1164,7 +1169,7 @@ class GridObject():
         blend_mode: {'multiply', 'overlay', 'soft'}, optional
             The algorithm used to combine the shaded elevation with
             the data. Defaults to 'soft'.
-       extent: floats (left, right, bottom, top), optional        
+       extent: floats (left, right, bottom, top), optional
             The bounding box used to set the axis limits. If no extent
             is supplied, defaults to self.extent
         **kwargs
@@ -1190,8 +1195,11 @@ class GridObject():
         ValueError
             The `filter_method` or `filter_size` arguments are not
             accepted by `GridObject.filter`.
-        """
+
+        Example
+        -------
         # TODO: Add Example to Docstring
+        """
         if ax is None:
             ax = plt.gca()
 
@@ -1230,7 +1238,7 @@ class GridObject():
         if extent is None:
             extent = self.extent
 
-        return ax.imshow(np.clip(rgb,0,1), extent=extent, **kwargs)
+        return ax.imshow(np.clip(rgb, 0, 1), extent=extent, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
@@ -1254,6 +1262,10 @@ class GridObject():
         -------
         GridObject
           A grid identical to the input, but with randomly reassigned labels.
+
+        Example
+        -------
+        # TODO: Add Example to Docstring
         """
         result = cp.copy(self)
 
@@ -1264,7 +1276,7 @@ class GridObject():
 
         return result
 
-    def duplicate_with_new_data(self, data : np.ndarray) -> 'GridObject':
+    def duplicate_with_new_data(self, data: np.ndarray) -> 'GridObject':
         """Duplicate a GridObject with different data
 
         This function is helpful when one wants to create a GridObject from
@@ -1282,8 +1294,10 @@ class GridObject():
         GridObject
           A grid identical to the input, but with new data.
 
+        Example
+        -------
+        # TODO: Add Example to Docstring
         """
-
         rows, columns = data.shape
 
         if self.columns != columns or self.rows != rows:
@@ -1499,7 +1513,6 @@ class GridObject():
 
     def __str__(self):
         return str(self.z)
-
 
     def __repr__(self):
 

@@ -368,10 +368,15 @@ def read_from_cache(filename: str) -> GridObject:
     filename : str
         Name of the file to be read from the cache directory. Requires the
         whole filename including the extension, like "dem.tif".
+
     Returns
     -------
     GridObject
         The GridObject generated from the cached GeoTIFF file.
+
+    Example
+    -------
+    # TODO: Add example
     """
     cache_path = os.path.join(get_save_location(), f"{filename}")
     grid_object = read_tif(cache_path)
@@ -564,6 +569,10 @@ def validate_alignment(s1, s2) -> bool:
     -------
     bool
        True if the two objects are aligned, False otherwise
+
+    Example
+    -------
+    # TODO: Add example
     """
     return (s1.shape == s2.shape) and all(
         (not hasattr(s1, attr) or not hasattr(s2, attr))

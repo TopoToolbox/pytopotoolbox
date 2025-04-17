@@ -50,7 +50,7 @@ class StreamObject():
         A GridObject or np.ndarray made up of zeros and ones to denote where
         the stream is located. Using this will overwrite any use of the
         threshold argument.
-    channelheads: np.ndarray, optional        
+    channelheads: np.ndarray, optional
         An np.ndarray with the linear indices in column-major ('F')
         order indicating the locations of channel heads. All streams
         downstream of the indicated channel heads will be returned in
@@ -127,10 +127,11 @@ class StreamObject():
                         "input for threshold will be ignored.")
                 warnings.warn(warn)
         elif channelheads is not None:
-            ch = np.zeros(flow.shape,dtype=np.uint32,order='F')
+            ch = np.zeros(flow.shape, dtype=np.uint32, order='F')
             ch[np.unravel_index(channelheads, flow.shape, order='F')] = 1
             edges = np.ones(flow.source.size, dtype=np.uint32)
-            _stream.traverse_down_u32_or_and(ch, edges, flow.source, flow.target)
+            _stream.traverse_down_u32_or_and(
+                ch, edges, flow.source, flow.target)
             w = (ch > 0).ravel(order='F')
 
         # Create the appropriate threshold matrix based on the threshold input.
@@ -239,9 +240,11 @@ class StreamObject():
         -------
         np.ndarray, float32
             A node attribute list with the downstream distances
-        """
-        # TODO: Add an example to docstring
 
+        Example
+        -------
+        # TODO: Add an example to docstring
+        """
         d = self.distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
         _stream.traverse_down_f32_max_add(dds, d, self.source, self.target)
@@ -274,6 +277,10 @@ class StreamObject():
         ValueError
             If `k` does not have the right shape to be indexed by the
             `StreamObject`.
+
+        Example
+        -------
+        # TODO: Add an example to docstring
         """
         if np.isscalar(k):
             nal = np.full(self.stream.shape, k, dtype=None)
@@ -286,11 +293,12 @@ class StreamObject():
 
                 # We use copy=False in astype to avoid copying that copy if possible
                 nal = nal.astype(dtype or nal.dtype, copy=False)
-            elif hasattr(k,"shape") and self.stream.shape == k.shape:
+            elif hasattr(k, "shape") and self.stream.shape == k.shape:
                 # k is already a node attribute list
                 nal = np.array(k, dtype=dtype, copy=True)
             else:
-                raise ValueError(f"{k} is not a node attribute list of the appropriate shape.")
+                raise ValueError(
+                    f"{k} is not a node attribute list of the appropriate shape.")
 
         return nal
 
@@ -314,6 +322,10 @@ class StreamObject():
         ------
         ValueError
             If an unknown point type is requested.
+
+        Example
+        -------
+        # TODO: Add an example to docstring
         """
         indegree = np.zeros(self.stream.size, dtype=np.uint8)
         outdegree = np.zeros(self.stream.size, dtype=np.uint8)
@@ -347,12 +359,12 @@ class StreamObject():
 
         Example
         -------
-        """
         # TODO: Add an example to docstring
+        """
         if data is None:
             # pylint: disable=unbalanced-tuple-unpacking
             j, i = np.unravel_index(self.stream, self.shape, order='F')
-            xs, ys = self.transform * np.vstack((i,j))
+            xs, ys = self.transform * np.vstack((i, j))
         else:
             xs, ys = data
 
@@ -414,8 +426,11 @@ class StreamObject():
         -------
         matplotlib.axes.Axes
             The axes into which the StreamObject has been plotted.
-        """
+
+        Example
+        -------
         # TODO: Add an example to docstring
+        """
 
         if ax is None:
             ax = plt.gca()
@@ -461,8 +476,10 @@ class StreamObject():
         ValueError
             If `dunit` is not one of 'm' or 'km'.
 
-        """
+        Example
+        -------
         # TODO: Add an example to docstring
+        """
 
         if ax is None:
             ax = plt.gca()
@@ -538,6 +555,10 @@ class StreamObject():
             extracted into a node attribute list.
         TypeError
             If the modified upstream area is not a supported floating point type.
+
+        Example
+        -------
+        #TODO: Add an example to docstring
         """
 
         # Retrieve node attribute lists
@@ -578,8 +599,8 @@ class StreamObject():
               flow_accumulation: GridObject | None = None) -> 'StreamObject':
         """Reduces a stream network to the longest streams in each stream
         network tree (e.g. connected component). The algorithm identifies
-        the main trunk by sequently tracing the maximum downstream 
-        distance in upstream direction. 
+        the main trunk by sequently tracing the maximum downstream
+        distance in upstream direction.
 
         Parameters
         ----------
@@ -587,7 +608,7 @@ class StreamObject():
             A GridObject filled with flow accumulation values (as returned by
             the function FlowObject.flow_accumulation). Defaults to None.
         downstream_distance : np.ndarray, optional
-            A numpy ndarray node-attribute list as generated by ezgetnal(). 
+            A numpy ndarray node-attribute list as generated by ezgetnal().
             This argument overwrites the flow_accumulation if used.
             Defaults to None.
 
@@ -595,6 +616,10 @@ class StreamObject():
         -------
         StreamObject
             StreamObject with truncated streams.
+
+        Example
+        -------
+        # TODO: Add an example to docstring
         """
 
         stream_network_size = len(self.stream)
@@ -644,6 +669,10 @@ class StreamObject():
         -------
         StreamObject
             A new StreamObject containing only the k largest connected components
+
+        Example
+        -------
+        #TODO: Add an example to docstring
         """
         nv = self.stream.size
         ne = self.source.size
@@ -701,6 +730,10 @@ class StreamObject():
         StreamObject
             A StreamObject representing the desired subset of the
             stream network.
+
+        Example
+        -------
+        #TODO: Add an example to docstring
         """
 
         nal = self.ezgetnal(nal)

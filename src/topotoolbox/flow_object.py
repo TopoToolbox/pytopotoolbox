@@ -127,7 +127,7 @@ class FlowObject():
 
         Parameters
         ----------
-        k : GridObject or np.ndarray or scalar        
+        k : GridObject or np.ndarray or scalar
             The object from which node values will be extracted. If
             `k` is a `GridObject` or an `ndarray` with the same shape
             as this `FlowObject`, then a copy is returned. If it is a
@@ -143,6 +143,9 @@ class FlowObject():
         ValueError
             The supplied input is not aligned with the FlowObject.
 
+        Example
+        -------
+        # TODO: Add example
         """
         if np.isscalar(k):
             return np.full(self.shape, k, dtype=dtype)
@@ -259,9 +262,13 @@ class FlowObject():
 
         Returns
         -------
-        np.ndarray        
+        np.ndarray
             An array containing column-major linear indices into the
             DEM identifying the flow path.
+
+        Example
+        -------
+        # TODO: Add example
         """
         ch = np.zeros(self.shape, dtype=np.uint32, order='F')
         ch[np.unravel_index(idx, self.shape, order='F')] = 1
@@ -278,6 +285,10 @@ class FlowObject():
         np.ndarray
             An array (edge attribute list) with the interpixel
             distance. This will be either cellsize or sqrt(2)*cellsize
+
+        Example
+        -------
+        # TODO: Add example
         """
         d = np.abs(self.source - self.target)
         dist = self.cellsize * np.where(
