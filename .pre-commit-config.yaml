@@ -14,14 +14,22 @@ repos:
     rev: v3.1.0
     hooks:
       - id: pylint
-        additional_dependencies: [toml]
+        additional_dependencies:
+          - toml
+          - numpy
+          - matplotlib
+          - scipy
+          - rasterio
+        exclude: |
+          (?x)^(
+            tests/|
+            docs/
+          )
         args:
           [
             "-rn",
             "-sn",
             "--rcfile=pyproject.toml",
-            "--ignore=tests,docs",
-            "--disable=import-error",  # Disable import checks
             "src/topotoolbox"
           ]
   - repo: https://github.com/pre-commit/mirrors-mypy
