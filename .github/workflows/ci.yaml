@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
       - name: Checkout repository
@@ -35,6 +35,7 @@ jobs:
           python -m pytest
 
       - name: Downgrade numpy
+        if: ${{ matrix.python-version <= '3.11' }}
         run: |
           pip install matplotlib scipy rasterio "numpy==1.23.5" --upgrade --upgrade-strategy eager
           pytest
