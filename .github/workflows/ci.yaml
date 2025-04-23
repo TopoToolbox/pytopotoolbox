@@ -35,7 +35,7 @@ jobs:
           python -m pytest
 
       - name: Downgrade numpy
-        if: ${{ matrix.python-version <= "3.11" }}
+        if: ${{ matrix.python-version <= '3.11' }}
         run: |
           pip install matplotlib scipy rasterio "numpy==1.23.5" --upgrade --upgrade-strategy eager
           pytest
