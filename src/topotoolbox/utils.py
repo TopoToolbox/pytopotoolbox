@@ -455,11 +455,11 @@ def load_open_topography(south: float, north: float, west: float, east: float,
 
     Example
     -------
-    dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
+    >>> dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
                     east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
-    dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
-    im = dem.plot(cmap="terrain")
-    plt.show()
+    >>> dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
+    >>> im = dem.plot(cmap="terrain")
+    >>> plt.show()
     """
 
     # Check if an API key is provided

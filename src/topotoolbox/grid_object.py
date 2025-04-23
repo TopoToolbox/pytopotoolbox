@@ -109,6 +109,11 @@ class GridObject():
         -------
         GridObject
             A copy of the original GridObject with the given data type
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem = dem.astype(np.float32)
         """
         result = GridObject()
         result.path = self.path
@@ -146,6 +151,9 @@ class GridObject():
         GridObject
             The reprojected data.
 
+        Example
+        -------
+        # TODO: Add example
         """
         dst = GridObject()
 
