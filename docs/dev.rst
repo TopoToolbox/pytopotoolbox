@@ -47,6 +47,12 @@ pull request to pytopotoolbox, because failing lints or type checks
 will cause a test failure that must be fixed before your contribution
 can be accepted.
 
+If you run into problems setting up development environment on any
+platform, please `open an issue
+<https://github.com/TopoToolbox/pytopotoolbox/issues/new>`_. While we
+test TopoToolbox extensively on different platforms, we only develop
+on a few, so feedback on how we can make this process as smooth as
+possible is greatly appreciated.
 
 Development environment on Windows
 ----------------------------------
@@ -62,8 +68,25 @@ have access to the Windows C/C++ toolchain.
    * download '*Build Tools for Visual Studio 2022*'
    * install it while including the '*Desktop development with C++*' workload
 
-2. To ensure the compiler is working with 64-bit architecture, that is necessary for python, **open 'x64 Native Tools Command Prompt for VS 2022'** instead of the '*Developer Command Prompt*' that defaults to 32-bit architecture.
-3. In the opened command prompt, navigate to the pytopotoolbox directory and follow the instructions above for installing the development environment.
+2. To ensure the compiler is working with 64-bit architecture, that is
+   necessary for python, **open 'x64 Native Tools Command Prompt for
+   VS 2022'** instead of the '*Developer Command Prompt*' that
+   defaults to 32-bit architecture.
+3. In the opened command prompt, navigate to the pytopotoolbox
+   directory and follow the instructions above for installing the
+   development environment.
+
+If you are using Anaconda, you will still need to install the Build
+Tools for Visual Studio 2022 as above, but then you should be able to
+build pytopotoolbox with pip from the Anaconda Prompt.
+
+If you receive errors like::
+
+   CMake Error: CMAKE_GENERATOR was set but the specified generator doesn't exist. Using CMake default.
+
+You may need to either set it to the correct value with ``set
+CMAKE_GENERATOR=Visual Studio 17 2022`` or unset it completely with
+``set CMAKE_GENERATOR=``.
 
 Making a release of pytopotoolbox
 ---------------------------------
