@@ -170,7 +170,8 @@ class GridObject():
             dst.cellsize = abs(dst.transform[0])
 
         if self.bounds:
-            dst.bounds = BoundingBox(*transform_bounds(self.crs, dst.crs, *self.bounds))
+            dst.bounds = BoundingBox(
+                *transform_bounds(self.crs, dst.crs, *self.bounds))
 
         return dst
 
@@ -270,7 +271,7 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = np.asarray(self,dtype=np.float32)
+        dem = np.asarray(self, dtype=np.float32)
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
         _grid.identifyflats(output_grid, dem, self.dims)
@@ -835,7 +836,8 @@ class GridObject():
         prominence_array = np.array(prominence)
         indices_array = np.array(indices)
         indices_array = indices_array[:, [1, 0]]  # swap columns 0 and 1
-        indices_array = indices_array.T  # transpose to get (x, y) instead of (y, x)
+        # transpose to get (x, y) instead of (y, x)
+        indices_array = indices_array.T
         return prominence_array, indices_array
 
     def hillshade(self,
@@ -896,7 +898,7 @@ class GridObject():
         dx, dy = ~gt * (sx, sy)
 
         # And retrieve the azimuth angle.
-        azimuth_radians = np.arctan2(dy,dx)
+        azimuth_radians = np.arctan2(dy, dx)
 
         # NOTE(wkearn): This angle is then immediately used within
         # hillshade to compute vector components again. It would be
@@ -1056,8 +1058,8 @@ class GridObject():
     def plot_hs(self, ax=None,
                 elev=None,
                 azimuth=315, altitude=60, exaggerate=1,
-                filter_method=None, filter_size = 3,
-                cmap='terrain', norm = None,
+                filter_method=None, filter_size=3,
+                cmap='terrain', norm=None,
                 blend_mode='soft',
                 extent=None,
                 **kwargs):
@@ -1141,16 +1143,17 @@ class GridObject():
             raise TypeError(err) from None
 
         if filter_method is not None:
-            shade = shade.filter(method=filter_method,kernelsize=filter_size)
+            shade = shade.filter(method=filter_method, kernelsize=filter_size)
 
         h = shade.hillshade(azimuth, altitude, exaggerate)
         cmap = plt.get_cmap(cmap)
 
         if norm is None:
-            norm = colors.Normalize(vmin=np.nanmin(self.z),vmax=np.nanmax(self.z))
+            norm = colors.Normalize(vmin=np.nanmin(
+                self.z), vmax=np.nanmax(self.z))
 
         base = cmap(norm(self.z))
-        top = np.expand_dims(np.clip(h,0,1),2)
+        top = np.expand_dims(np.clip(h, 0, 1), 2)
         if blend_mode == "multiply":
             rgb = base * top
         elif blend_mode == "overlay":
@@ -1163,7 +1166,7 @@ class GridObject():
         if extent is None:
             extent = self.extent
 
-        return ax.imshow(np.clip(rgb,0,1), extent=extent, **kwargs)
+        return ax.imshow(np.clip(rgb, 0, 1), extent=extent, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
@@ -1198,7 +1201,7 @@ class GridObject():
 
         return result
 
-    def duplicate_with_new_data(self, data : np.ndarray) -> 'GridObject':
+    def duplicate_with_new_data(self, data: np.ndarray) -> 'GridObject':
         """Duplicate a GridObject with different data
 
         This function is helpful when one wants to create a GridObject from
@@ -1229,8 +1232,28 @@ class GridObject():
 
         return result
 
-    # 'Magic' functions:
-    # ------------------------------------------------------------------------
+    def zscore(self):
+        """Returns the z-score for each element of GridObject such that 
+        all values are centered to have mean 0 and scaled to have 
+        standard deviation 1.
+
+        Returns
+        -------
+        GridObject
+            A GridObject containing the z-scores of the input GridObject.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('tibet')
+        >>> dem_zscore = dem.zscore()
+        >>> dem_zscore.plot()
+        """
+        result = cp.copy(self)
+        result.z = (self.z - np.nanmean(self.z)) / np.nanstd(self.z)
+        return result
+
+        # 'Magic' functions:
+        # ------------------------------------------------------------------------
 
     def __eq__(self, other):
         dem = cp.deepcopy(self)
@@ -1433,7 +1456,6 @@ class GridObject():
 
     def __str__(self):
         return str(self.z)
-
 
     def __repr__(self):
 
