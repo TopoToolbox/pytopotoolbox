@@ -22,7 +22,8 @@ DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
 OPEN_TOPO_SOURCE = "https://portal.opentopography.org/API/globaldem"
 OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E'
                       'SRTM15Plus', 'NASADEM', 'COP30', 'COP90', 'EU_DTM',
-                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo')
+                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo',
+                      'CA_MRDEM_DTM', 'CA_MRDEM_DSM')
 
 
 def write_tif(dem: GridObject, path: str) -> None:
@@ -392,6 +393,8 @@ def load_opentopography(south: float, north: float, west: float, east: float,
         - GEDI_L3 (DTM 1000m)
         - GEBCOIceTopo (Global Bathymetry 500m)
         - GEBCOSubIceTopo (Global Bathymetry 500m)
+        - CA_MRDEM_DSM (DSM 30m)
+        - CA_MRDEM_DTM (DTM 30m)
 
     overwrite : bool, optional
         If True cached DEM will be overwritten if it has the same bounds
