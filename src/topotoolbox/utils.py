@@ -14,7 +14,7 @@ from .grid_object import GridObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "gen_random_bool", "get_cache_contents", "clear_cache",
-           "read_from_cache", "load_open_topography", "validate_alignment"]
+           "read_from_cache", "load_opentopography", "validate_alignment"]
 
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
@@ -343,11 +343,11 @@ def read_from_cache(filename: str) -> GridObject:
     return grid_object
 
 
-def load_open_topography(south: float, north: float, west: float, east: float,
-                         api_key: str | None = None, dem_type: str = "SRTMGL3",
-                         api_path: str | None = None, overwrite: bool = False,
-                         save_path: str | None = None
-                         ) -> GridObject:
+def load_opentopography(south: float, north: float, west: float, east: float,
+                        api_key: str | None = None, dem_type: str = "SRTMGL3",
+                        api_path: str | None = None, overwrite: bool = False,
+                        save_path: str | None = None
+                        ) -> GridObject:
     """Download a DEM from Open Topography. The DEM is downloaded as a
     GeoTIFF file and saved in the cache directory. The DEM is then
     read into a GridObject. The DEMs come in geographic coordinates (WGS84).
@@ -415,7 +415,7 @@ def load_open_topography(south: float, north: float, west: float, east: float,
 
     Example
     -------
-    dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
+    dem = topotoolbox.load_opentopography(south=50, north=50.1, west=14.35,
                     east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
     dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
     im = dem.plot(cmap="terrain")
