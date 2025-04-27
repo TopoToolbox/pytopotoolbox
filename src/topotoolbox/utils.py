@@ -219,7 +219,7 @@ def get_dem_names() -> list[str]:
 
     Example
     -------
-    >>> print(topotoolbox.get_dem_names(dem))
+    >>> print(topotoolbox.get_dem_names())
     """
     with urlopen(DEM_NAMES) as dem_names:
         dem_names = dem_names.read().decode()
@@ -376,7 +376,9 @@ def read_from_cache(filename: str) -> GridObject:
 
     Example
     -------
-    # TODO: Add example
+    >>> topotoolbox.load_dem('bigtujunga')
+    >>> dem = topotoolbox.read_from_cache('bigtujunga.tif')
+    >>> dem.plot()
     """
     cache_path = os.path.join(get_save_location(), f"{filename}")
     grid_object = read_tif(cache_path)
@@ -572,7 +574,9 @@ def validate_alignment(s1, s2) -> bool:
 
     Example
     -------
-    # TODO: Add example
+    >>> dem = topotoolbox.load_dem('bigtujunga')
+    >>> fd = topotoolbox.FlowObject(dem)
+    >>> print(topotoolbox.validate_alignment(dem, fd))
     """
     return (s1.shape == s2.shape) and all(
         (not hasattr(s1, attr) or not hasattr(s2, attr))

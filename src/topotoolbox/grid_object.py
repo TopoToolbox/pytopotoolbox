@@ -153,7 +153,11 @@ class GridObject():
 
         Example
         -------
-        # TODO: Add example
+        >>> dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
+                    east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
+        >>> dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
+        >>> im = dem.plot(cmap="terrain")
+        >>> plt.show()
         """
         dst = GridObject()
 
@@ -208,7 +212,9 @@ class GridObject():
 
         Example
         -------
-        # TODO: Add example
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> filled_dem = dem.fillsinks()
+        >>> filled_dem.plot(cmap='terrain')
         """
         dem = self.z.astype(np.float32)
         output = np.zeros_like(dem)
@@ -1122,7 +1128,8 @@ class GridObject():
 
         Example
         -------
-        # TODO: Add Example
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem.plot(cmap='terrain')
         """
         if ax is None:
             ax = plt.gca()
@@ -1177,7 +1184,7 @@ class GridObject():
         blend_mode: {'multiply', 'overlay', 'soft'}, optional
             The algorithm used to combine the shaded elevation with
             the data. Defaults to 'soft'.
-       extent: floats (left, right, bottom, top), optional
+        extent: floats (left, right, bottom, top), optional
             The bounding box used to set the axis limits. If no extent
             is supplied, defaults to self.extent
         **kwargs
@@ -1206,7 +1213,8 @@ class GridObject():
 
         Example
         -------
-        # TODO: Add Example to Docstring
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem.plot_hs(exaggerate=dem.cellsize)
         """
         if ax is None:
             ax = plt.gca()
@@ -1273,7 +1281,10 @@ class GridObject():
 
         Example
         -------
-        # TODO: Add Example to Docstring
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> D = fd.drainagebasins()
+        >>> D.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
         """
         result = cp.copy(self)
 
@@ -1304,7 +1315,8 @@ class GridObject():
 
         Example
         -------
-        # TODO: Add Example to Docstring
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> new_dem = dem.duplicate_with_new_data(np.zeros(dem.shape))
         """
         rows, columns = data.shape
 

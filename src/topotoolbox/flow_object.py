@@ -122,7 +122,7 @@ class FlowObject():
         self.transform = grid.transform
         self.crs = grid.crs
 
-    def ezgetnal(self, k, dtype=None):
+    def ezgetnal(self, k, dtype=None) -> GridObject | np.ndarray:
         """Retrieve a node attribute list
 
         Parameters
@@ -145,7 +145,9 @@ class FlowObject():
 
         Example
         -------
-        # TODO: Add example
+        >>> dem = topotoolbox.load_dem('bigtujunga)
+        >>> fd = tt3.FlowObject(dem)
+        >>> fd.ezgetnal(dem).plot()
         """
         if np.isscalar(k):
             return np.full(self.shape, k, dtype=dtype)
@@ -268,7 +270,9 @@ class FlowObject():
 
         Example
         -------
-        # TODO: Add example
+        >>> dem = tt3.load_dem('bigtujunga')
+        >>> fd = tt3.FlowObject(dem)
+        >>> print(fd.flowpathextract(12345))
         """
         ch = np.zeros(self.shape, dtype=np.uint32, order='F')
         ch[np.unravel_index(idx, self.shape, order='F')] = 1
@@ -288,7 +292,9 @@ class FlowObject():
 
         Example
         -------
-        # TODO: Add example
+        >>> dem = tt3.load_dem('bigtujunga')
+        >>> fd = tt3.FlowObject(dem)
+        >>> print(fd.distance())
         """
         d = np.abs(self.source - self.target)
         dist = self.cellsize * np.where(

@@ -219,9 +219,7 @@ class StreamObject():
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> plt.subplots()
-        >>> dem.plot(cmap="terrain")
-        >>> s.plot(color='r')
+        >>> print(s.distance())
         """
         d = np.abs(self.stream[self.source] - self.stream[self.target])
 
@@ -240,10 +238,6 @@ class StreamObject():
         -------
         np.ndarray, float32
             A node attribute list with the downstream distances
-
-        Example
-        -------
-        # TODO: Add an example to docstring
         """
         d = self.distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
@@ -277,10 +271,6 @@ class StreamObject():
         ValueError
             If `k` does not have the right shape to be indexed by the
             `StreamObject`.
-
-        Example
-        -------
-        # TODO: Add an example to docstring
         """
         if np.isscalar(k):
             nal = np.full(self.stream.shape, k, dtype=None)
@@ -302,7 +292,7 @@ class StreamObject():
 
         return nal
 
-    def streampoi(self, point_type: str):
+    def streampoi(self, point_type: str) -> np.ndarray:
         """Extract points of interest from the stream network
 
         Currently supported points of interest are 'channelheads',
@@ -322,10 +312,6 @@ class StreamObject():
         ------
         ValueError
             If an unknown point type is requested.
-
-        Example
-        -------
-        # TODO: Add an example to docstring
         """
         indegree = np.zeros(self.stream.size, dtype=np.uint8)
         outdegree = np.zeros(self.stream.size, dtype=np.uint8)
@@ -356,10 +342,6 @@ class StreamObject():
         -------
         list
             A list of lists of (x,y) pairs.
-
-        Example
-        -------
-        # TODO: Add an example to docstring
         """
         if data is None:
             # pylint: disable=unbalanced-tuple-unpacking
@@ -429,7 +411,13 @@ class StreamObject():
 
         Example
         -------
-        # TODO: Add an example to docstring
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> plt.subplots()
+        >>> dem.plot(cmap="terrain")    
+        >>> s.plot(color='r')
         """
 
         if ax is None:
@@ -475,10 +463,6 @@ class StreamObject():
         ------
         ValueError
             If `dunit` is not one of 'm' or 'km'.
-
-        Example
-        -------
-        # TODO: Add an example to docstring
         """
 
         if ax is None:
@@ -555,10 +539,6 @@ class StreamObject():
             extracted into a node attribute list.
         TypeError
             If the modified upstream area is not a supported floating point type.
-
-        Example
-        -------
-        #TODO: Add an example to docstring
         """
 
         # Retrieve node attribute lists
@@ -619,7 +599,17 @@ class StreamObject():
 
         Example
         -------
-        # TODO: Add an example to docstring
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> s2 = s.klargestconncomps(1)
+        >>> st = s2.trunk()
+        >>> fig,ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s.plot(ax=ax, color='r')
+        >>> s2.plot(ax=ax,color='k')
+        >>> st.plot(ax=ax, color='b')
         """
 
         stream_network_size = len(self.stream)
@@ -672,7 +662,15 @@ class StreamObject():
 
         Example
         -------
-        #TODO: Add an example to docstring
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> s2 = s.klargestconncomps(1)
+        >>> fig, ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s2.plot(ax=ax,color='k')
+        >>> plt.show()
         """
         nv = self.stream.size
         ne = self.source.size
@@ -733,7 +731,18 @@ class StreamObject():
 
         Example
         -------
-        #TODO: Add an example to docstring
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> shape = dem.shape
+        >>> arr = (np.arange(np.prod(shape))<np.prod(shape)//4).reshape(shape)
+        >>> s2 = s.subgraph(arr)
+        >>> fig,ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s2.plot(ax=ax,color='k')
         """
 
         nal = self.ezgetnal(nal)
