@@ -425,7 +425,7 @@ class GridObject():
         -------
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> sharr = dem.filter(method='scharr', kernelsize=3)
-        >>> plt.schatt.plot(cmap='terrain')
+        >>> sharr.plot(cmap='terrain')
         """
 
         valid_methods = ['mean', 'average', 'median',
