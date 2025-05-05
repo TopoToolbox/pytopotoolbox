@@ -1252,6 +1252,12 @@ class GridObject():
         result.z = (self.z - np.nanmean(self.z)) / np.nanstd(self.z)
         return result
 
+    def castshadows(self, azimuth, altitude) -> 'GridObject':
+        pass
+
+    def impaintnans():
+        pass
+
         # 'Magic' functions:
         # ------------------------------------------------------------------------
 
