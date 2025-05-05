@@ -13,7 +13,7 @@ API Documentation
    topotoolbox.read_tif
    topotoolbox.write_tif
    topotoolbox.load_dem
-   topotoolbox.load_open_topography
+   topotoolbox.load_opentopography
    topotoolbox.get_dem_names
    topotoolbox.get_cache_contents
    topotoolbox.read_from_cache
