@@ -50,7 +50,7 @@ class StreamObject():
         A GridObject or np.ndarray made up of zeros and ones to denote where
         the stream is located. Using this will overwrite any use of the
         threshold argument.
-    channelheads: np.ndarray, optional        
+    channelheads: np.ndarray, optional
         An np.ndarray with the linear indices in column-major ('F')
         order indicating the locations of channel heads. All streams
         downstream of the indicated channel heads will be returned in
@@ -63,6 +63,14 @@ class StreamObject():
     ValueError
         If the shape of the threshold does not match the flow object shape.
 
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
+    >>> fd = topotoolbox.FlowObject(dem)
+    >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+    >>> plt.subplots()
+    >>> dem.plot(cmap="terrain")
+    >>> s.plot(color='r')
         """
         if not isinstance(flow, FlowObject):
             err = f"{flow} is not a topotoolbox.FlowObject."
@@ -119,10 +127,11 @@ class StreamObject():
                         "input for threshold will be ignored.")
                 warnings.warn(warn)
         elif channelheads is not None:
-            ch = np.zeros(flow.shape,dtype=np.uint32,order='F')
+            ch = np.zeros(flow.shape, dtype=np.uint32, order='F')
             ch[np.unravel_index(channelheads, flow.shape, order='F')] = 1
             edges = np.ones(flow.source.size, dtype=np.uint32)
-            _stream.traverse_down_u32_or_and(ch, edges, flow.source, flow.target)
+            _stream.traverse_down_u32_or_and(
+                ch, edges, flow.source, flow.target)
             w = (ch > 0).ravel(order='F')
 
         # Create the appropriate threshold matrix based on the threshold input.
@@ -204,6 +213,13 @@ class StreamObject():
         -------
         np.ndarray, float32
             An edge attribute list with the distance between pixels
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> print(s.distance())
         """
         d = np.abs(self.stream[self.source] - self.stream[self.target])
 
@@ -223,7 +239,6 @@ class StreamObject():
         np.ndarray, float32
             A node attribute list with the downstream distances
         """
-
         d = self.distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
         _stream.traverse_down_f32_max_add(dds, d, self.source, self.target)
@@ -256,7 +271,6 @@ class StreamObject():
         ValueError
             If `k` does not have the right shape to be indexed by the
             `StreamObject`.
-
         """
         if np.isscalar(k):
             nal = np.full(self.stream.shape, k, dtype=None)
@@ -269,15 +283,16 @@ class StreamObject():
 
                 # We use copy=False in astype to avoid copying that copy if possible
                 nal = nal.astype(dtype or nal.dtype, copy=False)
-            elif hasattr(k,"shape") and self.stream.shape == k.shape:
+            elif hasattr(k, "shape") and self.stream.shape == k.shape:
                 # k is already a node attribute list
                 nal = np.array(k, dtype=dtype, copy=True)
             else:
-                raise ValueError(f"{k} is not a node attribute list of the appropriate shape.")
+                raise ValueError(
+                    f"{k} is not a node attribute list of the appropriate shape.")
 
         return nal
 
-    def streampoi(self, point_type: str):
+    def streampoi(self, point_type: str) -> np.ndarray:
         """Extract points of interest from the stream network
 
         Currently supported points of interest are 'channelheads',
@@ -327,12 +342,11 @@ class StreamObject():
         -------
         list
             A list of lists of (x,y) pairs.
-
         """
         if data is None:
             # pylint: disable=unbalanced-tuple-unpacking
             j, i = np.unravel_index(self.stream, self.shape, order='F')
-            xs, ys = self.transform * np.vstack((i,j))
+            xs, ys = self.transform * np.vstack((i, j))
         else:
             xs, ys = data
 
@@ -394,7 +408,18 @@ class StreamObject():
         -------
         matplotlib.axes.Axes
             The axes into which the StreamObject has been plotted.
+
+        Example
+        -------
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> plt.subplots()
+        >>> dem.plot(cmap="terrain")    
+        >>> s.plot(color='r')
         """
+
         if ax is None:
             ax = plt.gca()
         collection = LineCollection(self.xy(), **kwargs)
@@ -438,8 +463,8 @@ class StreamObject():
         ------
         ValueError
             If `dunit` is not one of 'm' or 'km'.
-
         """
+
         if ax is None:
             ax = plt.gca()
         z = self.ezgetnal(z)
@@ -554,8 +579,8 @@ class StreamObject():
               flow_accumulation: GridObject | None = None) -> 'StreamObject':
         """Reduces a stream network to the longest streams in each stream
         network tree (e.g. connected component). The algorithm identifies
-        the main trunk by sequently tracing the maximum downstream 
-        distance in upstream direction. 
+        the main trunk by sequently tracing the maximum downstream
+        distance in upstream direction.
 
         Parameters
         ----------
@@ -563,7 +588,7 @@ class StreamObject():
             A GridObject filled with flow accumulation values (as returned by
             the function FlowObject.flow_accumulation). Defaults to None.
         downstream_distance : np.ndarray, optional
-            A numpy ndarray node-attribute list as generated by ezgetnal(). 
+            A numpy ndarray node-attribute list as generated by ezgetnal().
             This argument overwrites the flow_accumulation if used.
             Defaults to None.
 
@@ -571,6 +596,20 @@ class StreamObject():
         -------
         StreamObject
             StreamObject with truncated streams.
+
+        Example
+        -------
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> s2 = s.klargestconncomps(1)
+        >>> st = s2.trunk()
+        >>> fig,ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s.plot(ax=ax, color='r')
+        >>> s2.plot(ax=ax,color='k')
+        >>> st.plot(ax=ax, color='b')
         """
 
         stream_network_size = len(self.stream)
@@ -606,7 +645,7 @@ class StreamObject():
         result = self.subgraph(trunks)
         return result
 
-    def klargestconncomps(self, k = 1) -> 'StreamObject':
+    def klargestconncomps(self, k=1) -> 'StreamObject':
         """Extract the k largest connected components of the stream network
 
         Components are ordered by the number of stream network pixels.
@@ -620,6 +659,18 @@ class StreamObject():
         -------
         StreamObject
             A new StreamObject containing only the k largest connected components
+
+        Example
+        -------
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> s2 = s.klargestconncomps(1)
+        >>> fig, ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s2.plot(ax=ax,color='k')
+        >>> plt.show()
         """
         nv = self.stream.size
         ne = self.source.size
@@ -638,7 +689,8 @@ class StreamObject():
         # connected component.
         acc = np.ones(nv, dtype=np.float32)
         weights = np.ones(ne, dtype=np.float32)
-        _stream.traverse_down_f32_add_mul(acc, weights, self.source, self.target)
+        _stream.traverse_down_f32_add_mul(
+            acc, weights, self.source, self.target)
 
         # Indices of the outlets in a node attribute list
         outlet_indices = np.flatnonzero(outlets)
@@ -676,6 +728,21 @@ class StreamObject():
         StreamObject
             A StreamObject representing the desired subset of the
             stream network.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> shape = dem.shape
+        >>> arr = (np.arange(np.prod(shape))<np.prod(shape)//4).reshape(shape)
+        >>> s2 = s.subgraph(arr)
+        >>> fig,ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s2.plot(ax=ax,color='k')
         """
 
         nal = self.ezgetnal(nal)
@@ -697,7 +764,6 @@ class StreamObject():
         # TODO(wkearn): clean(result)
         # TODO(wkearn): return indices into the original node attribute list
         return result
-
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------

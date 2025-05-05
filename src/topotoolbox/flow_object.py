@@ -42,6 +42,11 @@ class FlowObject():
         -----
         Large intermediate arrays are created during the initialization
         process, which could lead to issues when using very large DEMs.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> flow = topotoolbox.FlowObject(dem)
         """
         dims = grid.dims
         dem = np.asarray(grid, dtype=np.float32)
@@ -117,12 +122,12 @@ class FlowObject():
         self.transform = grid.transform
         self.crs = grid.crs
 
-    def ezgetnal(self, k, dtype=None):
+    def ezgetnal(self, k, dtype=None) -> GridObject | np.ndarray:
         """Retrieve a node attribute list
 
         Parameters
         ----------
-        k : GridObject or np.ndarray or scalar        
+        k : GridObject or np.ndarray or scalar
             The object from which node values will be extracted. If
             `k` is a `GridObject` or an `ndarray` with the same shape
             as this `FlowObject`, then a copy is returned. If it is a
@@ -138,6 +143,11 @@ class FlowObject():
         ValueError
             The supplied input is not aligned with the FlowObject.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('bigtujunga)
+        >>> fd = tt3.FlowObject(dem)
+        >>> fd.ezgetnal(dem).plot()
         """
         if np.isscalar(k):
             return np.full(self.shape, k, dtype=dtype)
@@ -170,6 +180,13 @@ class FlowObject():
         ValueError
             If the shape of the `weights` array does not match the shape of the
             flow network grid.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> acc = fd.flow_accumulation()
+        >>> acc.plot(cmap='Blues',norm="log")
         """
         acc = np.zeros(self.shape, dtype=np.float32, order='F')
 
@@ -209,6 +226,13 @@ class FlowObject():
         GridObject
             An integer-valued GridObject with a unique label for each drainage
             basin.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> basins = fd.drainagebasins()
+        >>> basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
         """
         basins = np.zeros(self.shape, dtype=np.int64, order='F')
 
@@ -240,9 +264,15 @@ class FlowObject():
 
         Returns
         -------
-        np.ndarray        
+        np.ndarray
             An array containing column-major linear indices into the
             DEM identifying the flow path.
+
+        Example
+        -------
+        >>> dem = tt3.load_dem('bigtujunga')
+        >>> fd = tt3.FlowObject(dem)
+        >>> print(fd.flowpathextract(12345))
         """
         ch = np.zeros(self.shape, dtype=np.uint32, order='F')
         ch[np.unravel_index(idx, self.shape, order='F')] = 1
@@ -259,6 +289,12 @@ class FlowObject():
         np.ndarray
             An array (edge attribute list) with the interpixel
             distance. This will be either cellsize or sqrt(2)*cellsize
+
+        Example
+        -------
+        >>> dem = tt3.load_dem('bigtujunga')
+        >>> fd = tt3.FlowObject(dem)
+        >>> print(fd.distance())
         """
         d = np.abs(self.source - self.target)
         dist = self.cellsize * np.where(

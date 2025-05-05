@@ -17,7 +17,7 @@ setup, it is a good idea to set up a `virtual environment
 in Python. You can then install the developer environment by running
 
 .. code-block:: bash
-		
+
     pip install -r requirements.txt .
 
 within the top-level directory of the repository.
@@ -26,19 +26,19 @@ Now you can make changes within pytopotoolbox. To rebuild
 pytopotoolbox after making changes, you'll need to run
 
 .. code-block:: bash
-		
+
     pip install .
 
 You can run the tests with
 
 .. code-block:: bash
-		
+
    python -m pytest
 
 and the linter and type checks with
 
 .. code-block:: bash
-		
+
     pylint --rcfile=pyproject.toml src/topotoolbox
     mypy --ignore-missing-imports src/topotoolbox
 
@@ -88,8 +88,8 @@ You may need to either set it to the correct value with ``set
 CMAKE_GENERATOR=Visual Studio 17 2022`` or unset it completely with
 ``set CMAKE_GENERATOR=``.
 
-Making a release of pytopotoolbox
----------------------------------
+Creating a new release of pytopotoolbox
+---------------------------------------
 
 To release a new version of pytopotoolbox:
 
@@ -100,3 +100,43 @@ To release a new version of pytopotoolbox:
 3. Publish the release. This will trigger our release workflow, which
    will build and upload binary wheels to the GitHub release and to
    PyPi.
+
+Pre-Commit Hooks
+----------------
+
+We suggest using `pre-commit <https://pre-commit.com/>`_ to run linters and
+formatting checks before committing changes. This way, there will be no
+suprises when the CI pipeline runs the same checks. If you installed the
+requirements.txt pre-commit should already be installed. If not, run:
+
+.. code-block:: bash
+
+   pip install pre-commit
+
+To  install the pre-commit hook, run:
+
+.. code-block:: bash
+
+   pre-commit install
+
+If you want to disable the pre-commit hook, run :
+
+.. code-block:: bash
+
+   pre-commit uninstall
+
+If you want to run the pre-commit checks manually, run:
+
+.. code-block:: bash
+
+   pre-commit run --all-files
+
+The pre-commit-config contains the following hooks:
+
+- Trims trailing whitespace at end of lines
+- Ensures files end with a newline and only one
+- Validates YAML files for syntax correctness
+- Prevents accidentally committing large files
+- Running pylint
+- Running mypy
+- Running nbstripout to clean metadata from notebooks

@@ -109,6 +109,11 @@ class GridObject():
         -------
         GridObject
             A copy of the original GridObject with the given data type
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem = dem.astype(np.float32)
         """
         result = GridObject()
         result.path = self.path
@@ -146,6 +151,13 @@ class GridObject():
         GridObject
             The reprojected data.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
+                    east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
+        >>> dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
+        >>> im = dem.plot(cmap="terrain")
+        >>> plt.show()
         """
         dst = GridObject()
 
@@ -170,7 +182,8 @@ class GridObject():
             dst.cellsize = abs(dst.transform[0])
 
         if self.bounds:
-            dst.bounds = BoundingBox(*transform_bounds(self.crs, dst.crs, *self.bounds))
+            dst.bounds = BoundingBox(
+                *transform_bounds(self.crs, dst.crs, *self.bounds))
 
         return dst
 
@@ -197,8 +210,12 @@ class GridObject():
         GridObject
             The filled DEM.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> filled_dem = dem.fillsinks()
+        >>> filled_dem.plot(cmap='terrain')
         """
-
         dem = self.z.astype(np.float32)
         output = np.zeros_like(dem)
 
@@ -262,6 +279,12 @@ class GridObject():
         Flats are identified as 1s, sills as 2s, and presills as 5s
         (since they are also flats) in the output grid.
         Only relevant when using raw=True.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> flats, sills = dem.identifyflats()
+        >>> flats.plot(cmap='terrain')
         """
 
         # Since having lists as default arguments can lead to problems, output
@@ -270,7 +293,7 @@ class GridObject():
         if output is None:
             output = ['sills', 'flats']
 
-        dem = np.asarray(self,dtype=np.float32)
+        dem = np.asarray(self, dtype=np.float32)
         output_grid = np.zeros_like(dem, dtype=np.int32)
 
         _grid.identifyflats(output_grid, dem, self.dims)
@@ -324,6 +347,12 @@ class GridObject():
             If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
         TypeError
             If `threshold` is not a float, int, GridObject, or np.ndarray.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
+        >>> excess.plot(cmap='terrain')
         """
 
         if method not in ['fsm2d', 'fmm2d']:
@@ -391,6 +420,12 @@ class GridObject():
         ValueError
             If the kernelsize does not match the requirements of this function
             or the selected method is not implemented in the function.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> sharr = dem.filter(method='scharr', kernelsize=3)
+        >>> sharr.plot(cmap='terrain')
         """
 
         valid_methods = ['mean', 'average', 'median',
@@ -462,6 +497,12 @@ class GridObject():
     -------
     GridObject
         A new GridObject with the calculated gradient.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
+    >>> grad = = dem.gradient8()
+    >>> grad.plot(cmap='terrain')
         """
 
         if multiprocessing:
@@ -520,7 +561,7 @@ class GridObject():
         --------
         >>> dem = topotoolbox.load_dem('tibet')
         >>> curv = dem.curvature()
-        >>> curv.show()
+        >>> curv.plot(cmap='terrain')
         """
 
         if meanfilt:
@@ -598,7 +639,7 @@ class GridObject():
             Non-zero elements define the neighborhood over which the erosion
             is applied. Defaults to None
         structure : np.ndarray of ints, optional
-            A array defining the structuring element used for the erosion. 
+            A array defining the structuring element used for the erosion.
             This defines the connectivity of the elements. Defaults to None
 
         Returns
@@ -609,6 +650,12 @@ class GridObject():
         ------
         ValueError
             If size, structure and footprint are all None.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dilate = dem.dilate(size=10)
+        >>> dilate.plot(cmap='terrain')
         """
 
         if size is None and structure is None and footprint is None:
@@ -652,7 +699,7 @@ class GridObject():
             Non-zero elements define the neighborhood over which the erosion
             is applied. Defaults to None
         structure : np.ndarray of ints, optional
-            A array defining the structuring element used for the erosion. 
+            A array defining the structuring element used for the erosion.
             This defines the connectivity of the elements. Defaults to None
 
         Returns
@@ -663,7 +710,14 @@ class GridObject():
         Raises
         ------
         ValueError
-            If size, structure and footprint are all None."""
+            If size, structure and footprint are all None.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> eroded = dem.erode()
+        >>> eroded.plot(cmap='terrain')
+        """
 
         if size is None and structure is None and footprint is None:
             err = ("Erode requires a structuring element to be specified."
@@ -715,6 +769,12 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the computed evansslope data.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> slope = dem.evansslope()
+        >>> slope.plot(cmap='terrain')
         """
         dem = self.z.copy()
         # NaN replacement not optional since convolve can't handle NaNs
@@ -751,7 +811,7 @@ class GridObject():
     def aspect(self, classify: bool = False) -> 'GridObject':
         """Aspect returns the slope exposition of each cell in a digital
         elevation model in degrees. In contrast to the second output of
-        gradient8 which returns the steepest slope direction, aspect 
+        gradient8 which returns the steepest slope direction, aspect
         returns the angle of the slope.
 
         Parameters
@@ -764,6 +824,12 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the computed aspect data.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> aspect = dem.aspect()
+        >>> aspect.plot(cmap='terrain')
         """
 
         grad_y, grad_x = np.gradient(self.z, edge_order=2)
@@ -806,6 +872,14 @@ class GridObject():
             A Tuple containing a ndarray storing the computed prominence and
             a tuple of ndarray. Each array in the inner tuple has the same
             shape as the indices array (as returned by np.unravel_index).
+
+        Examples
+        --------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> prom, idx = dem.prominence(tolerance=90)
+        >>> plt.subplot()
+        >>> dem.plot(cmap='terrain')
+        >>> plt.plot(idx[0], idx[1], 'ro')
         """
         dem = np.nan_to_num(self.z)
         p = np.full_like(dem, np.min(dem))
@@ -835,7 +909,8 @@ class GridObject():
         prominence_array = np.array(prominence)
         indices_array = np.array(indices)
         indices_array = indices_array[:, [1, 0]]  # swap columns 0 and 1
-        indices_array = indices_array.T  # transpose to get (x, y) instead of (y, x)
+        # transpose to get (x, y) instead of (y, x)
+        indices_array = indices_array.T
         return prominence_array, indices_array
 
     def hillshade(self,
@@ -860,6 +935,13 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the resulting hillshade data
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> hillshade = dem.hillshade()
+        >>> hillshade.plot(cmap='gray')
+        >>> dem.plot(cmap='terrain', alpha=0.2)
         """
 
         h = np.zeros_like(self.z)
@@ -896,7 +978,7 @@ class GridObject():
         dx, dy = ~gt * (sx, sy)
 
         # And retrieve the azimuth angle.
-        azimuth_radians = np.arctan2(dy,dx)
+        azimuth_radians = np.arctan2(dy, dx)
 
         # NOTE(wkearn): This angle is then immediately used within
         # hillshade to compute vector components again. It would be
@@ -1030,7 +1112,7 @@ class GridObject():
             The axes in which to plot the GridObject. If no axes
             are given, the current axes are used.
 
-        extent: floats (left, right, bottom, top), optional        
+        extent: floats (left, right, bottom, top), optional
             The bounding box used to set the axis limits. If no extent
             is supplied, defaults to self.extent, which plots the
             GridObject in geographic coordinates.
@@ -1044,6 +1126,10 @@ class GridObject():
         matplotlib.image.AxesImage
             The image constructed by imshow
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem.plot(cmap='terrain')
         """
         if ax is None:
             ax = plt.gca()
@@ -1056,8 +1142,8 @@ class GridObject():
     def plot_hs(self, ax=None,
                 elev=None,
                 azimuth=315, altitude=60, exaggerate=1,
-                filter_method=None, filter_size = 3,
-                cmap='terrain', norm = None,
+                filter_method=None, filter_size=3,
+                cmap='terrain', norm=None,
                 blend_mode='soft',
                 extent=None,
                 **kwargs):
@@ -1098,7 +1184,7 @@ class GridObject():
         blend_mode: {'multiply', 'overlay', 'soft'}, optional
             The algorithm used to combine the shaded elevation with
             the data. Defaults to 'soft'.
-       extent: floats (left, right, bottom, top), optional        
+        extent: floats (left, right, bottom, top), optional
             The bounding box used to set the axis limits. If no extent
             is supplied, defaults to self.extent
         **kwargs
@@ -1125,6 +1211,10 @@ class GridObject():
             The `filter_method` or `filter_size` arguments are not
             accepted by `GridObject.filter`.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem.plot_hs(exaggerate=dem.cellsize)
         """
         if ax is None:
             ax = plt.gca()
@@ -1141,16 +1231,17 @@ class GridObject():
             raise TypeError(err) from None
 
         if filter_method is not None:
-            shade = shade.filter(method=filter_method,kernelsize=filter_size)
+            shade = shade.filter(method=filter_method, kernelsize=filter_size)
 
         h = shade.hillshade(azimuth, altitude, exaggerate)
         cmap = plt.get_cmap(cmap)
 
         if norm is None:
-            norm = colors.Normalize(vmin=np.nanmin(self.z),vmax=np.nanmax(self.z))
+            norm = colors.Normalize(vmin=np.nanmin(
+                self.z), vmax=np.nanmax(self.z))
 
         base = cmap(norm(self.z))
-        top = np.expand_dims(np.clip(h,0,1),2)
+        top = np.expand_dims(np.clip(h, 0, 1), 2)
         if blend_mode == "multiply":
             rgb = base * top
         elif blend_mode == "overlay":
@@ -1163,7 +1254,7 @@ class GridObject():
         if extent is None:
             extent = self.extent
 
-        return ax.imshow(np.clip(rgb,0,1), extent=extent, **kwargs)
+        return ax.imshow(np.clip(rgb, 0, 1), extent=extent, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
@@ -1188,6 +1279,12 @@ class GridObject():
         GridObject
           A grid identical to the input, but with randomly reassigned labels.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> D = fd.drainagebasins()
+        >>> D.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
         """
         result = cp.copy(self)
 
@@ -1198,7 +1295,7 @@ class GridObject():
 
         return result
 
-    def duplicate_with_new_data(self, data : np.ndarray) -> 'GridObject':
+    def duplicate_with_new_data(self, data: np.ndarray) -> 'GridObject':
         """Duplicate a GridObject with different data
 
         This function is helpful when one wants to create a GridObject from
@@ -1216,8 +1313,11 @@ class GridObject():
         GridObject
           A grid identical to the input, but with new data.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> new_dem = dem.duplicate_with_new_data(np.zeros(dem.shape))
         """
-
         rows, columns = data.shape
 
         if self.columns != columns or self.rows != rows:
@@ -1433,7 +1533,6 @@ class GridObject():
 
     def __str__(self):
         return str(self.z)
-
 
     def __repr__(self):
 
