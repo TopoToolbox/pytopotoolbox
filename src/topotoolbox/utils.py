@@ -14,7 +14,7 @@ from .grid_object import GridObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "gen_random_bool", "get_cache_contents", "clear_cache",
-           "read_from_cache", "load_open_topography", "validate_alignment"]
+           "read_from_cache", "load_opentopography", "validate_alignment"]
 
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
@@ -22,7 +22,8 @@ DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
 OPEN_TOPO_SOURCE = "https://portal.opentopography.org/API/globaldem"
 OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E'
                       'SRTM15Plus', 'NASADEM', 'COP30', 'COP90', 'EU_DTM',
-                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo')
+                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo',
+                      'CA_MRDEM_DTM', 'CA_MRDEM_DSM')
 
 
 def write_tif(dem: GridObject, path: str) -> None:
@@ -343,11 +344,11 @@ def read_from_cache(filename: str) -> GridObject:
     return grid_object
 
 
-def load_open_topography(south: float, north: float, west: float, east: float,
-                         api_key: str | None = None, dem_type: str = "SRTMGL3",
-                         api_path: str | None = None, overwrite: bool = False,
-                         save_path: str | None = None
-                         ) -> GridObject:
+def load_opentopography(south: float, north: float, west: float, east: float,
+                        api_key: str | None = None, dem_type: str = "SRTMGL3",
+                        api_path: str | None = None, overwrite: bool = False,
+                        save_path: str | None = None
+                        ) -> GridObject:
     """Download a DEM from Open Topography. The DEM is downloaded as a
     GeoTIFF file and saved in the cache directory. The DEM is then
     read into a GridObject. The DEMs come in geographic coordinates (WGS84).
@@ -392,6 +393,8 @@ def load_open_topography(south: float, north: float, west: float, east: float,
         - GEDI_L3 (DTM 1000m)
         - GEBCOIceTopo (Global Bathymetry 500m)
         - GEBCOSubIceTopo (Global Bathymetry 500m)
+        - CA_MRDEM_DSM (DSM 30m)
+        - CA_MRDEM_DTM (DTM 30m)
 
     overwrite : bool, optional
         If True cached DEM will be overwritten if it has the same bounds
@@ -415,7 +418,7 @@ def load_open_topography(south: float, north: float, west: float, east: float,
 
     Example
     -------
-    dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
+    dem = topotoolbox.load_opentopography(south=50, north=50.1, west=14.35,
                     east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
     dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
     im = dem.plot(cmap="terrain")
