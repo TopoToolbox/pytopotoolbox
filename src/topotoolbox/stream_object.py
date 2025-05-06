@@ -416,7 +416,7 @@ class StreamObject():
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
         >>> plt.subplots()
-        >>> dem.plot(cmap="terrain")    
+        >>> dem.plot(cmap="terrain")
         >>> s.plot(color='r')
         """
 
@@ -761,9 +761,108 @@ class StreamObject():
         result.source = new_indices[result.source]
         result.target = new_indices[result.target]
 
-        # TODO(wkearn): clean(result)
-        # TODO(wkearn): return indices into the original node attribute list
+        # MATLAB cleans the result, but this leads to a circular
+        # dependency between `subgraph` and `clean` that confuses
+        # things.
+
+        # TODO(wkearn): return indices into the original node
+        # attribute list
         return result
+
+    def clean(self) -> 'StreamObject':
+        """Remove disconnected nodes in stream networks
+
+        Returns
+        -------
+        StreamObject
+            A stream network where all isolated nodes have been removed
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000)
+        >>> sc = s.clean()
+        >>> assert sc.stream.shape <= s.stream.shape
+        """
+
+        indegree = np.zeros(self.stream.size, dtype=np.uint8)
+        outdegree = np.zeros(self.stream.size, dtype=np.uint8)
+        _stream.edgelist_degree(indegree, outdegree, self.source, self.target)
+        nal = (indegree != 0) | (outdegree != 0)
+
+        return self.subgraph(nal)
+
+
+    def upstreamto(self, nodes) -> 'StreamObject':
+        """Extract the portion of the stream network upstream of the given nodes
+
+        Parameters
+        ----------
+        nodes: GridObject or np.ndarray
+            A logical node attribute list or grid that is True for the desired nodes.
+
+        Returns
+        -------
+        StreamObject
+            A stream network containing those nodes of the original
+            one that are upstream of the given nodes.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> confluences = s.streampoi('confluences')
+        >>> s2 = s.upstreamto(confluences)
+        >>> fig,ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s2.plot(ax=ax,color='k')
+        """
+        nal = self.ezgetnal(nodes, dtype=np.uint32)
+
+        edges = np.ones(self.source.size, dtype=np.uint32)
+        _stream.traverse_up_u32_or_and(nal, edges, self.source, self.target)
+
+        return self.subgraph(nal)
+
+    def downstreamto(self, nodes) -> 'StreamObject':
+        """Extract the portion of the stream network downstream of the given nodes
+
+        Parameters
+        ----------
+        nodes: GridObject or np.ndarray
+            A logical node attribute list or grid that is True for the desired nodes.
+
+        Returns
+        -------
+        StreamObject
+            A stream network containing those nodes of the original
+            one that are downstream of the given nodes.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+        >>> confluences = s.streampoi('confluences')
+        >>> s2 = s.downstream(confluences)
+        >>> fig,ax = plt.subplots()
+        >>> dem.plot(ax=ax,cmap="terrain")
+        >>> s2.plot(ax=ax,color='k')
+        """
+        nal = self.ezgetnal(nodes, dtype=np.uint32)
+
+        edges = np.ones(self.source.size, dtype=np.uint32)
+        _stream.traverse_down_u32_or_and(nal, edges, self.source, self.target)
+
+        return self.subgraph(nal)
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
