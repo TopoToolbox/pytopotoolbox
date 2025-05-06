@@ -266,7 +266,7 @@ def test_stream_channelheads(tall_dem, wide_dem):
     s = topo.StreamObject(fd)
 
     assert topo.validate_alignment(fd, s)
-    
+
     channel_heads = s.streampoi("channelheads")
 
     s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
@@ -275,6 +275,19 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
+def test_stream_downstreamto(tall_dem):
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    ch = s.streampoi("channelheads")
+
+    sc = topo.StreamObject(fd,channelheads=s.stream[ch])
+    sd = s.downstreamto(ch)
+
+    # These two stream networks should be equivalent
+    assert len(set(sd.stream).symmetric_difference(set(sc.stream))) == 0
+
 
 def test_stream_imposemin(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
