@@ -761,9 +761,40 @@ class StreamObject():
         result.source = new_indices[result.source]
         result.target = new_indices[result.target]
 
-        # TODO(wkearn): clean(result)
-        # TODO(wkearn): return indices into the original node attribute list
+        # MATLAB cleans the result, but this leads to a circular
+        # dependency between `subgraph` and `clean` that confuses
+        # things.
+
+        # TODO(wkearn): return indices into the original node
+        # attribute list
         return result
+
+    def clean(self) -> 'StreamObject':
+        """Remove disconnected nodes in stream networks
+
+        Returns
+        -------
+        StreamObject
+            A stream network where all isolated nodes have been removed
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd,threshold=1000)
+        >>> sc = s.clean()
+        >>> assert sc.stream.shape <= s.stream.shape
+        """
+
+        indegree = np.zeros(self.stream.size, dtype=np.uint8)
+        outdegree = np.zeros(self.stream.size, dtype=np.uint8)
+        _stream.edgelist_degree(indegree, outdegree, self.source, self.target)
+        nal = (indegree != 0) | (outdegree != 0)
+
+        return self.subgraph(nal)
+
 
     def upstreamto(self, nodes) -> 'StreamObject':
         """Extract the portion of the stream network upstream of the given nodes
