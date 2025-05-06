@@ -218,8 +218,14 @@ class FlowObject():
 
         return result
 
-    def drainagebasins(self):
+    def drainagebasins(self, outlets=None):
         """Delineate drainage basins from a flow network.
+
+        Parameters
+        ----------
+        outlets: np.ndarray
+            An array containing the linear indices of the outlet nodes
+            in column major ('F') order.
 
         Returns
         -------
@@ -233,10 +239,16 @@ class FlowObject():
         >>> fd = topotoolbox.FlowObject(dem)
         >>> basins = fd.drainagebasins()
         >>> basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
+
         """
         basins = np.zeros(self.shape, dtype=np.int64, order='F')
 
-        _flow.drainagebasins(basins, self.source, self.target, self.shape)
+        if outlets is None:
+            _flow.drainagebasins(basins, self.source, self.target, self.shape)
+        else:
+            indices = np.unravel_index(outlets, self.shape, order='F')
+            basins[indices] = np.arange(1, len(outlets) + 1)
+            _stream.propagatevaluesupstream_i64(basins, self.source, self.target)
 
         result = GridObject()
         result.path = self.path
