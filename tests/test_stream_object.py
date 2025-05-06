@@ -288,6 +288,21 @@ def test_stream_downstreamto(tall_dem):
     # These two stream networks should be equivalent
     assert len(set(sd.stream).symmetric_difference(set(sc.stream))) == 0
 
+def test_stream_upstreamto(tall_dem):
+    fd = topo.FlowObject(tall_dem)
+
+    # We clean here in case any 1 pixel streams exist in s.
+    # They won't be identified as outlets, so the reconstructed stream
+    # network would not be identical to the original.
+    s = topo.StreamObject(fd).clean()
+
+    outlets = s.streampoi("outlets")
+
+    su = s.upstreamto(outlets)
+
+    # These two stream networks should be equivalent
+    assert len(set(s.stream).symmetric_difference(set(su.stream))) == 0
+
 
 def test_stream_imposemin(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
