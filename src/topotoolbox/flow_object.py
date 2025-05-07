@@ -1,5 +1,7 @@
 """This module contains the FlowObject class.
 """
+from typing import Literal
+
 import numpy as np
 
 # pylint: disable=no-name-in-module
@@ -116,7 +118,8 @@ class FlowObject():
         self.shape = grid.shape
         self.cellsize = grid.cellsize
         self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
-        self.order = 'F' if grid.z.flags.f_contiguous else 'C'
+        self.order: Literal['F', 'C'] = ('F' if grid.z.flags.c_contiguous
+                                         else 'C')
 
         # georeference
         self.bounds = grid.bounds
