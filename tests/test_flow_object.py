@@ -74,6 +74,71 @@ def test_flowobject_order(order_dems):
     assert cedges == fedges
 
 
+def test_flow_accumulation_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    ca = cfd.flow_accumulation()
+    fa = ffd.flow_accumulation()
+
+    assert np.array_equal(ca, fa)
+
+
+def test_drainagebasins_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cdb = cfd.drainagebasins()
+    fdb = ffd.drainagebasins()
+
+    # This testing logic is rather complicated, so please excuse the
+    # length explanation.
+
+    # The two sets of labels are identical up to a bijection between
+    # the label sets. We construct that bijection here. We need the
+    # set of unique labels, `us`, the indices of a representative pixel
+    # in the drainage basins array that has each label, `idxs`, and, for
+    # each pixel, the index of its label in the label set, `invs`. If we
+    # have B basins in an N x M DEM, `us` is a length B array of basin
+    # labels, `idxs` is an length B array of pixel indices and `invs` is
+    # an N x M array of the indices [0,B-1) into the `us`
+    # array. Fortunately np.unique can provide all of these.
+    cus, cidxs, cinvs = np.unique(cdb, return_index=True, return_inverse=True)
+    fus, fidxs, finvs = np.unique(fdb, return_index=True, return_inverse=True)
+
+    # Now we construct the bijection and apply it to reconstruct the
+    # column-major and row-major drainage basins. Below the "main array"
+    # refers to the array whose pattern we are trying to reconstruct
+    # and the "alternate array" is the one we reconstruct from.
+
+    # First, we use the `idxs` of the alternate array to extract the
+    # `invs` of the main array at each of the representative
+    # pixels. Then we index into the `us` of the main array to find
+    # the labels assigned to each of the representative pixels /in the
+    # order in which they show up in the alternate `idxs` array/,
+    # which is also the order of the labels in the alternate `us`
+    # array. This array represents the bijection between the main
+    # labels and the alternate labels. When we index into this length
+    # B array with the alternate `invs`, we will get the main labels
+    # that should be assigned to each pixel in the alternate array if
+    # the two arrays are identical up to the bijection.
+    frec = fus[np.take(finvs, cidxs)][cinvs]
+
+    # Now we test that the reconstructed array is identical to the
+    # main array. We use flatten because older versions of numpy
+    # return different `invs` of different dimensions.
+    assert np.array_equal(frec.flatten(), fdb.z.flatten())
+
+    # Having done this once, we might as well do it with the main and
+    # alternate arrays swapped.
+    crec = cus[np.take(cinvs, fidxs)][finvs]
+    assert np.array_equal(crec.flatten(), cdb.z.flatten())
+
+
 def test_ezgetnal(wide_dem):
     fd = topo.FlowObject(wide_dem)
 
