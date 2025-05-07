@@ -126,16 +126,17 @@ def test_drainagebasins_order(order_dems):
     # B array with the alternate `invs`, we will get the main labels
     # that should be assigned to each pixel in the alternate array if
     # the two arrays are identical up to the bijection.
-    frec = fus[finvs[np.unravel_index(cidxs, cdb.shape)]][cinvs]
+    frec = fus[np.take(finvs, cidxs)][cinvs]
 
     # Now we test that the reconstructed array is identical to the
-    # main array.
-    assert np.array_equal(frec, fdb)
+    # main array. We use flatten because older versions of numpy
+    # return different `invs` of different dimensions.
+    assert np.array_equal(frec.flatten(), fdb.z.flatten())
 
     # Having done this once, we might as well do it with the main and
     # alternate arrays swapped.
-    crec = cus[cinvs[np.unravel_index(fidxs, fdb.shape)]][finvs]
-    assert np.array_equal(crec, cdb)
+    crec = cus[np.take(cinvs, fidxs)][finvs]
+    assert np.array_equal(crec.flatten(), cdb.z.flatten())
 
 
 def test_ezgetnal(wide_dem):
