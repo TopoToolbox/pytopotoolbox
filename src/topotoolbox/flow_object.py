@@ -118,7 +118,7 @@ class FlowObject():
         self.shape = grid.shape
         self.cellsize = grid.cellsize
         self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
-        self.order: Literal['F', 'C'] = ('F' if grid.z.flags.c_contiguous
+        self.order: Literal['F', 'C'] = ('F' if grid.z.flags.f_contiguous
                                          else 'C')
 
         # georeference
