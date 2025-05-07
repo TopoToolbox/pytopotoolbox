@@ -1,5 +1,7 @@
 """This module contains the FlowObject class.
 """
+from typing import Literal
+
 import numpy as np
 
 # pylint: disable=no-name-in-module
@@ -116,6 +118,8 @@ class FlowObject():
         self.shape = grid.shape
         self.cellsize = grid.cellsize
         self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
+        self.order: Literal['F', 'C'] = ('F' if grid.z.flags.f_contiguous
+                                         else 'C')
 
         # georeference
         self.bounds = grid.bounds
@@ -188,17 +192,19 @@ class FlowObject():
         >>> acc = fd.flow_accumulation()
         >>> acc.plot(cmap='Blues',norm="log")
         """
-        acc = np.zeros(self.shape, dtype=np.float32, order='F')
+        acc = np.zeros(self.shape, dtype=np.float32, order=self.order)
 
+        # This is overly complicated
         if weights == 1.0:
-            weights = np.ones(self.shape, dtype=np.float32, order='F')
+            weights = np.ones(self.shape, dtype=np.float32, order=self.order)
         elif isinstance(weights, np.ndarray):
             if weights.shape != acc.shape:
                 err = ("The shape of the provided weights ndarray does not "
                        f"match the shape of the FlowObject. {self.shape}")
                 raise ValueError(err)from None
         else:
-            weights = np.full(self.shape, weights, dtype=np.float32, order='F')
+            weights = np.full(self.shape, weights,
+                              dtype=np.float32, order=self.order)
 
         fraction = np.ones_like(self.source, dtype=np.float32)
 

@@ -74,6 +74,18 @@ def test_flowobject_order(order_dems):
     assert cedges == fedges
 
 
+def test_flow_accumulation_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    ca = cfd.flow_accumulation()
+    fa = ffd.flow_accumulation()
+
+    assert np.array_equal(ca, fa)
+
+
 def test_ezgetnal(wide_dem):
     fd = topo.FlowObject(wide_dem)
 
