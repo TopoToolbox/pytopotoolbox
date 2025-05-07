@@ -126,6 +126,15 @@ class FlowObject():
         self.transform = grid.transform
         self.crs = grid.crs
 
+    @property
+    def dims(self):
+        """The dimensions of the grid in the correct order for libtopotoolbox
+        """
+        if self.order == 'C':
+            return (self.shape[0], self.shape[1])
+
+        return (self.shape[1], self.shape[0])
+
     def ezgetnal(self, k, dtype=None) -> GridObject | np.ndarray:
         """Retrieve a node attribute list
 
@@ -247,14 +256,15 @@ class FlowObject():
         >>> basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
 
         """
-        basins = np.zeros(self.shape, dtype=np.int64, order='F')
+        basins = np.zeros(self.shape, dtype=np.int64, order=self.order)
 
         if outlets is None:
-            _flow.drainagebasins(basins, self.source, self.target, self.shape)
+            _flow.drainagebasins(basins, self.source, self.target, self.dims)
         else:
-            indices = np.unravel_index(outlets, self.shape, order='F')
+            indices = np.unravel_index(outlets, self.shape, order=self.order)
             basins[indices] = np.arange(1, len(outlets) + 1)
-            _stream.propagatevaluesupstream_i64(basins, self.source, self.target)
+            _stream.propagatevaluesupstream_i64(basins, self.source,
+                                                self.target)
 
         result = GridObject()
         result.path = self.path
