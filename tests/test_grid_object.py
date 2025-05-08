@@ -295,3 +295,18 @@ def test_prominence(order_dems):
     assert np.array_equal(cp, fp)
     assert np.array_equal(cx, fx)
     assert np.array_equal(cy, fy)
+
+
+def test_shufflelabel(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cdb = cfd.drainagebasins()
+    cs = cdb.shufflelabel()
+    fdb = ffd.drainagebasins()
+    fs = fdb.shufflelabel()
+
+    assert cs.shape == cdb.shape
+    assert fs.shape == fdb.shape
