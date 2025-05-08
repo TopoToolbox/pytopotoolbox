@@ -21,15 +21,17 @@ def wide_dem():
 def tall_dem():
     return topo.gen_random(rows=128, columns=64, seed=12)
 
+
 @pytest.fixture
 def order_dems():
     opensimplex.seed(12)
 
-    x = np.arange(0,128)
-    y = np.arange(0,256)
+    x = np.arange(0, 128)
+    y = np.arange(0, 256)
 
     cdem = topo.GridObject()
-    cdem.z = np.array(64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
+    cdem.z = np.array(
+        64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
     cdem.cellsize = 13.0
     cdem.transform = Affine.scale(cdem.cellsize)
 
@@ -94,18 +96,19 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
 
 def test_fillsinks_order(order_dems):
     cdem, fdem = order_dems
-    
+
     cfilled = cdem.fillsinks()
     assert cfilled.z.flags.c_contiguous
-    
+
     ffilled = fdem.fillsinks()
     assert ffilled.z.flags.f_contiguous
-   
+
     assert np.array_equal(ffilled, cfilled)
 
     assert topo.validate_alignment(fdem, ffilled)
     assert topo.validate_alignment(cdem, cfilled)
-    
+
+
 def test_identifyflats(square_dem, wide_dem, tall_dem):
     # TODO: add more tests
     for dem in [square_dem, wide_dem, tall_dem]:
@@ -137,6 +140,7 @@ def test_identifyflats(square_dem, wide_dem, tall_dem):
                     if flats[i_neighbor, j_neighbor] < flats[i, j]:
                         assert flats[i, j] == 1.0
 
+
 def test_identifyflats_order(order_dems):
     cdem, fdem = order_dems
 
@@ -163,10 +167,12 @@ def test_identifyflats_order(order_dems):
     assert fflats.z.flags.f_contiguous
     assert fsills.z.flags.f_contiguous
 
+
 def test_excesstopography(square_dem):
     # TODO: add more tests
     with pytest.raises(TypeError):
         square_dem.excesstopography(threshold='0.1')
+
 
 def test_excesstopography_order(order_dems):
     cdem, fdem = order_dems
@@ -183,10 +189,11 @@ def test_excesstopography_order(order_dems):
         assert topo.validate_alignment(fdem, fext)
         assert topo.validate_alignment(cdem, cext)
 
+
 def test_hillshade_order(order_dems):
     cdem, fdem = order_dems
-    
-    for azimuth in np.arange(0.0,360.0,2.3):
+
+    for azimuth in np.arange(0.0, 360.0, 2.3):
         hc = cdem.hillshade(azimuth=azimuth)
         hf = fdem.hillshade(azimuth=azimuth)
         assert np.allclose(hc, hf)
@@ -194,15 +201,17 @@ def test_hillshade_order(order_dems):
         assert topo.validate_alignment(cdem, hc)
         assert topo.validate_alignment(fdem, hf)
 
+
 def test_filter_order(order_dems):
     cdem, fdem = order_dems
 
-    for method in ['mean','average','median',
-                   'sobel','scharr','wiener','std']:
+    for method in ['mean', 'average', 'median',
+                   'sobel', 'scharr', 'wiener', 'std']:
         cfiltered = cdem.filter(method=method)
         ffiltered = fdem.filter(method=method)
 
         assert np.array_equal(cfiltered, ffiltered)
+
 
 def test_gradient8_order(order_dems):
     cdem, fdem = order_dems
@@ -223,30 +232,34 @@ def test_gradient8_order(order_dems):
     assert cgradient.z.flags.c_contiguous
     assert fgradient.z.flags.f_contiguous
 
+
 def test_curvature_order(order_dems):
     cdem, fdem = order_dems
 
-    for ctype in ['profc','planc','tangc','meanc','total']:
+    for ctype in ['profc', 'planc', 'tangc', 'meanc', 'total']:
         ccurv = cdem.curvature(ctype=ctype)
         fcurv = fdem.curvature(ctype=ctype)
 
         assert np.array_equal(ccurv, fcurv)
 
+
 def test_dilate_order(order_dems):
     cdem, fdem = order_dems
 
-    cdilated = cdem.dilate((3,3))
-    fdilated = fdem.dilate((3,3))
+    cdilated = cdem.dilate((3, 3))
+    fdilated = fdem.dilate((3, 3))
 
     assert np.array_equal(cdilated, fdilated)
+
 
 def test_erode_order(order_dems):
     cdem, fdem = order_dems
 
-    ceroded = cdem.erode((3,3))
-    feroded = fdem.erode((3,3))
+    ceroded = cdem.erode((3, 3))
+    feroded = fdem.erode((3, 3))
 
     assert np.array_equal(ceroded, feroded)
+
 
 def test_evansslope_order(order_dems):
     cdem, fdem = order_dems
@@ -255,6 +268,7 @@ def test_evansslope_order(order_dems):
     fslope = fdem.evansslope()
 
     assert np.array_equal(cslope, fslope)
+
 
 def test_aspect_order(order_dems):
     cdem, fdem = order_dems
@@ -281,3 +295,18 @@ def test_prominence(order_dems):
     assert np.array_equal(cp, fp)
     assert np.array_equal(cx, fx)
     assert np.array_equal(cy, fy)
+
+
+def test_shufflelabel(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cdb = cfd.drainagebasins()
+    cs = cdb.shufflelabel()
+    fdb = ffd.drainagebasins()
+    fs = fdb.shufflelabel()
+
+    assert cs.shape == cdb.shape
+    assert fs.shape == fdb.shape
