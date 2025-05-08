@@ -1288,10 +1288,9 @@ class GridObject():
         """
         result = cp.copy(self)
 
-        labels = self.z
-        u, indices = np.unique(labels, return_inverse=True)
+        u, indices = np.unique(self, return_inverse=True)
         rng = np.random.default_rng(seed)
-        result.z = rng.permutation(u)[indices]
+        result.z = np.reshape(rng.permutation(u)[indices], self.shape)
 
         return result
 
