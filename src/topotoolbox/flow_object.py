@@ -256,21 +256,22 @@ class FlowObject():
         >>> basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
 
         """
-        basins = np.zeros(self.shape, dtype=np.int64, order=self.order)
-
         if outlets is None:
+            basins = np.zeros(self.shape, dtype=np.int64, order=self.order)
             _flow.drainagebasins(basins, self.source, self.target, self.dims)
         else:
+            basins = np.zeros(self.shape, dtype=np.uint32, order=self.order)
             indices = np.unravel_index(outlets, self.shape, order=self.order)
-            basins[indices] = np.arange(1, len(outlets) + 1)
-            _stream.propagatevaluesupstream_i64(basins, self.source,
-                                                self.target)
+            basins[indices] = np.arange(1, len(outlets) + 1, dtype=np.uint32)
+            weights = np.full(self.source.size, 0xffffffff, dtype=np.uint32)
+            _stream.traverse_up_u32_or_and(
+                basins, weights, self.source, self.target)
 
         result = GridObject()
         result.path = self.path
         result.name = self.name
 
-        result.z = basins
+        result.z = np.array(basins, dtype=np.int64)
         result.cellsize = self.cellsize
 
         result.bounds = self.bounds
