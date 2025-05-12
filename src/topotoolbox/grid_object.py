@@ -97,6 +97,21 @@ class GridObject():
 
         return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
 
+    @property
+    def coordinates(self):
+        """Coordinate arrays for the DEM
+
+        Returns
+        -------
+        X,Y : tuple of ndarrays
+            The two returned arrays are of the same shape as the
+        DEM. The first contains the coordinates of each pixel in the
+        horizontal dimension, and the second contains the coordinates
+        in the vertical dimension.
+        """
+        x, y = np.meshgrid(np.arange(self.columns), np.arange(self.rows))
+        return self.transform * (x, y)
+
     def astype(self, dtype):
         """Copy of the GridObject, cast to specified type
 
