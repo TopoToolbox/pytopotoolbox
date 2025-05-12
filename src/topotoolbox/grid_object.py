@@ -1271,6 +1271,34 @@ class GridObject():
 
         return ax.imshow(np.clip(rgb, 0, 1), extent=extent, **kwargs)
 
+    def plot_surface(self, ax=None, **kwargs):
+        """Plot DEM as a 3D surface
+
+        Parameters
+        ----------
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the GridObject. If no axes
+            are given, the current axes are used.
+
+        **kwargs
+            Additional keyword arguments are forwarded to
+            matplotlib.axes.Axes3D.plot_surface.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
+        >>> dem.plot_surface(ax=ax)
+        >>> ax.set_aspect('equal')
+        >>> plt.show()
+        """
+        if ax is None:
+            ax = plt.gca()
+
+        x, y = self.coordinates
+
+        return ax.plot_surface(x, y, self.z, **kwargs)
+
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
 
