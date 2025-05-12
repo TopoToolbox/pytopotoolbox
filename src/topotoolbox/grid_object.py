@@ -1290,6 +1290,7 @@ class GridObject():
         >>> fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
         >>> dem.plot_surface(ax=ax)
         >>> ax.set_aspect('equal')
+        >>> ax.set_zticks([0,np.nanmax(dem)])
         >>> plt.show()
         """
         if ax is None:
