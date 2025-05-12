@@ -97,6 +97,21 @@ class GridObject():
 
         return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
 
+    @property
+    def coordinates(self):
+        """Coordinate arrays for the DEM
+
+        Returns
+        -------
+        X,Y : tuple of ndarrays
+            The two returned arrays are of the same shape as the
+        DEM. The first contains the coordinates of each pixel in the
+        horizontal dimension, and the second contains the coordinates
+        in the vertical dimension.
+        """
+        x, y = np.meshgrid(np.arange(self.columns), np.arange(self.rows))
+        return self.transform * (x, y)
+
     def astype(self, dtype):
         """Copy of the GridObject, cast to specified type
 
@@ -1255,6 +1270,35 @@ class GridObject():
             extent = self.extent
 
         return ax.imshow(np.clip(rgb, 0, 1), extent=extent, **kwargs)
+
+    def plot_surface(self, ax=None, **kwargs):
+        """Plot DEM as a 3D surface
+
+        Parameters
+        ----------
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the GridObject. If no axes
+            are given, the current axes are used.
+
+        **kwargs
+            Additional keyword arguments are forwarded to
+            matplotlib.axes.Axes3D.plot_surface.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
+        >>> dem.plot_surface(ax=ax)
+        >>> ax.set_aspect('equal')
+        >>> ax.set_zticks([0,np.nanmax(dem)])
+        >>> plt.show()
+        """
+        if ax is None:
+            ax = plt.gca()
+
+        x, y = self.coordinates
+
+        return ax.plot_surface(x, y, self.z, **kwargs)
 
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
