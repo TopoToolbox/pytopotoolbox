@@ -20,6 +20,12 @@ jobs:
       - name: Install Pandoc
         run: sudo apt-get install -y pandoc
 
+      - name: Ensure API key is available for examples that require it
+        env:
+          OPENTOPOGRAPHY_API_KEY: ${{ secrets.OPENTOPOGRAPHY_API_KEY }}
+        run: |
+          printf '%s' "$OPENTOPOGRAPHY_API_KEY" > $HOME/.opentopography.txt
+
       - name: Install Python build dependencies
         run: |
           python -m pip install --upgrade pip
