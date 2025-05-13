@@ -140,3 +140,9 @@ The pre-commit-config contains the following hooks:
 - Running pylint
 - Running mypy
 - Running nbstripout to clean metadata from notebooks
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Example Notebook for TopoToolbox <dev/template>
