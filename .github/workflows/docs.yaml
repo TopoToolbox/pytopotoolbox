@@ -2,7 +2,7 @@ name: docs
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main","docs-template-notebook"]
 
 jobs:
   build:
@@ -10,7 +10,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
+      - name: Restore data cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/topotoolbox
+          key: tt3-docs-data
+
       - name: Install Pandoc
         run: sudo apt-get install -y pandoc
 
