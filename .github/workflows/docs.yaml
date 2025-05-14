@@ -10,9 +10,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
+      - name: Restore data cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/topotoolbox
+          key: tt3-docs-data
+
       - name: Install Pandoc
         run: sudo apt-get install -y pandoc
+
+      - name: Ensure API key is available for examples that require it
+        env:
+          OPENTOPOGRAPHY_API_KEY: ${{ secrets.OPENTOPOGRAPHY_API_KEY }}
+        run: |
+          printf '%s' "$OPENTOPOGRAPHY_API_KEY" > $HOME/.opentopography.txt
 
       - name: Install Python build dependencies
         run: |
