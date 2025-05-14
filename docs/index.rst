@@ -28,7 +28,7 @@ For further documentation regarding the functionality of this package, check out
 Contributing
 ------------
 
-If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTING` page. To get a better understanding of how we wrap functions for use in python, the :doc:`wrapping` page will help.
+If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTING` page. A great way to get started is to :doc:`create a notebook <dev/template>` for our :doc:`examples` gallery. To get a better understanding of how we wrap libtopotoolbox functions for use in Python, the :doc:`dev/wrapping` page will help.
 
 .. toctree::
    :maxdepth: 1
@@ -39,7 +39,6 @@ If you would like to contribute to pytopotoolbox, refer to the :doc:`CONTRIBUTIN
    API <api>
    Contribution Guidelines <CONTRIBUTING>
    Developer Documentation <dev>
-   Wrapping LibTopoToolbox <wrapping>
 
 Indices and Tables
 ------------------

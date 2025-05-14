@@ -145,4 +145,5 @@ The pre-commit-config contains the following hooks:
    :maxdepth: 1
    :hidden:
 
-   Example Notebook for TopoToolbox <dev/template>
+   dev/template
+   dev/wrapping
