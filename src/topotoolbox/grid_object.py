@@ -959,10 +959,11 @@ class GridObject():
         >>> dem.plot(cmap='terrain', alpha=0.2)
         """
 
-        h = np.zeros_like(self.z)
-        nx = np.zeros_like(self.z)
-        ny = np.zeros_like(self.z)
-        nz = np.zeros_like(self.z)
+        z = np.asarray(self, dtype=np.float32)
+        h = np.zeros_like(z)
+        nx = np.zeros_like(z)
+        ny = np.zeros_like(z)
+        nz = np.zeros_like(z)
 
         # Computing the azimuth angle is a bit tricky
         gt = self.transform
@@ -1007,8 +1008,9 @@ class GridObject():
 
         altitude_radians = np.deg2rad(altitude)
 
-        _grid.hillshade(h, nx, ny, nz, exaggerate * self.z,
-                        azimuth_radians, altitude_radians, self.cellsize, self.dims)
+        _grid.hillshade(h, nx, ny, nz, exaggerate * z,
+                        azimuth_radians, altitude_radians,
+                        self.cellsize, self.dims)
 
         result = cp.copy(self)
         result.z = h
