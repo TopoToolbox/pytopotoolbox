@@ -43,6 +43,27 @@ def order_dems():
     return [cdem, fdem]
 
 
+@pytest.fixture
+def types_dems():
+    opensimplex.seed(12)
+
+    x = np.arange(0, 128)
+    y = np.arange(0, 256)
+
+    dem64 = topo.GridObject()
+    dem64.z = np.array(
+        64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float64)
+    dem64.cellsize = 13.0
+    dem64.transform = Affine.scale(dem64.cellsize)
+
+    dem32 = topo.GridObject()
+    dem32.z = np.array(dem64, dtype=np.float32)
+    dem32.cellsize = 13.0
+    dem32.transform = Affine.scale(dem32.cellsize)
+
+    return [dem32, dem64]
+
+
 def test_fillsinks(square_dem, wide_dem, tall_dem):
     # TODO: add more tests
     for grid in [square_dem, wide_dem, tall_dem]:
@@ -200,6 +221,15 @@ def test_hillshade_order(order_dems):
 
         assert topo.validate_alignment(cdem, hc)
         assert topo.validate_alignment(fdem, hf)
+
+
+def test_hillshade_types(types_dems):
+    dem32, dem64 = types_dems
+
+    for azimuth in np.arange(0.0, 360.0, 2.3):
+        h32 = dem32.hillshade(azimuth=azimuth)
+        h64 = dem64.hillshade(azimuth=azimuth)
+        assert np.allclose(h64, h32)
 
 
 def test_filter_order(order_dems):
