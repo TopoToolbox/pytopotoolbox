@@ -1,5 +1,6 @@
 """This module contains the StreamObject class.
 """
+import os
 import math
 import warnings
 import copy
@@ -8,6 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from scipy.sparse import csr_matrix
+from shapely.geometry import LineString
+import geopandas as gpd
 
 from .flow_object import FlowObject
 from .grid_object import GridObject
@@ -385,6 +388,26 @@ class StreamObject():
                         stack.append(v)
 
         return segments
+    
+    def to_shapefile(self, saving_path, saving_name):
+        '''Convert the stream network to a georeferenced shapefile
+        
+        Parameters
+        ----------
+        saving_path: python string
+             path were the shapefile will be saved.
+            
+        saving_name: python string
+            name of the shapefile.
+        
+        Returns
+        ----------
+        None
+            (The shapefile of the stream network is saved to "saving_path" location as "saving_name" filename)
+        '''
+        line_geoms = [LineString(coords) for coords in self.xy()]
+        gdf = gpd.GeoDataFrame(geometry=line_geoms, crs=self.crs)
+        gdf.to_file(os.path.join(saving_path, saving_name))
 
     def plot(self, ax=None, **kwargs):
         """Plot the StreamObject
