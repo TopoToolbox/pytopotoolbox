@@ -1,6 +1,5 @@
 """This module contains the StreamObject class.
 """
-import os
 import math
 import warnings
 import copy
@@ -389,25 +388,43 @@ class StreamObject():
 
         return segments
     
-    def to_shapefile(self, saving_path, saving_name):
-        '''Convert the stream network to a georeferenced shapefile
+    def to_geodataframe(self):
+        '''Convert the stream network to a GeoDataFrame.
+            
+        Returns
+        ----------
+        geopandas.GeoDataFrame
+            The GeoDataFrame.
+ 
+        Example
+        -------
+        dem = tt3.load_dem('bigtujunga')
+        fd = tt3.FlowObject(dem)
+        s = tt3.StreamObject(fd)
+        s_gdf = s.to_geodataframe()
+        '''
+        
+        line_geoms = [LineString(coords) for coords in self.xy()]
+        gdf = gpd.GeoDataFrame(geometry=line_geoms, crs=self.crs)
+        return gdf
+        
+    def to_shapefile(self, path: str) -> None:
+        '''Convert the stream network to a georeferenced shapefile.
         
         Parameters
         ----------
-        saving_path: python string
-             path were the shapefile will be saved.
-            
-        saving_name: python string
-            name of the shapefile.
+        path : str
+             path where the shapefile will be saved.
         
-        Returns
-        ----------
-        None
-            (The shapefile of the stream network is saved to "saving_path" location as "saving_name" filename)
+        Example
+        -------
+        dem = tt3.load_dem('bigtujunga')
+        fd = tt3.FlowObject(dem)
+        s = tt3.StreamObject(fd)
+        s.to_shapefile('stream_network.shp')
         '''
-        line_geoms = [LineString(coords) for coords in self.xy()]
-        gdf = gpd.GeoDataFrame(geometry=line_geoms, crs=self.crs)
-        gdf.to_file(os.path.join(saving_path, saving_name))
+        gdf = self.to_geodataframe()
+        gdf.to_file(path)
 
     def plot(self, ax=None, **kwargs):
         """Plot the StreamObject
