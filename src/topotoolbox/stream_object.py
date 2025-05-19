@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from scipy.sparse import csr_matrix
+from shapely.geometry import LineString
+import geopandas as gpd
 
 from .flow_object import FlowObject
 from .grid_object import GridObject
@@ -385,6 +387,44 @@ class StreamObject():
                         stack.append(v)
 
         return segments
+
+    def to_geodataframe(self):
+        '''Convert the stream network to a GeoDataFrame.
+            
+        Returns
+        ----------
+        geopandas.GeoDataFrame
+            The GeoDataFrame.
+ 
+        Example
+        -------
+        dem = tt3.load_dem('bigtujunga')
+        fd = tt3.FlowObject(dem)
+        s = tt3.StreamObject(fd)
+        s_gdf = s.to_geodataframe()
+        '''
+
+        line_geoms = [LineString(coords) for coords in self.xy()]
+        gdf = gpd.GeoDataFrame(geometry=line_geoms, crs=self.crs)
+        return gdf
+
+    def to_shapefile(self, path: str) -> None:
+        '''Convert the stream network to a georeferenced shapefile.
+        
+        Parameters
+        ----------
+        path : str
+             path where the shapefile will be saved.
+        
+        Example
+        -------
+        dem = tt3.load_dem('bigtujunga')
+        fd = tt3.FlowObject(dem)
+        s = tt3.StreamObject(fd)
+        s.to_shapefile('stream_network.shp')
+        '''
+        gdf = self.to_geodataframe()
+        gdf.to_file(path)
 
     def plot(self, ax=None, **kwargs):
         """Plot the StreamObject
