@@ -387,7 +387,7 @@ class StreamObject():
                         stack.append(v)
 
         return segments
-    
+
     def to_geodataframe(self):
         '''Convert the stream network to a GeoDataFrame.
             
@@ -403,11 +403,11 @@ class StreamObject():
         s = tt3.StreamObject(fd)
         s_gdf = s.to_geodataframe()
         '''
-        
+
         line_geoms = [LineString(coords) for coords in self.xy()]
         gdf = gpd.GeoDataFrame(geometry=line_geoms, crs=self.crs)
         return gdf
-        
+
     def to_shapefile(self, path: str) -> None:
         '''Convert the stream network to a georeferenced shapefile.
         
