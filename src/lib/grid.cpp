@@ -252,7 +252,7 @@ void wrap_gradient8(
 }
 
 void wrap_hillshade(py::array_t<float> output,
-                    py::array_t<float>nx, py::array_t<float> ny, py::array_t<float> nz,
+                    py::array_t<float>nx, py::array_t<float> ny,
                     py::array_t<float> dem,
                     float azimuth, float altitude, float cellsize,
                     std::tuple<ptrdiff_t, ptrdiff_t> dims) {
