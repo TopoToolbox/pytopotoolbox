@@ -963,7 +963,6 @@ class GridObject():
         h = np.zeros_like(z)
         nx = np.zeros_like(z)
         ny = np.zeros_like(z)
-        nz = np.zeros_like(z)
 
         # Computing the azimuth angle is a bit tricky
         gt = self.transform
@@ -1008,7 +1007,7 @@ class GridObject():
 
         altitude_radians = np.deg2rad(altitude)
 
-        _grid.hillshade(h, nx, ny, nz, exaggerate * z,
+        _grid.hillshade(h, nx, ny, exaggerate * z,
                         azimuth_radians, altitude_radians,
                         self.cellsize, self.dims)
 
