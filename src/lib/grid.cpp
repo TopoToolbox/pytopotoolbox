@@ -9,7 +9,7 @@ extern "C" {
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include <cstdlib> 
+#include <cstdlib>
 
 namespace py = pybind11;
 
@@ -49,13 +49,13 @@ void wrap_fillsinks_hybrid(py::array_t<float> output,
     fillsinks_hybrid(output_ptr, queue_ptr, dem_ptr, bc_ptr, dims_ptr);
 }
 
-// wrap_identifyflats: 
+// wrap_identifyflats:
 // Parameters:
 //   output: A NumPy array to store the output, where flats, sill amd presills will be marked.
 //   dem: A NumPy array representing the digital elevation model.
 //   dims: A tuple containing the number of rows and columns.
 
-void wrap_identifyflats(py::array_t<int32_t> output, py::array_t<float> dem, 
+void wrap_identifyflats(py::array_t<int32_t> output, py::array_t<float> dem,
                         std::tuple<ptrdiff_t, ptrdiff_t> dims){
 
     int32_t *output_ptr = output.mutable_data();
@@ -67,7 +67,7 @@ void wrap_identifyflats(py::array_t<int32_t> output, py::array_t<float> dem,
     identifyflats(output_ptr, dem_ptr, dims_ptr);
 }
 
-// wrap_excesstopography_fsm2d: 
+// wrap_excesstopography_fsm2d:
 // Parameters:
 //   excess: A NumPy array to store the excess topography values computed by the FSM2D algorithm.
 //   dem: A NumPy array representing the digital elevation model.
@@ -77,20 +77,20 @@ void wrap_identifyflats(py::array_t<int32_t> output, py::array_t<float> dem,
 
 void wrap_excesstopography_fsm2d(
         py::array_t<float> excess, py::array_t<float> dem,
-        py::array_t<float> threshold_slopes, float cellsize, 
+        py::array_t<float> threshold_slopes, float cellsize,
         std::tuple<ptrdiff_t, ptrdiff_t> dims){
 
     float *excess_ptr = excess.mutable_data();
     float *dem_ptr = dem.mutable_data();
     float *threshold_slopes_ptr = threshold_slopes.mutable_data();
-    
+
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
 
     excesstopography_fsm2d(excess_ptr, dem_ptr, threshold_slopes_ptr, cellsize, dims_ptr);
 }
 
-// wrap_excesstopography_fmm2d: 
+// wrap_excesstopography_fmm2d:
 // Parameters:
 //   excess: A NumPy array to store the excess topography values computed by the FMM2D algorithm.
 //   heap: A NumPy array representing the heap used in the FMM2D algorithm.
@@ -103,7 +103,7 @@ void wrap_excesstopography_fsm2d(
 void wrap_excesstopography_fmm2d(
         py::array_t<float> excess, py::array_t<ptrdiff_t> heap,
         py::array_t<ptrdiff_t> back, py::array_t<float> dem,
-        py::array_t<float> threshold_slopes, float cellsize, 
+        py::array_t<float> threshold_slopes, float cellsize,
         std::tuple<ptrdiff_t, ptrdiff_t> dims){
 
     float *excess_ptr = excess.mutable_data();
@@ -111,7 +111,7 @@ void wrap_excesstopography_fmm2d(
     ptrdiff_t *back_ptr = back.mutable_data();
     float *dem_ptr = dem.mutable_data();
     float *threshold_slopes_ptr = threshold_slopes.mutable_data();
-    
+
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
 
@@ -131,9 +131,9 @@ void wrap_excesstopography_fmm2d(
 void wrap_gwdt(
         py::array_t<float> dist, py::array_t<ptrdiff_t> prev,
         py::array_t<float> costs, py::array_t<int32_t> flats,
-        py::array_t<ptrdiff_t> heap, py::array_t<ptrdiff_t> back, 
+        py::array_t<ptrdiff_t> heap, py::array_t<ptrdiff_t> back,
         std::tuple<ptrdiff_t, ptrdiff_t> dims){
-            
+
     float *dist_ptr = dist.mutable_data();
     ptrdiff_t *prev_ptr = prev.mutable_data();
     float *costs_ptr = costs.mutable_data();
@@ -184,16 +184,16 @@ void wrap_gwdt_computecosts(
 //   dims: A tuple containing the number of rows and columns.
 
 void wrap_flow_routing_d8_carve(
-        py::array_t<ptrdiff_t> node, py::array_t<uint8_t> direction, 
-        py::array_t<float> dem, py::array_t<float> dist, 
+        py::array_t<ptrdiff_t> node, py::array_t<uint8_t> direction,
+        py::array_t<float> dem, py::array_t<float> dist,
         py::array_t<int32_t> flats, std::tuple<ptrdiff_t, ptrdiff_t> dims){
-    
+
     ptrdiff_t *node_ptr = node.mutable_data();
     uint8_t *direction_ptr = direction.mutable_data();
     float *dem_ptr = dem.mutable_data();
     float *dist_ptr = dist.mutable_data();
     int32_t *flats_ptr = flats.mutable_data();
-        
+
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
 
@@ -221,7 +221,7 @@ ptrdiff_t wrap_flow_routing_d8_edgelist(
     ptrdiff_t *target_ptr = target.mutable_data();
 
     ptrdiff_t *node_ptr = node.mutable_data();
-    uint8_t *direction_ptr = direction.mutable_data(); 
+    uint8_t *direction_ptr = direction.mutable_data();
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
@@ -240,7 +240,7 @@ ptrdiff_t wrap_flow_routing_d8_edgelist(
 //   dims: A tuple containing the number of rows and columns.
 
 void wrap_gradient8(
-        py::array_t<float> output, py::array_t<float> dem, float cellsize, 
+        py::array_t<float> output, py::array_t<float> dem, float cellsize,
         int use_mp, std::tuple<ptrdiff_t,ptrdiff_t> dims){
 
     float *output_ptr = output.mutable_data();
@@ -252,19 +252,18 @@ void wrap_gradient8(
 }
 
 void wrap_hillshade(py::array_t<float> output,
-                    py::array_t<float>nx, py::array_t<float> ny, py::array_t<float> nz,
+                    py::array_t<float>nx, py::array_t<float> ny,
                     py::array_t<float> dem,
                     float azimuth, float altitude, float cellsize,
                     std::tuple<ptrdiff_t, ptrdiff_t> dims) {
-  
+
   float *output_ptr = output.mutable_data();
   float *nx_ptr = nx.mutable_data();
   float *ny_ptr = ny.mutable_data();
-  float *nz_ptr = nz.mutable_data();
   float *dem_ptr = dem.mutable_data();
 
   std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
-  hillshade(output_ptr, nx_ptr, ny_ptr, nz_ptr,
+  hillshade(output_ptr, nx_ptr, ny_ptr,
             dem_ptr, azimuth, altitude, cellsize,
             dims_array.data());
 }
