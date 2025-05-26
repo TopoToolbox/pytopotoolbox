@@ -21,6 +21,8 @@ repos:
           - matplotlib
           - scipy
           - rasterio
+          - shapely
+          - geopandas
         exclude: |
           (?x)^(
             tests/|
