@@ -71,7 +71,7 @@ class FlowObject():
 
         bc = np.asarray(bc, dtype=np.uint8)
 
-        queue = np.zeros_like(dem, dtype=np.int64)
+        queue = np.zeros(np.prod(dem.shape), dtype=np.int64)
         if hybrid:
             _grid.fillsinks_hybrid(filled_dem, queue, dem, bc, dims)
         else:
@@ -112,6 +112,7 @@ class FlowObject():
         # raster metadata
         self.direction = direction  # dtype=np.unit8
 
+        self.stream = node
         self.source = source[0:edge_count]  # dtype=np.int64
         self.target = target[0:edge_count]  # dtype=np.int64
 
