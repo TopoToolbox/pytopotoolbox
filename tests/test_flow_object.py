@@ -180,6 +180,26 @@ def test_flowpathextract(wide_dem):
     idxs = fd.flowpathextract(s.stream[ch][0])
     assert np.array_equal(s2.stream, idxs)
 
+def test_flowpathextract_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    for ci in np.arange(np.prod(cdem.shape)):
+        # Convert the row-major linear index to column-major
+        fi = np.ravel_multi_index(np.unravel_index(ci, cfd.shape, order=cfd.order),
+                                  ffd.shape, order=ffd.order)
+
+        cp = cfd.flowpathextract(ci)
+        fp = ffd.flowpathextract(fi)
+
+        # Convert the column-major flow path indices to row-major
+        fpc = np.ravel_multi_index(np.unravel_index(fp, ffd.shape, order=ffd.order),
+                                   cfd.shape, order= cfd.order)
+
+        assert np.array_equal(cp, fpc)
+
 
 def test_imposemin(wide_dem):
     original_dem = wide_dem.z.copy()
