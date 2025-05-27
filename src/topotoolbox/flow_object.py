@@ -71,7 +71,7 @@ class FlowObject():
 
         bc = np.asarray(bc, dtype=np.uint8)
 
-        queue = np.zeros_like(dem, dtype=np.int64)
+        queue = np.zeros(np.prod(dem.shape), dtype=np.int64)
         if hybrid:
             _grid.fillsinks_hybrid(filled_dem, queue, dem, bc, dims)
         else:
@@ -112,6 +112,7 @@ class FlowObject():
         # raster metadata
         self.direction = direction  # dtype=np.unit8
 
+        self.stream = node
         self.source = source[0:edge_count]  # dtype=np.int64
         self.target = target[0:edge_count]  # dtype=np.int64
 
@@ -303,12 +304,12 @@ class FlowObject():
         >>> fd = tt3.FlowObject(dem)
         >>> print(fd.flowpathextract(12345))
         """
-        ch = np.zeros(self.shape, dtype=np.uint32, order='F')
-        ch[np.unravel_index(idx, self.shape, order='F')] = 1
+        ch = np.zeros(self.shape, dtype=np.uint32, order=self.order)
+        ch[np.unravel_index(idx, self.shape, order=self.order)] = 1
         edges = np.ones(self.source.size, dtype=np.uint32)
         _stream.traverse_down_u32_or_and(ch, edges, self.source, self.target)
 
-        return np.nonzero(np.ravel(ch, order='F'))[0]
+        return self.stream[ch[np.unravel_index(self.stream, self.shape, order=self.order)] > 0]
 
     def distance(self):
         """Compute the distance between each node in the flow network
