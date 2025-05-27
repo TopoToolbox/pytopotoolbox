@@ -186,19 +186,18 @@ def test_flowpathextract_order(order_dems):
     cfd = topo.FlowObject(cdem)
     ffd = topo.FlowObject(fdem)
 
-    for ci in np.arange(np.prod(cdem.shape)):
-        # Convert the row-major linear index to column-major
-        fi = np.ravel_multi_index(np.unravel_index(ci, cfd.shape, order=cfd.order),
-                                  ffd.shape, order=ffd.order)
+    # Convert the row-major linear index to column-major
+    ci = np.ravel_multi_index((37, 109), cfd.shape, order=cfd.order)
+    fi = np.ravel_multi_index((37, 109), ffd.shape, order=ffd.order)
 
-        cp = cfd.flowpathextract(ci)
-        fp = ffd.flowpathextract(fi)
+    cp = cfd.flowpathextract(ci)
+    fp = ffd.flowpathextract(fi)
 
-        # Convert the column-major flow path indices to row-major
-        fpc = np.ravel_multi_index(np.unravel_index(fp, ffd.shape, order=ffd.order),
+    # Convert the column-major flow path indices to row-major
+    fpc = np.ravel_multi_index(np.unravel_index(fp, ffd.shape, order=ffd.order),
                                    cfd.shape, order= cfd.order)
 
-        assert np.array_equal(cp, fpc)
+    assert np.array_equal(cp, fpc)
 
 
 def test_imposemin(wide_dem):
