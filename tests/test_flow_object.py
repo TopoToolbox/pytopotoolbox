@@ -173,12 +173,27 @@ def test_flowpathextract(wide_dem):
 
     ch = s.streampoi('channelheads')
 
-    s2 = topo.StreamObject(fd, channelheads=s.stream[ch][0:1])
+    for c in s.stream[ch]:
 
-    assert topo.validate_alignment(wide_dem, s2)
+        s2 = topo.StreamObject(fd, channelheads=[c])
 
-    idxs = fd.flowpathextract(s.stream[ch][0])
-    assert np.array_equal(s2.stream, idxs)
+        assert topo.validate_alignment(wide_dem, s2)
+
+        idxs = fd.flowpathextract(c)
+
+        # NOTE(wkearn): StreamObject's stream nodes are not
+        # necessarily topologically sorted, whereas the flow path
+        # returned by flowpathextract is topologically sorted. The two
+        # arrays will contain the same elements but in different
+        # orders. We therefore verify that idxs is the one and only
+        # flow path in s2 by reconstructing the topological order of
+        # s2.stream from the edge list.
+        assert len(idxs) == len(s2.source) + 1
+        for e in np.arange(len(s2.source)):
+            u = s2.stream[s2.source[e]]
+            v = s2.stream[s2.target[e]]
+            assert idxs[e] == u
+            assert idxs[e + 1] == v
 
 def test_flowpathextract_order(order_dems):
     cdem, fdem = order_dems
