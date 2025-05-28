@@ -1,6 +1,8 @@
 import warnings
 import pytest
+
 import numpy as np
+import opensimplex
 
 import topotoolbox as topo
 
@@ -18,6 +20,24 @@ def fixture_wide_dem():
 @pytest.fixture(name="tall_dem")
 def fixture_tall_dem():
     yield topo.gen_random(rows=128, columns=64)
+
+@pytest.fixture
+def order_dems():
+    opensimplex.seed(12)
+
+    x = np.arange(0, 128)
+    y = np.arange(0, 256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(
+        64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    return [cdem, fdem]
 
 def test_constructors():
     grid_obj = topo.gen_random(rows=64, columns=64)
@@ -61,6 +81,33 @@ def test_constructors():
         assert len(w) > 0
         assert issubclass(w[-1].category, Warning)
         assert "threshold will be ignored" in str(w[-1].message)
+
+def test_streamobject_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    # The two graphs cs and fs should be isomorphic to one
+    # another.
+    #
+    # First, construct the mapping from column-major linear indices to
+    # row-major linear indices.
+    idxmap = np.ravel_multi_index(np.unravel_index(
+        np.arange(0, np.prod(cfd.shape)), cfd.shape, order=cfd.order), ffd.shape, order=ffd.order)
+
+    # Then, compare the vertices.
+    assert np.array_equal(np.sort(idxmap[cs.stream]), np.sort(fs.stream))
+
+    # Finally, compare the edges.
+    cedges = set(
+        map(tuple, np.stack((idxmap[cs.stream[cs.source]], idxmap[cs.stream[cs.target]]), axis=1)))
+    fedges = set(map(tuple, np.stack((fs.stream[fs.source], fs.stream[fs.target]), axis=1)))
+
+    assert cedges == fedges
 
 def test_streamobject_sizes(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
