@@ -214,6 +214,22 @@ def test_flowpathextract_order(order_dems):
 
     assert np.array_equal(cp, fpc)
 
+def test_distance_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cd = cfd.distance()
+    fd = ffd.distance()
+
+    cdg = np.zeros(cfd.shape)
+    fdg = np.zeros(ffd.shape)
+
+    cdg[np.unravel_index(cfd.source, cfd.shape, order=cfd.order)] = cd
+    fdg[np.unravel_index(ffd.source, ffd.shape, order=ffd.order)] = fd
+
+    assert np.array_equal(cdg, fdg)
 
 def test_imposemin(wide_dem):
     original_dem = wide_dem.z.copy()
