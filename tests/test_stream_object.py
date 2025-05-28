@@ -19,6 +19,24 @@ def fixture_wide_dem():
 def fixture_tall_dem():
     yield topo.gen_random(rows=128, columns=64)
 
+@pytest.fixture
+def order_dems():
+    opensimplex.seed(12)
+
+    x = np.arange(0, 128)
+    y = np.arange(0, 256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(
+        64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    return [cdem, fdem]
+
 def test_constructors():
     grid_obj = topo.gen_random(rows=64, columns=64)
     flow_obj = topo.FlowObject(grid_obj)
