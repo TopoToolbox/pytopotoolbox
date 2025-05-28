@@ -1,6 +1,8 @@
 import warnings
 import pytest
+
 import numpy as np
+import opensimplex
 
 import topotoolbox as topo
 
@@ -79,6 +81,33 @@ def test_constructors():
         assert len(w) > 0
         assert issubclass(w[-1].category, Warning)
         assert "threshold will be ignored" in str(w[-1].message)
+
+def test_streamobject_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    # The two graphs cs and fs should be isomorphic to one
+    # another.
+    #
+    # First, construct the mapping from column-major linear indices to
+    # row-major linear indices.
+    idxmap = np.ravel_multi_index(np.unravel_index(
+        np.arange(0, np.prod(cfd.shape)), cfd.shape, order=cfd.order), ffd.shape, order=ffd.order)
+
+    # Then, compare the vertices.
+    assert np.array_equal(np.sort(idxmap[cs.stream]), np.sort(fs.stream))
+
+    # Finally, compare the edges.
+    cedges = set(
+        map(tuple, np.stack((idxmap[cs.stream[cs.source]], idxmap[cs.stream[cs.target]]), axis=1)))
+    fedges = set(map(tuple, np.stack((fs.stream[fs.source], fs.stream[fs.target]), axis=1)))
+
+    assert cedges == fedges
 
 def test_streamobject_sizes(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
