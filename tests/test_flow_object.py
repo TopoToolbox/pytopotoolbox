@@ -274,3 +274,14 @@ def test_imposemin_f64(wide_dem):
 
     # imposemin should not modify the original array
     assert np.array_equal(original_dem, z)
+
+def test_imposemin_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cminslope = topo.imposemin(cfd, cdem, minimum_slope=0.001)
+    fminslope = topo.imposemin(ffd, fdem, minimum_slope=0.001)
+
+    assert np.array_equal(cminslope, fminslope)
