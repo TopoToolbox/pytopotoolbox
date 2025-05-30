@@ -134,6 +134,26 @@ def test_streamobject_sizes(tall_dem, wide_dem):
     assert np.max(wide_stream.stream) <= wide_stream.shape[0] * wide_stream.shape[1]
     assert np.max(tall_stream.stream) <= tall_stream.shape[0] * tall_stream.shape[1]
 
+
+def test_distance_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+
+    cd = cs.distance()
+    fd = fs.distance()
+
+    cdg = np.zeros(cfd.shape)
+    fdg = np.zeros(ffd.shape)
+
+    cdg[np.unravel_index(cs.stream[cs.source], cs.shape, order=cfd.order)] = cd
+    fdg[np.unravel_index(fs.stream[fs.source], fs.shape, order=ffd.order)] = fd
+
+    assert np.array_equal(cdg, fdg)
+
 def test_run_chitransform(tall_dem, wide_dem):
 
     tall_flow = topo.FlowObject(tall_dem)
