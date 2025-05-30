@@ -136,6 +136,44 @@ class FlowObject():
 
         return (self.shape[1], self.shape[0])
 
+    @property
+    def source_indices(self) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the sources of each edge in
+        the flow network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each edge in the flow
+        network. Each of these arrays is an edge attribute lists and
+        have a length equal to the number of edges in the flow
+        network. This tuple of arrays is suitable for indexing
+        GridObjects or arrays shaped like the GridObject from which
+        this FlowObject was derived.
+
+        """
+        return np.unravel_index(self.source, self.shape, self.order)
+
+    @property
+    def target_indices(self) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the targets of each edge in
+        the flow network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each edge in the flow
+        network. Each of these arrays is an edge attribute lists and
+        have a length equal to the number of edges in the flow
+        network. This tuple of arrays is suitable for indexing
+        GridObjects or arrays shaped like the GridObject from which
+        this FlowObject was derived.
+
+        """
+        return np.unravel_index(self.target, self.shape, self.order)
+
     def ezgetnal(self, k, dtype=None) -> GridObject | np.ndarray:
         """Retrieve a node attribute list
 

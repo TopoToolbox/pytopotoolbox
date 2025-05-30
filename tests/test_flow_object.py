@@ -226,8 +226,8 @@ def test_distance_order(order_dems):
     cdg = np.zeros(cfd.shape)
     fdg = np.zeros(ffd.shape)
 
-    cdg[np.unravel_index(cfd.source, cfd.shape, order=cfd.order)] = cd
-    fdg[np.unravel_index(ffd.source, ffd.shape, order=ffd.order)] = fd
+    cdg[cfd.source_indices] = cd
+    fdg[ffd.source_indices] = fd
 
     assert np.array_equal(cdg, fdg)
 
@@ -235,8 +235,8 @@ def test_imposemin(wide_dem):
     original_dem = wide_dem.z.copy()
     fd = topo.FlowObject(wide_dem)
 
-    g0 = (wide_dem.z[np.unravel_index(fd.source, fd.shape, order='F')] -
-          wide_dem.z[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
+    g0 = (wide_dem.z[fd.source_indices] -
+          wide_dem.z[fd.target_indices])/fd.distance()
 
     # Make sure that the test array has slopes less than the imposed minimum
     assert not np.all(g0 >= 0.1 - 1e-6)
@@ -249,8 +249,8 @@ def test_imposemin(wide_dem):
 
         # The gradient along the flow network should be greater than or
         # equal to the defined slope within some numerical error
-        g = (min_dem.z[np.unravel_index(fd.source, fd.shape, order='F')] -
-             min_dem.z[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
+        g = (min_dem.z[fd.source_indices] -
+             min_dem.z[fd.target_indices])/fd.distance()
         assert np.all(g >= minimum_slope - 1e-6)
 
         # imposemin should not modify the original array
@@ -268,8 +268,8 @@ def test_imposemin_f64(wide_dem):
 
     assert np.all(min_dem <= z)
 
-    g = (min_dem[np.unravel_index(fd.source, fd.shape, order='F')] -
-         min_dem[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
+    g = (min_dem[fd.source_indices] -
+         min_dem[fd.target_indices])/fd.distance()
     assert np.all(g >= 0.001 - 1e-6)
 
     # imposemin should not modify the original array
