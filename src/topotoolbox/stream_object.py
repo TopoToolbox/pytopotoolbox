@@ -209,7 +209,7 @@ class StreamObject():
         self.name = flow.name
 
     @property
-    def node_indices(self) -> tuple[np.ndarray, np.ndarray]:
+    def node_indices(self) -> tuple[np.ndarray, ...]:
         """The row and column indices of the nodes of the stream
         network.
 
@@ -226,8 +226,7 @@ class StreamObject():
         """
         return np.unravel_index(self.stream, self.shape, self._order)
 
-    def node_indices_where(self, nal: np.ndarray) -> tuple[np.ndarray,
-                                                           np.ndarray]:
+    def node_indices_where(self, nal: np.ndarray) -> tuple[np.ndarray, ...]:
         """The row and column indices of the nodes of the stream
         network where a condition is satisfied.
 
@@ -246,7 +245,7 @@ class StreamObject():
         return np.unravel_index(self.stream[nal], self.shape, self._order)
 
     @property
-    def source_indices(self) -> tuple[np.ndarray, np.ndarray]:
+    def source_indices(self) -> tuple[np.ndarray, ...]:
         """The row and column indices of the sources of each edge in
         the stream network.
 
@@ -266,7 +265,7 @@ class StreamObject():
                                 self.shape, self._order)
 
     @property
-    def target_indices(self) -> tuple[np.ndarray, np.ndarray]:
+    def target_indices(self) -> tuple[np.ndarray, ...]:
         """The row and column indices of the targets of each edge in
         the stream network.
 
