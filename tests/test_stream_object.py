@@ -227,6 +227,28 @@ def test_ezgetnal(tall_dem):
     # ezgetnal with the dtype argument should return array of that type
     assert z3.dtype is np.dtype(np.float64)
 
+
+def test_ezgetnal_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    cz = cs.ezgetnal(cdem)
+    fz = fs.ezgetnal(fdem)
+
+    cdz = np.zeros(cs.shape)
+    fdz = np.zeros(fs.shape)
+
+    cdz[np.unravel_index(cs.stream, cs.shape, order=cfd.order)] = cz
+    fdz[np.unravel_index(fs.stream, fs.shape, order=ffd.order)] = fz
+
+    assert np.array_equal(cdz, fdz)
+
+
 def test_subgraph(tall_dem, wide_dem):
     ############
     # Tall DEM #
