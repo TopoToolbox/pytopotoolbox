@@ -174,6 +174,18 @@ class FlowObject():
         """
         return np.unravel_index(self.target, self.shape, self.order)
 
+    def unravel_index(self, idxs: int | np.ndarray) -> tuple[np.ndarray, ...]:
+        """Unravel the provided linear indices so they can be used to
+        index grids.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each pixel in the idxs array.
+        """
+        return np.unravel_index(idxs, self.shape, self.order)
+
     def ezgetnal(self, k, dtype=None) -> GridObject | np.ndarray:
         """Retrieve a node attribute list
 
@@ -300,7 +312,7 @@ class FlowObject():
             _flow.drainagebasins(basins, self.source, self.target, self.dims)
         else:
             basins = np.zeros(self.shape, dtype=np.uint32, order=self.order)
-            indices = np.unravel_index(outlets, self.shape, order=self.order)
+            indices = self.unravel_index(outlets)
             basins[indices] = np.arange(1, len(outlets) + 1, dtype=np.uint32)
             weights = np.full(self.source.size, 0xffffffff, dtype=np.uint32)
             _stream.traverse_up_u32_or_and(
@@ -343,11 +355,11 @@ class FlowObject():
         >>> print(fd.flowpathextract(12345))
         """
         ch = np.zeros(self.shape, dtype=np.uint32, order=self.order)
-        ch[np.unravel_index(idx, self.shape, order=self.order)] = 1
+        ch[self.unravel_index(idx)] = 1
         edges = np.ones(self.source.size, dtype=np.uint32)
         _stream.traverse_down_u32_or_and(ch, edges, self.source, self.target)
 
-        return self.stream[ch[np.unravel_index(self.stream, self.shape, order=self.order)] > 0]
+        return self.stream[ch[self.unravel_index(self.stream)] > 0]
 
     def distance(self):
         """Compute the distance between each node in the flow network

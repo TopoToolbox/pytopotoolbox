@@ -64,8 +64,8 @@ def test_flowobject_order(order_dems):
 
     # We can construct the isomorphism by recomputing the linear
     # indices of the row-major array in the column-major ordering.
-    idxmap = np.ravel_multi_index(np.unravel_index(
-        np.arange(0, np.prod(cfd.shape)), cfd.shape, order='C'), ffd.shape, order='F')
+    cidxs = cfd.unravel_index(np.arange(0, np.prod(cfd.shape)))
+    idxmap = np.ravel_multi_index(cidxs, ffd.shape, order='F')
 
     # Now test whether the edge sets are identical
     cedges = set(
@@ -209,8 +209,8 @@ def test_flowpathextract_order(order_dems):
     fp = ffd.flowpathextract(fi)
 
     # Convert the column-major flow path indices to row-major
-    fpc = np.ravel_multi_index(np.unravel_index(fp, ffd.shape, order=ffd.order),
-                                   cfd.shape, order= cfd.order)
+    fpc = np.ravel_multi_index(ffd.unravel_index(fp),
+                               cfd.shape, order=cfd.order)
 
     assert np.array_equal(cp, fpc)
 
