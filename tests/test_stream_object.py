@@ -269,6 +269,37 @@ def test_ezgetnal_order(order_dems):
     assert np.array_equal(cdz, fdz)
 
 
+def test_streampoi_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    ch = cs.streampoi('channelheads')
+    co = cs.streampoi('outlets')
+    cc = cs.streampoi('confluences')
+
+    fh = fs.streampoi('channelheads')
+    fo = fs.streampoi('outlets')
+    fc = fs.streampoi('confluences')
+
+    cp = np.zeros(cs.shape, dtype=np.uint32)
+    fp = np.zeros(fs.shape, dtype=np.uint32)
+
+    cp[np.unravel_index(cs.stream[ch], cs.shape, order=cs.order)] |= 1
+    cp[np.unravel_index(cs.stream[co], cs.shape, order=cs.order)] |= 2
+    cp[np.unravel_index(cs.stream[cc], cs.shape, order=cs.order)] |= 4
+
+    fp[np.unravel_index(fs.stream[fh], fs.shape, order=fs.order)] |= 1
+    fp[np.unravel_index(fs.stream[fo], fs.shape, order=fs.order)] |= 2
+    fp[np.unravel_index(fs.stream[fc], fs.shape, order=fs.order)] |= 4
+
+    assert np.array_equal(cp, fp)
+
+
 def test_subgraph(tall_dem, wide_dem):
     ############
     # Tall DEM #
