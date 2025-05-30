@@ -149,8 +149,8 @@ def test_distance_order(order_dems):
     cdg = np.zeros(cfd.shape)
     fdg = np.zeros(ffd.shape)
 
-    cdg[np.unravel_index(cs.stream[cs.source], cs.shape, order=cfd.order)] = cd
-    fdg[np.unravel_index(fs.stream[fs.source], fs.shape, order=ffd.order)] = fd
+    cdg[cs.source_indices] = cd
+    fdg[fs.source_indices] = fd
 
     assert np.array_equal(cdg, fdg)
 
@@ -169,8 +169,8 @@ def test_downstream_distance_order(order_dems):
     cdg = np.zeros(cfd.shape)
     fdg = np.zeros(ffd.shape)
 
-    cdg[np.unravel_index(cs.stream, cs.shape, order=cfd.order)] = cd
-    fdg[np.unravel_index(fs.stream, fs.shape, order=ffd.order)] = fd
+    cdg[cs.node_indices] = cd
+    fdg[fs.node_indices] = fd
 
     assert np.array_equal(cdg, fdg)
 
@@ -263,8 +263,8 @@ def test_ezgetnal_order(order_dems):
     cdz = np.zeros(cs.shape)
     fdz = np.zeros(fs.shape)
 
-    cdz[np.unravel_index(cs.stream, cs.shape, order=cfd.order)] = cz
-    fdz[np.unravel_index(fs.stream, fs.shape, order=ffd.order)] = fz
+    cdz[cs.node_indices] = cz
+    fdz[fs.node_indices] = fz
 
     assert np.array_equal(cdz, fdz)
 
@@ -289,13 +289,13 @@ def test_streampoi_order(order_dems):
     cp = np.zeros(cs.shape, dtype=np.uint32)
     fp = np.zeros(fs.shape, dtype=np.uint32)
 
-    cp[np.unravel_index(cs.stream[ch], cs.shape, order=cs.order)] |= 1
-    cp[np.unravel_index(cs.stream[co], cs.shape, order=cs.order)] |= 2
-    cp[np.unravel_index(cs.stream[cc], cs.shape, order=cs.order)] |= 4
+    cp[cs.node_indices_where(ch)] |= 1
+    cp[cs.node_indices_where(co)] |= 2
+    cp[cs.node_indices_where(cc)] |= 4
 
-    fp[np.unravel_index(fs.stream[fh], fs.shape, order=fs.order)] |= 1
-    fp[np.unravel_index(fs.stream[fo], fs.shape, order=fs.order)] |= 2
-    fp[np.unravel_index(fs.stream[fc], fs.shape, order=fs.order)] |= 4
+    fp[fs.node_indices_where(fh)] |= 1
+    fp[fs.node_indices_where(fo)] |= 2
+    fp[fs.node_indices_where(fc)] |= 4
 
     assert np.array_equal(cp, fp)
 
