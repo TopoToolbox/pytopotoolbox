@@ -154,6 +154,26 @@ def test_distance_order(order_dems):
 
     assert np.array_equal(cdg, fdg)
 
+
+def test_downstream_distance_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+
+    cd = cs.downstream_distance()
+    fd = fs.downstream_distance()
+
+    cdg = np.zeros(cfd.shape)
+    fdg = np.zeros(ffd.shape)
+
+    cdg[np.unravel_index(cs.stream, cs.shape, order=cfd.order)] = cd
+    fdg[np.unravel_index(fs.stream, fs.shape, order=ffd.order)] = fd
+
+    assert np.array_equal(cdg, fdg)
+
 def test_run_chitransform(tall_dem, wide_dem):
 
     tall_flow = topo.FlowObject(tall_dem)
