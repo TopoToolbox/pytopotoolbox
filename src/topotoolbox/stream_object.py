@@ -81,6 +81,7 @@ class StreamObject():
         self.cellsize = flow.cellsize
         self.shape = flow.shape
         self.strides = flow.strides
+        self.order = flow.order
 
         # georeference
         self.bounds = flow.bounds
@@ -281,16 +282,19 @@ class StreamObject():
                 # k is a GridObject or ndarray with the right shape
                 # and georeferencing
                 # Advanced indexing of k will always return a copy
-                nal = k[np.unravel_index(self.stream, self.shape, order='F')]
+                idxs = np.unravel_index(self.stream, self.shape,
+                                        order=self.order)
+                nal = k[idxs]
 
-                # We use copy=False in astype to avoid copying that copy if possible
+                # We use copy=False in astype to avoid copying that copy
+                # if possible
                 nal = nal.astype(dtype or nal.dtype, copy=False)
             elif hasattr(k, "shape") and self.stream.shape == k.shape:
                 # k is already a node attribute list
                 nal = np.array(k, dtype=dtype, copy=True)
             else:
-                raise ValueError(
-                    f"{k} is not a node attribute list of the appropriate shape.")
+                raise ValueError(f"""{k} is not a node attribute list
+                of the appropriate shape.""")
 
         return nal
 
@@ -390,12 +394,12 @@ class StreamObject():
 
     def to_geodataframe(self):
         '''Convert the stream network to a GeoDataFrame.
-            
+
         Returns
         ----------
         geopandas.GeoDataFrame
             The GeoDataFrame.
- 
+
         Example
         -------
         dem = tt3.load_dem('bigtujunga')
@@ -410,12 +414,12 @@ class StreamObject():
 
     def to_shapefile(self, path: str) -> None:
         '''Convert the stream network to a georeferenced shapefile.
-        
+
         Parameters
         ----------
         path : str
              path where the shapefile will be saved.
-        
+
         Example
         -------
         dem = tt3.load_dem('bigtujunga')
