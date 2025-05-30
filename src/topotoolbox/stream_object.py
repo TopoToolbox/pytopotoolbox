@@ -81,7 +81,7 @@ class StreamObject():
         self.cellsize = flow.cellsize
         self.shape = flow.shape
         self.strides = flow.strides
-        self.order = flow.order
+        self._order = flow.order
 
         # georeference
         self.bounds = flow.bounds
@@ -208,6 +208,82 @@ class StreamObject():
         self.path = flow.path
         self.name = flow.name
 
+    @property
+    def node_indices(self) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the nodes of the stream
+        network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices for the nodes in the stream network. Each of these
+        arrays is a node attribute lists and have a length equal to
+        the number of nodes in the stream network. This tuple of
+        arrays is suitable for indexing GridObjects or arrays shaped
+        like the GridObject from which this StreamObject was derived.
+
+        """
+        return np.unravel_index(self.stream, self.shape, self._order)
+
+    def node_indices_where(self, nal: np.ndarray) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the nodes of the stream
+        network where a condition is satisfied.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices for the nodes in the stream network where the input
+        Boolean node attribute list `nal` is true. Each of these
+        arrays is a node attribute lists and have a length equal to
+        the number of nodes in the stream network. This tuple of
+        arrays is suitable for indexing GridObjects or arrays shaped
+        like the GridObject from which this StreamObject was derived.
+
+        """
+        return np.unravel_index(self.stream[nal], self.shape, self._order)
+
+    @property
+    def source_indices(self) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the sources of each edge in
+        the stream network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each edge in the stream
+        network. Each of these arrays is an edge attribute lists and
+        have a length equal to the number of edges in the stream
+        network. This tuple of arrays is suitable for indexing
+        GridObjects or arrays shaped like the GridObject from which
+        this StreamObject was derived.
+
+        """
+        return np.unravel_index(self.stream[self.source],
+                                self.shape, self._order)
+
+    @property
+    def target_indices(self) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the targets of each edge in
+        the stream network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each edge in the stream
+        network. Each of these arrays is an edge attribute lists and
+        have a length equal to the number of edges in the stream
+        network. This tuple of arrays is suitable for indexing
+        GridObjects or arrays shaped like the GridObject from which
+        this StreamObject was derived.
+
+        """
+        return np.unravel_index(self.stream[self.target],
+                                self.shape, self._order)
+
     def distance(self) -> np.ndarray:
         """
         Compute the pixel-to-pixel distance for each edge.
@@ -282,9 +358,7 @@ class StreamObject():
                 # k is a GridObject or ndarray with the right shape
                 # and georeferencing
                 # Advanced indexing of k will always return a copy
-                idxs = np.unravel_index(self.stream, self.shape,
-                                        order=self.order)
-                nal = k[idxs]
+                nal = k[self.node_indices]
 
                 # We use copy=False in astype to avoid copying that copy
                 # if possible
@@ -351,7 +425,7 @@ class StreamObject():
         """
         if data is None:
             # pylint: disable=unbalanced-tuple-unpacking
-            j, i = np.unravel_index(self.stream, self.shape, order='F')
+            j, i = self.node_indices
             xs, ys = self.transform * np.vstack((i, j))
         else:
             xs, ys = data
