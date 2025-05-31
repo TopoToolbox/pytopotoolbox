@@ -21,7 +21,6 @@ from scipy.signal import wiener
 
 from rasterio import CRS, Affine
 from rasterio.coords import BoundingBox
-from rasterio.transform import array_bounds
 from rasterio.warp import reproject, transform_bounds
 from rasterio.enums import Resampling
 
@@ -1371,6 +1370,157 @@ class GridObject():
         result = cp.deepcopy(self)
 
         result.z = np.array(data, copy=True)
+
+        return result
+
+    def zscore(self):
+        """Returns the z-score for each element of GridObject such that
+        all values are centered to have mean 0 and scaled to have
+        standard deviation 1.
+
+        Returns
+        -------
+        GridObject
+            A GridObject containing the z-scores of the input GridObject.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('tibet')
+        >>> dem_zscore = dem.zscore()
+        >>> dem_zscore.plot()
+        """
+        result = cp.copy(self)
+        result.z = (self.z - np.nanmean(self.z)) / np.nanstd(self.z)
+        return result
+
+    def resize(self, left: float | int, right: float | int,
+               top: float | int, bottom: float | int,
+               highlight_selected: bool=False) -> 'GridObject':
+        """Resize the Gridobject by cropping to specified boundaries.
+
+        Supports three input modes (percentage, coordinate, pixel) to define
+        the crop region. Automatically detects the mode based on input values.
+        In case of reversed boundaries, automatically swaps them to ensure
+        the crop region is valid. If coordinate and pixel modes include the
+        same values, the coordinate mode takes precedence.
+        The resulting grid will have a new transform and bounds based on the
+        specified boundaries. If `highlight_selected` is True, the original
+        grid will be plotted with the selected region highlighted.
+
+        Parameters
+        ----------
+        left : float or int
+            Left boundary in one of three modes:
+            - Percentage: 0.0 to 1.0 (relative to grid width)
+            - Coordinate: Within grid's horizontal bounds
+            - Pixel: Column index (0 to grid width-1)
+        right : float or int
+            Right boundary (same modes as `left`).
+        top : float or int
+            Top boundary in one of three modes:
+            - Percentage: 0.0-1.0 (relative to grid height)
+            - Coordinate: Within grid's vertical bounds
+            - Pixel: Row index (0 to grid height-1)
+        bottom : float or int
+            Bottom boundary (same modes as `top`).
+        highlight_selected : bool, optional, default=False
+            If True, plots the original grid with selected region highlighted.
+
+        Returns
+        -------
+        GridObject
+            Cropped grid with updated transform, bounds, and data.
+
+        Raises
+        ------
+        ValueError
+            If boundaries are not in a consistent valid mode.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('tibet')
+        >>> new_dem = dem.resize(0.6, 0.8, 0.3, 0.5, highlight_selected=True)
+        >>> new_dem = dem.resize(240000, 300000, 2600000, 2500000,
+                                 highlight_selected=True)
+        >>> new_dem = dem.resize(1000, 1500, 600, 1100,
+                                 highlight_selected=True)
+        >>> new_dem.plot()
+        """
+        height, width = self.shape[0], self.shape[1]
+        left_bound, right_bound = self.extent[0], self.extent[1]
+        top_bound, bottom_bound = self.extent[3], self.extent[2]
+        # Case 1: Percentage mode (all values between 0 and 1)
+        if all(0.0 <= float(val) <= 1.0 for val in [top, bottom, left, right]):
+            y_start = int(top * height)
+            y_end = int(bottom * height)
+            x_start = int(left * width)
+            x_end = int(right * width)
+
+        # Case 2: Coordinate mode
+        elif (all(left_bound<= val <= right_bound for
+                  val in [left, right]) and
+              all(bottom_bound <= val <= top_bound for
+                  val in [top, bottom])):
+            y_start = int((top_bound - top) / self.cellsize)
+            y_end = int((top_bound - bottom) / self.cellsize)
+            x_start = int((left - left_bound) / self.cellsize)
+            x_end = int((right - left_bound) / self.cellsize)
+
+        # Case 3: Pixel mode (values are in array indices)
+        elif (all(0 <= val < height for val in [top, bottom]) and
+              all(0 <= val < width for val in [left, right])):
+            y_start, y_end = int(top), int(bottom)
+            x_start, x_end = int(left), int(right)
+
+        else:
+            err = ("Provided Borders are not in a valid format."
+                   " Please provide values in one of the following formats:\n"
+                   "1. Percentage mode: all values between 0.0 and 1.0\n"
+                   "2. Coordinate mode: all values within the extent of the "
+                   f"GridObject: extent = {self.extent}\n"
+                   "3. Pixel mode: all values are valid indices of the "
+                   f"GridObject: 0 to {self.shape[0]} for rows and 0 to "
+                   f"{self.shape[1]} for columns.")
+            raise ValueError(err) from None
+
+        # Ensure x_start < x_end and y_start < y_end to handle switched
+        # bounds instead of raising an error
+        if x_start > x_end:
+            x_start, x_end = x_end, x_start
+        if y_start > y_end:
+            y_start, y_end = y_end, y_start
+
+        result = cp.copy(self)
+
+        # Calculate new transform
+        new_x_origin = self.transform.c + x_start * self.transform.a
+        new_y_origin = self.transform.f + y_start * self.transform.e
+        new_transform = Affine(
+            self.transform.a, self.transform.b, new_x_origin,
+            self.transform.d, self.transform.e, new_y_origin)
+        result.transform = new_transform
+        # Calculate new bounds
+        new_left = new_x_origin
+        new_top = new_y_origin
+        new_right = new_x_origin + (x_end - x_start) * self.transform.a
+        new_bottom = new_y_origin + (y_end - y_start) * self.transform.e
+        new_bounds = BoundingBox(new_left, new_bottom, new_right, new_top)
+        result.bounds = new_bounds
+        # Crop DEM
+        result.z = result.z[y_start:y_end, x_start:x_end]
+
+        if highlight_selected:
+            _, ax = plt.subplots()
+            # adjust selection rectangle to extent
+            x_start = left_bound + x_start * self.cellsize
+            x_end = left_bound + x_end * self.cellsize
+            y_start = top_bound - y_start * self.cellsize
+            y_end = top_bound - y_end * self.cellsize
+            # plot rectangle
+            x = [x_start, x_end, x_end, x_start, x_start]
+            y = [y_start, y_start, y_end, y_end, y_start]
+            self.plot()
+            ax.plot(x, y, 'r-', linewidth=2)
 
         return result
 
