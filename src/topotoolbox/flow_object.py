@@ -1,5 +1,7 @@
 """This module contains the FlowObject class.
 """
+from typing import Literal
+
 import numpy as np
 
 # pylint: disable=no-name-in-module
@@ -42,6 +44,11 @@ class FlowObject():
         -----
         Large intermediate arrays are created during the initialization
         process, which could lead to issues when using very large DEMs.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> flow = topotoolbox.FlowObject(dem)
         """
         dims = grid.dims
         dem = np.asarray(grid, dtype=np.float32)
@@ -64,7 +71,7 @@ class FlowObject():
 
         bc = np.asarray(bc, dtype=np.uint8)
 
-        queue = np.zeros_like(dem, dtype=np.int64)
+        queue = np.zeros(np.prod(dem.shape), dtype=np.int64)
         if hybrid:
             _grid.fillsinks_hybrid(filled_dem, queue, dem, bc, dims)
         else:
@@ -105,24 +112,86 @@ class FlowObject():
         # raster metadata
         self.direction = direction  # dtype=np.unit8
 
+        self.stream = node
         self.source = source[0:edge_count]  # dtype=np.int64
         self.target = target[0:edge_count]  # dtype=np.int64
 
         self.shape = grid.shape
         self.cellsize = grid.cellsize
         self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
+        self.order: Literal['F', 'C'] = ('F' if grid.z.flags.f_contiguous
+                                         else 'C')
 
         # georeference
         self.bounds = grid.bounds
         self.transform = grid.transform
         self.crs = grid.crs
 
-    def ezgetnal(self, k, dtype=None):
+    @property
+    def dims(self):
+        """The dimensions of the grid in the correct order for libtopotoolbox
+        """
+        if self.order == 'C':
+            return (self.shape[0], self.shape[1])
+
+        return (self.shape[1], self.shape[0])
+
+    @property
+    def source_indices(self) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the sources of each edge in
+        the flow network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each edge in the flow
+        network. Each of these arrays is an edge attribute lists and
+        have a length equal to the number of edges in the flow
+        network. This tuple of arrays is suitable for indexing
+        GridObjects or arrays shaped like the GridObject from which
+        this FlowObject was derived.
+
+        """
+        return np.unravel_index(self.source, self.shape, self.order)
+
+    @property
+    def target_indices(self) -> tuple[np.ndarray, ...]:
+        """The row and column indices of the targets of each edge in
+        the flow network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each edge in the flow
+        network. Each of these arrays is an edge attribute lists and
+        have a length equal to the number of edges in the flow
+        network. This tuple of arrays is suitable for indexing
+        GridObjects or arrays shaped like the GridObject from which
+        this FlowObject was derived.
+
+        """
+        return np.unravel_index(self.target, self.shape, self.order)
+
+    def unravel_index(self, idxs: int | np.ndarray) -> tuple[np.ndarray, ...]:
+        """Unravel the provided linear indices so they can be used to
+        index grids.
+
+        Returns
+        -------
+        tuple of ndarray
+            A tuple of arrays containing the row indices and column
+        indices of the sources of each pixel in the idxs array.
+        """
+        return np.unravel_index(idxs, self.shape, self.order)
+
+    def ezgetnal(self, k, dtype=None) -> GridObject | np.ndarray:
         """Retrieve a node attribute list
 
         Parameters
         ----------
-        k : GridObject or np.ndarray or scalar        
+        k : GridObject or np.ndarray or scalar
             The object from which node values will be extracted. If
             `k` is a `GridObject` or an `ndarray` with the same shape
             as this `FlowObject`, then a copy is returned. If it is a
@@ -138,6 +207,11 @@ class FlowObject():
         ValueError
             The supplied input is not aligned with the FlowObject.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('bigtujunga)
+        >>> fd = tt3.FlowObject(dem)
+        >>> fd.ezgetnal(dem).plot()
         """
         if np.isscalar(k):
             return np.full(self.shape, k, dtype=dtype)
@@ -170,18 +244,27 @@ class FlowObject():
         ValueError
             If the shape of the `weights` array does not match the shape of the
             flow network grid.
-        """
-        acc = np.zeros(self.shape, dtype=np.float32, order='F')
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> acc = fd.flow_accumulation()
+        >>> acc.plot(cmap='Blues',norm="log")
+        """
+        acc = np.zeros(self.shape, dtype=np.float32, order=self.order)
+
+        # This is overly complicated
         if weights == 1.0:
-            weights = np.ones(self.shape, dtype=np.float32, order='F')
+            weights = np.ones(self.shape, dtype=np.float32, order=self.order)
         elif isinstance(weights, np.ndarray):
             if weights.shape != acc.shape:
                 err = ("The shape of the provided weights ndarray does not "
                        f"match the shape of the FlowObject. {self.shape}")
                 raise ValueError(err)from None
         else:
-            weights = np.full(self.shape, weights, dtype=np.float32, order='F')
+            weights = np.full(self.shape, weights,
+                              dtype=np.float32, order=self.order)
 
         fraction = np.ones_like(self.source, dtype=np.float32)
 
@@ -201,24 +284,45 @@ class FlowObject():
 
         return result
 
-    def drainagebasins(self):
+    def drainagebasins(self, outlets=None):
         """Delineate drainage basins from a flow network.
+
+        Parameters
+        ----------
+        outlets: np.ndarray
+            An array containing the linear indices of the outlet nodes
+            in column major ('F') order.
 
         Returns
         -------
         GridObject
             An integer-valued GridObject with a unique label for each drainage
             basin.
-        """
-        basins = np.zeros(self.shape, dtype=np.int64, order='F')
 
-        _flow.drainagebasins(basins, self.source, self.target, self.shape)
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> basins = fd.drainagebasins()
+        >>> basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
+
+        """
+        if outlets is None:
+            basins = np.zeros(self.shape, dtype=np.int64, order=self.order)
+            _flow.drainagebasins(basins, self.source, self.target, self.dims)
+        else:
+            basins = np.zeros(self.shape, dtype=np.uint32, order=self.order)
+            indices = self.unravel_index(outlets)
+            basins[indices] = np.arange(1, len(outlets) + 1, dtype=np.uint32)
+            weights = np.full(self.source.size, 0xffffffff, dtype=np.uint32)
+            _stream.traverse_up_u32_or_and(
+                basins, weights, self.source, self.target)
 
         result = GridObject()
         result.path = self.path
         result.name = self.name
 
-        result.z = basins
+        result.z = np.array(basins, dtype=np.int64)
         result.cellsize = self.cellsize
 
         result.bounds = self.bounds
@@ -240,16 +344,22 @@ class FlowObject():
 
         Returns
         -------
-        np.ndarray        
+        np.ndarray
             An array containing column-major linear indices into the
             DEM identifying the flow path.
+
+        Example
+        -------
+        >>> dem = tt3.load_dem('bigtujunga')
+        >>> fd = tt3.FlowObject(dem)
+        >>> print(fd.flowpathextract(12345))
         """
-        ch = np.zeros(self.shape, dtype=np.uint32, order='F')
-        ch[np.unravel_index(idx, self.shape, order='F')] = 1
+        ch = np.zeros(self.shape, dtype=np.uint32, order=self.order)
+        ch[self.unravel_index(idx)] = 1
         edges = np.ones(self.source.size, dtype=np.uint32)
         _stream.traverse_down_u32_or_and(ch, edges, self.source, self.target)
 
-        return np.nonzero(np.ravel(ch, order='F'))[0]
+        return self.stream[ch[self.unravel_index(self.stream)] > 0]
 
     def distance(self):
         """Compute the distance between each node in the flow network
@@ -259,6 +369,12 @@ class FlowObject():
         np.ndarray
             An array (edge attribute list) with the interpixel
             distance. This will be either cellsize or sqrt(2)*cellsize
+
+        Example
+        -------
+        >>> dem = tt3.load_dem('bigtujunga')
+        >>> fd = tt3.FlowObject(dem)
+        >>> print(fd.distance())
         """
         d = np.abs(self.source - self.target)
         dist = self.cellsize * np.where(

@@ -98,6 +98,21 @@ class GridObject():
 
         return (-0.5, self.columns-0.5, self.rows-0.5, -0.5)
 
+    @property
+    def coordinates(self):
+        """Coordinate arrays for the DEM
+
+        Returns
+        -------
+        X,Y : tuple of ndarrays
+            The two returned arrays are of the same shape as the
+        DEM. The first contains the coordinates of each pixel in the
+        horizontal dimension, and the second contains the coordinates
+        in the vertical dimension.
+        """
+        x, y = np.meshgrid(np.arange(self.columns), np.arange(self.rows))
+        return self.transform * (x, y)
+
     def astype(self, dtype):
         """Copy of the GridObject, cast to specified type
 
@@ -110,6 +125,11 @@ class GridObject():
         -------
         GridObject
             A copy of the original GridObject with the given data type
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem = dem.astype(np.float32)
         """
         result = GridObject()
         result.path = self.path
@@ -147,6 +167,13 @@ class GridObject():
         GridObject
             The reprojected data.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
+                    east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
+        >>> dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
+        >>> im = dem.plot(cmap="terrain")
+        >>> plt.show()
         """
         dst = GridObject()
 
@@ -199,8 +226,12 @@ class GridObject():
         GridObject
             The filled DEM.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> filled_dem = dem.fillsinks()
+        >>> filled_dem.plot(cmap='terrain')
         """
-
         dem = self.z.astype(np.float32)
         output = np.zeros_like(dem)
 
@@ -264,6 +295,12 @@ class GridObject():
         Flats are identified as 1s, sills as 2s, and presills as 5s
         (since they are also flats) in the output grid.
         Only relevant when using raw=True.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> flats, sills = dem.identifyflats()
+        >>> flats.plot(cmap='terrain')
         """
 
         # Since having lists as default arguments can lead to problems, output
@@ -326,6 +363,12 @@ class GridObject():
             If `threshold` is an np.ndarray and doesn't match the shape of the DEM.
         TypeError
             If `threshold` is not a float, int, GridObject, or np.ndarray.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
+        >>> excess.plot(cmap='terrain')
         """
 
         if method not in ['fsm2d', 'fmm2d']:
@@ -393,6 +436,12 @@ class GridObject():
         ValueError
             If the kernelsize does not match the requirements of this function
             or the selected method is not implemented in the function.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> sharr = dem.filter(method='scharr', kernelsize=3)
+        >>> sharr.plot(cmap='terrain')
         """
 
         valid_methods = ['mean', 'average', 'median',
@@ -464,6 +513,12 @@ class GridObject():
     -------
     GridObject
         A new GridObject with the calculated gradient.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
+    >>> grad = = dem.gradient8()
+    >>> grad.plot(cmap='terrain')
         """
 
         if multiprocessing:
@@ -522,7 +577,7 @@ class GridObject():
         --------
         >>> dem = topotoolbox.load_dem('tibet')
         >>> curv = dem.curvature()
-        >>> curv.show()
+        >>> curv.plot(cmap='terrain')
         """
 
         if meanfilt:
@@ -600,7 +655,7 @@ class GridObject():
             Non-zero elements define the neighborhood over which the erosion
             is applied. Defaults to None
         structure : np.ndarray of ints, optional
-            A array defining the structuring element used for the erosion. 
+            A array defining the structuring element used for the erosion.
             This defines the connectivity of the elements. Defaults to None
 
         Returns
@@ -611,6 +666,12 @@ class GridObject():
         ------
         ValueError
             If size, structure and footprint are all None.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dilate = dem.dilate(size=10)
+        >>> dilate.plot(cmap='terrain')
         """
 
         if size is None and structure is None and footprint is None:
@@ -654,7 +715,7 @@ class GridObject():
             Non-zero elements define the neighborhood over which the erosion
             is applied. Defaults to None
         structure : np.ndarray of ints, optional
-            A array defining the structuring element used for the erosion. 
+            A array defining the structuring element used for the erosion.
             This defines the connectivity of the elements. Defaults to None
 
         Returns
@@ -665,7 +726,14 @@ class GridObject():
         Raises
         ------
         ValueError
-            If size, structure and footprint are all None."""
+            If size, structure and footprint are all None.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> eroded = dem.erode()
+        >>> eroded.plot(cmap='terrain')
+        """
 
         if size is None and structure is None and footprint is None:
             err = ("Erode requires a structuring element to be specified."
@@ -717,6 +785,12 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the computed evansslope data.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> slope = dem.evansslope()
+        >>> slope.plot(cmap='terrain')
         """
         dem = self.z.copy()
         # NaN replacement not optional since convolve can't handle NaNs
@@ -753,7 +827,7 @@ class GridObject():
     def aspect(self, classify: bool = False) -> 'GridObject':
         """Aspect returns the slope exposition of each cell in a digital
         elevation model in degrees. In contrast to the second output of
-        gradient8 which returns the steepest slope direction, aspect 
+        gradient8 which returns the steepest slope direction, aspect
         returns the angle of the slope.
 
         Parameters
@@ -766,6 +840,12 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the computed aspect data.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> aspect = dem.aspect()
+        >>> aspect.plot(cmap='terrain')
         """
 
         grad_y, grad_x = np.gradient(self.z, edge_order=2)
@@ -808,6 +888,14 @@ class GridObject():
             A Tuple containing a ndarray storing the computed prominence and
             a tuple of ndarray. Each array in the inner tuple has the same
             shape as the indices array (as returned by np.unravel_index).
+
+        Examples
+        --------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> prom, idx = dem.prominence(tolerance=90)
+        >>> plt.subplot()
+        >>> dem.plot(cmap='terrain')
+        >>> plt.plot(idx[0], idx[1], 'ro')
         """
         dem = np.nan_to_num(self.z)
         p = np.full_like(dem, np.min(dem))
@@ -863,12 +951,19 @@ class GridObject():
         -------
         GridObject
             A GridObject containing the resulting hillshade data
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> hillshade = dem.hillshade()
+        >>> hillshade.plot(cmap='gray')
+        >>> dem.plot(cmap='terrain', alpha=0.2)
         """
 
-        h = np.zeros_like(self.z)
-        nx = np.zeros_like(self.z)
-        ny = np.zeros_like(self.z)
-        nz = np.zeros_like(self.z)
+        z = np.asarray(self, dtype=np.float32)
+        h = np.zeros_like(z)
+        nx = np.zeros_like(z)
+        ny = np.zeros_like(z)
 
         # Computing the azimuth angle is a bit tricky
         gt = self.transform
@@ -913,8 +1008,9 @@ class GridObject():
 
         altitude_radians = np.deg2rad(altitude)
 
-        _grid.hillshade(h, nx, ny, nz, exaggerate * self.z,
-                        azimuth_radians, altitude_radians, self.cellsize, self.dims)
+        _grid.hillshade(h, nx, ny, exaggerate * z,
+                        azimuth_radians, altitude_radians,
+                        self.cellsize, self.dims)
 
         result = cp.copy(self)
         result.z = h
@@ -1033,7 +1129,7 @@ class GridObject():
             The axes in which to plot the GridObject. If no axes
             are given, the current axes are used.
 
-        extent: floats (left, right, bottom, top), optional        
+        extent: floats (left, right, bottom, top), optional
             The bounding box used to set the axis limits. If no extent
             is supplied, defaults to self.extent, which plots the
             GridObject in geographic coordinates.
@@ -1047,6 +1143,10 @@ class GridObject():
         matplotlib.image.AxesImage
             The image constructed by imshow
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem.plot(cmap='terrain')
         """
         if ax is None:
             ax = plt.gca()
@@ -1101,7 +1201,7 @@ class GridObject():
         blend_mode: {'multiply', 'overlay', 'soft'}, optional
             The algorithm used to combine the shaded elevation with
             the data. Defaults to 'soft'.
-       extent: floats (left, right, bottom, top), optional        
+        extent: floats (left, right, bottom, top), optional
             The bounding box used to set the axis limits. If no extent
             is supplied, defaults to self.extent
         **kwargs
@@ -1128,6 +1228,10 @@ class GridObject():
             The `filter_method` or `filter_size` arguments are not
             accepted by `GridObject.filter`.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> dem.plot_hs(exaggerate=dem.cellsize)
         """
         if ax is None:
             ax = plt.gca()
@@ -1169,6 +1273,35 @@ class GridObject():
 
         return ax.imshow(np.clip(rgb, 0, 1), extent=extent, **kwargs)
 
+    def plot_surface(self, ax=None, **kwargs):
+        """Plot DEM as a 3D surface
+
+        Parameters
+        ----------
+        ax: matplotlib.axes.Axes, optional
+            The axes in which to plot the GridObject. If no axes
+            are given, the current axes are used.
+
+        **kwargs
+            Additional keyword arguments are forwarded to
+            matplotlib.axes.Axes3D.plot_surface.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
+        >>> dem.plot_surface(ax=ax)
+        >>> ax.set_aspect('equal')
+        >>> ax.set_zticks([0,np.nanmax(dem)])
+        >>> plt.show()
+        """
+        if ax is None:
+            ax = plt.gca()
+
+        x, y = self.coordinates
+
+        return ax.plot_surface(x, y, self.z, **kwargs)
+
     def shufflelabel(self, seed=None):
         """Randomize the labels of a GridObject
 
@@ -1192,13 +1325,18 @@ class GridObject():
         GridObject
           A grid identical to the input, but with randomly reassigned labels.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> D = fd.drainagebasins()
+        >>> D.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
         """
         result = cp.copy(self)
 
-        labels = self.z
-        u, indices = np.unique(labels, return_inverse=True)
+        u, indices = np.unique(self, return_inverse=True)
         rng = np.random.default_rng(seed)
-        result.z = rng.permutation(u)[indices]
+        result.z = np.reshape(rng.permutation(u)[indices], self.shape)
 
         return result
 
@@ -1220,8 +1358,11 @@ class GridObject():
         GridObject
           A grid identical to the input, but with new data.
 
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> new_dem = dem.duplicate_with_new_data(np.zeros(dem.shape))
         """
-
         rows, columns = data.shape
 
         if self.columns != columns or self.rows != rows:
@@ -1233,157 +1374,8 @@ class GridObject():
 
         return result
 
-    def zscore(self):
-        """Returns the z-score for each element of GridObject such that
-        all values are centered to have mean 0 and scaled to have
-        standard deviation 1.
-
-        Returns
-        -------
-        GridObject
-            A GridObject containing the z-scores of the input GridObject.
-
-        Example
-        -------
-        >>> dem = topotoolbox.load_dem('tibet')
-        >>> dem_zscore = dem.zscore()
-        >>> dem_zscore.plot()
-        """
-        result = cp.copy(self)
-        result.z = (self.z - np.nanmean(self.z)) / np.nanstd(self.z)
-        return result
-
-    def resize(self, left: float | int, right: float | int, 
-               top: float | int, bottom: float | int, 
-               highlight_selected: bool=False) -> 'GridObject':
-        """Resize the Gridobject by cropping to specified boundaries.
-
-        Supports three input modes (percentage, coordinate, pixel) to define
-        the crop region. Automatically detects the mode based on input values.
-        In case of reversed boundaries, automatically swaps them to ensure
-        the crop region is valid. If coordinate and pixel modes include the
-        same values, the coordinate mode takes precedence.
-        The resulting grid will have a new transform and bounds based on the
-        specified boundaries. If `highlight_selected` is True, the original
-        grid will be plotted with the selected region highlighted.
-
-        Parameters
-        ----------
-        left : float or int
-            Left boundary in one of three modes:
-            - Percentage: 0.0 to 1.0 (relative to grid width)
-            - Coordinate: Within grid's horizontal bounds
-            - Pixel: Column index (0 to grid width-1)
-        right : float or int
-            Right boundary (same modes as `left`).
-        top : float or int
-            Top boundary in one of three modes:
-            - Percentage: 0.0-1.0 (relative to grid height)
-            - Coordinate: Within grid's vertical bounds
-            - Pixel: Row index (0 to grid height-1)
-        bottom : float or int
-            Bottom boundary (same modes as `top`).
-        highlight_selected : bool, optional, default=False
-            If True, plots the original grid with selected region highlighted.
-
-        Returns
-        -------
-        GridObject
-            Cropped grid with updated transform, bounds, and data.
-
-        Raises
-        ------
-        ValueError
-            If boundaries are not in a consistent valid mode.
-
-        Example
-        -------
-        >>> dem = topotoolbox.load_dem('tibet')
-        >>> new_dem = dem.resize(0.6, 0.8, 0.3, 0.5, highlight_selected=True)
-        >>> new_dem = dem.resize(240000, 300000, 2600000, 2500000, 
-                                 highlight_selected=True)
-        >>> new_dem = dem.resize(1000, 1500, 600, 1100, 
-                                 highlight_selected=True)
-        >>> new_dem.plot()
-        """
-        height, width = self.shape[0], self.shape[1]
-        # Case 1: Percentage mode (all values between 0 and 1)
-        if all(0.0 <= float(val) <= 1.0 for val in [top, bottom, left, right]):
-            y_start = int(top * height)
-            y_end = int(bottom * height)
-            x_start = int(left * width)
-            x_end = int(right * width)
-
-        # Case 2: Coordinate mode
-        elif (all(self.bounds.left <= val <= self.bounds.right for 
-                  val in [left, right]) and
-              all(self.bounds.bottom <= val <= self.bounds.top for 
-                  val in [top, bottom])):
-            y_start = int((self.bounds.top - top) / self.cellsize)
-            y_end = int((self.bounds.top - bottom) / self.cellsize)
-            x_start = int((left - self.bounds.left) / self.cellsize)
-            x_end = int((right - self.bounds.left) / self.cellsize)
-
-        # Case 3: Pixel mode (values are in array indices)
-        elif (all(0 <= val < height for val in [top, bottom]) and
-              all(0 <= val < width for val in [left, right])):
-            y_start, y_end = int(top), int(bottom)
-            x_start, x_end = int(left), int(right)
-
-        else:
-            err = ("Provided Borders are not in a valid format."
-                   " Please provide values in one of the following formats:\n"
-                   "1. Percentage mode: all values between 0.0 and 1.0\n"
-                   "2. Coordinate mode: all values within the extent of the "
-                   f"GridObject: extent = {self.extent}\n"
-                   "3. Pixel mode: all values are valid indices of the "
-                   f"GridObject: 0 to {self.shape[0]} for rows and 0 to "
-                   f"{self.shape[1]} for columns.")
-            raise ValueError(err) from None
-
-        # Ensure x_start < x_end and y_start < y_end to handle switched
-        # bounds instead of raising an error
-        if x_start > x_end:
-            x_start, x_end = x_end, x_start
-        if y_start > y_end:
-            y_start, y_end = y_end, y_start
-
-        result = cp.copy(self)
-
-        # Calculate new transform
-        new_x_origin = self.transform.c + x_start * self.transform.a
-        new_y_origin = self.transform.f + y_start * self.transform.e
-        new_transform = Affine(
-            self.transform.a, self.transform.b, new_x_origin,
-            self.transform.d, self.transform.e, new_y_origin)
-        result.transform = new_transform
-        # Calculate new bounds
-        new_left = new_x_origin
-        new_top = new_y_origin
-        new_right = new_x_origin + (x_end - x_start) * self.transform.a
-        new_bottom = new_y_origin + (y_end - y_start) * self.transform.e
-        new_bounds = BoundingBox(new_left, new_bottom, new_right, new_top)
-        result.bounds = new_bounds
-        # Crop DEM
-        result.z = result.z[y_start:y_end, x_start:x_end]
-
-        if highlight_selected:
-            _, ax = plt.subplots()
-            # adjust selection rectangle to extent
-            x_start = self.bounds.left + x_start * self.cellsize
-            x_end = self.bounds.left + x_end * self.cellsize
-            y_start = self.bounds.top - y_start * self.cellsize
-            y_end = self.bounds.top - y_end * self.cellsize
-            # plot rectangle
-            x = [x_start, x_end, x_end, x_start, x_start]
-            y = [y_start, y_start, y_end, y_end, y_start]
-            self.plot()
-            ax.plot(x, y, 'r-', linewidth=2)
-
-        return result
-
-        # 'Magic' functions:
-        # ------------------------------------------------------------------------
+    # 'Magic' functions:
+    # ------------------------------------------------------------------------
 
     def __eq__(self, other):
         dem = cp.deepcopy(self)

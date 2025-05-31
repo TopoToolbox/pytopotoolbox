@@ -11,7 +11,7 @@ include(FetchContent)
 FetchContent_Declare(
   topotoolbox
   GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG 14809a9bff099e33048d52289d48c53cdf785605
+  GIT_TAG 0d364c3745e05458084c81f70cff000dd4ed4cef
 )
 FetchContent_MakeAvailable(topotoolbox)
 

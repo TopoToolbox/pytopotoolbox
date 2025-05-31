@@ -76,6 +76,15 @@ def run_graphflood(
     RuntimeError
         If the shape of `initial_hw`, `BCs`, `P`, or `manning` does not match
         the shape of the 'grid' GridObject`.
+
+    Example
+    -------
+    >>> import topotoolbox
+    >>> import matplotlib.pyplot as plt
+    >>> import matplotlib.colors as colors
+    >>> flood = topotoolbox.run_graphflood(topotoolbox.load_dem('perfectworld'))
+    >>> im = flood.plot(norm=colors.SymLogNorm(linthresh=1e-3, linscale=1))
+    >>> plt.show()
     """
 
     # Preparing the arguments

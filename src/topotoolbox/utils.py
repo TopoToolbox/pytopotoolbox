@@ -14,7 +14,7 @@ from .grid_object import GridObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "gen_random_bool", "get_cache_contents", "clear_cache",
-           "read_from_cache", "load_open_topography", "validate_alignment"]
+           "read_from_cache", "load_opentopography", "validate_alignment"]
 
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
@@ -22,7 +22,8 @@ DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
 OPEN_TOPO_SOURCE = "https://portal.opentopography.org/API/globaldem"
 OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E'
                       'SRTM15Plus', 'NASADEM', 'COP30', 'COP90', 'EU_DTM',
-                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo')
+                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo',
+                      'CA_MRDEM_DTM', 'CA_MRDEM_DSM')
 
 
 def write_tif(dem: GridObject, path: str) -> None:
@@ -41,9 +42,9 @@ def write_tif(dem: GridObject, path: str) -> None:
     TypeError
         If `dem` is not an instance of GridObject.
 
-    Examples
-    --------
-    >>> dem = topotoolbox.load_dem('taiwan')
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('perfectworld')
     >>> topotoolbox.write_tif(dem, 'dem.tif')
     """
 
@@ -77,6 +78,10 @@ def read_tif(path: str) -> GridObject:
     -------
     GridObject
         A new GridObject of the .tif file.
+
+    Example
+    -------
+    >>> dem = topotoolbox.read_tif('dem.tif')
     """
 
     grid = GridObject()
@@ -132,6 +137,11 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
     -------
     GridObject
         An instance of GridObject with randomly generated values.
+
+    Example
+    -------
+    >>> dem = topotoolbox.gen_random(seed=8192)
+    >>> dem.plot(cmap='terrain')
     """
     try:
         import opensimplex as simplex  # pylint: disable=C0415
@@ -177,6 +187,11 @@ def gen_random_bool(
     -------
     GridObject
         An instance of GridObject with randomly generated Boolean values.
+
+    Example
+    -------
+    >>> dem = topotoolbox.gen_random_bool()
+    >>> dem.plot(cmap='grey')
     """
     bool_array = np.empty((rows, columns), dtype=np.float32)
 
@@ -202,6 +217,10 @@ def get_dem_names() -> list[str]:
     -------
     list[str]
         A list of strings, where each string is the name of a DEM.
+
+    Example
+    -------
+    >>> print(topotoolbox.get_dem_names())
     """
     with urlopen(DEM_NAMES) as dem_names:
         dem_names = dem_names.read().decode()
@@ -224,6 +243,11 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
     -------
     GridObject
         A GridObject generated from the downloaded DEM.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('taiwan')
+    >>> dem.plot(cmap='terrain')
     """
     if dem not in get_dem_names():
         err = ("Selected DEM has to be selected from the provided examples." +
@@ -254,6 +278,10 @@ def get_save_location() -> str:
     -------
     str
         Filepath to file saved in cache.
+
+    Example
+    -------
+    >>> print(topotoolbox.get_save_location())
     """
     system = sys.platform
 
@@ -289,6 +317,10 @@ def clear_cache(filename: str | None = None) -> None:
     filename : str, optional
         Add a filename if only one specific file is to be deleted.
         Defaults to None.
+
+    Example
+    -------
+    >>> topotoolbox.clear_cache()
     """
     path = get_save_location()
 
@@ -313,6 +345,10 @@ def get_cache_contents() -> (list[str] | None):
     list[str]
         List of all files in the TopoToolbox cache. If cache does
         not exist, None is returned.
+
+    Example
+    -------
+    >>> print(topotoolbox.get_cache_contents())
     """
     path = get_save_location()
 
@@ -333,21 +369,28 @@ def read_from_cache(filename: str) -> GridObject:
     filename : str
         Name of the file to be read from the cache directory. Requires the
         whole filename including the extension, like "dem.tif".
+
     Returns
     -------
     GridObject
         The GridObject generated from the cached GeoTIFF file.
+
+    Example
+    -------
+    >>> topotoolbox.load_dem('bigtujunga')
+    >>> dem = topotoolbox.read_from_cache('bigtujunga.tif')
+    >>> dem.plot()
     """
     cache_path = os.path.join(get_save_location(), f"{filename}")
     grid_object = read_tif(cache_path)
     return grid_object
 
 
-def load_open_topography(south: float, north: float, west: float, east: float,
-                         api_key: str | None = None, dem_type: str = "SRTMGL3",
-                         api_path: str | None = None, overwrite: bool = False,
-                         save_path: str | None = None
-                         ) -> GridObject:
+def load_opentopography(south: float, north: float, west: float, east: float,
+                        api_key: str | None = None, dem_type: str = "SRTMGL3",
+                        api_path: str | None = None, overwrite: bool = False,
+                        save_path: str | None = None
+                        ) -> GridObject:
     """Download a DEM from Open Topography. The DEM is downloaded as a
     GeoTIFF file and saved in the cache directory. The DEM is then
     read into a GridObject. The DEMs come in geographic coordinates (WGS84).
@@ -392,6 +435,8 @@ def load_open_topography(south: float, north: float, west: float, east: float,
         - GEDI_L3 (DTM 1000m)
         - GEBCOIceTopo (Global Bathymetry 500m)
         - GEBCOSubIceTopo (Global Bathymetry 500m)
+        - CA_MRDEM_DSM (DSM 30m)
+        - CA_MRDEM_DTM (DTM 30m)
 
     overwrite : bool, optional
         If True cached DEM will be overwritten if it has the same bounds
@@ -415,11 +460,11 @@ def load_open_topography(south: float, north: float, west: float, east: float,
 
     Example
     -------
-    dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
+    >>> dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
                     east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
-    dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
-    im = dem.plot(cmap="terrain")
-    plt.show()
+    >>> dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
+    >>> im = dem.plot(cmap="terrain")
+    >>> plt.show()
     """
 
     # Check if an API key is provided
@@ -529,6 +574,12 @@ def validate_alignment(s1, s2) -> bool:
     -------
     bool
        True if the two objects are aligned, False otherwise
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('bigtujunga')
+    >>> fd = topotoolbox.FlowObject(dem)
+    >>> print(topotoolbox.validate_alignment(dem, fd))
     """
     return (s1.shape == s2.shape) and all(
         (not hasattr(s1, attr) or not hasattr(s2, attr))

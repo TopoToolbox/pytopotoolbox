@@ -1,6 +1,8 @@
 import warnings
 import pytest
+
 import numpy as np
+import opensimplex
 
 import topotoolbox as topo
 
@@ -18,6 +20,24 @@ def fixture_wide_dem():
 @pytest.fixture(name="tall_dem")
 def fixture_tall_dem():
     yield topo.gen_random(rows=128, columns=64)
+
+@pytest.fixture
+def order_dems():
+    opensimplex.seed(12)
+
+    x = np.arange(0, 128)
+    y = np.arange(0, 256)
+
+    cdem = topo.GridObject()
+    cdem.z = np.array(
+        64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
+    cdem.cellsize = 13.0
+
+    fdem = topo.GridObject()
+    fdem.z = np.asfortranarray(cdem.z)
+    fdem.cellsize = 13.0
+
+    return [cdem, fdem]
 
 def test_constructors():
     grid_obj = topo.gen_random(rows=64, columns=64)
@@ -62,6 +82,33 @@ def test_constructors():
         assert issubclass(w[-1].category, Warning)
         assert "threshold will be ignored" in str(w[-1].message)
 
+def test_streamobject_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    # The two graphs cs and fs should be isomorphic to one
+    # another.
+    #
+    # First, construct the mapping from column-major linear indices to
+    # row-major linear indices.
+    idxmap = np.ravel_multi_index(np.unravel_index(
+        np.arange(0, np.prod(cfd.shape)), cfd.shape, order=cfd.order), ffd.shape, order=ffd.order)
+
+    # Then, compare the vertices.
+    assert np.array_equal(np.sort(idxmap[cs.stream]), np.sort(fs.stream))
+
+    # Finally, compare the edges.
+    cedges = set(
+        map(tuple, np.stack((idxmap[cs.stream[cs.source]], idxmap[cs.stream[cs.target]]), axis=1)))
+    fedges = set(map(tuple, np.stack((fs.stream[fs.source], fs.stream[fs.target]), axis=1)))
+
+    assert cedges == fedges
+
 def test_streamobject_sizes(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
     tall_stream = topo.StreamObject(tall_flow)
@@ -86,6 +133,46 @@ def test_streamobject_sizes(tall_dem, wide_dem):
     # Ensure that no index in stream exceeds the max possible index in the grid
     assert np.max(wide_stream.stream) <= wide_stream.shape[0] * wide_stream.shape[1]
     assert np.max(tall_stream.stream) <= tall_stream.shape[0] * tall_stream.shape[1]
+
+
+def test_distance_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+
+    cd = cs.distance()
+    fd = fs.distance()
+
+    cdg = np.zeros(cfd.shape)
+    fdg = np.zeros(ffd.shape)
+
+    cdg[cs.source_indices] = cd
+    fdg[fs.source_indices] = fd
+
+    assert np.array_equal(cdg, fdg)
+
+
+def test_downstream_distance_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+
+    cd = cs.downstream_distance()
+    fd = fs.downstream_distance()
+
+    cdg = np.zeros(cfd.shape)
+    fdg = np.zeros(ffd.shape)
+
+    cdg[cs.node_indices] = cd
+    fdg[fs.node_indices] = fd
+
+    assert np.array_equal(cdg, fdg)
 
 def test_run_chitransform(tall_dem, wide_dem):
 
@@ -159,6 +246,59 @@ def test_ezgetnal(tall_dem):
     assert z2.dtype == tall_dem.z.dtype
     # ezgetnal with the dtype argument should return array of that type
     assert z3.dtype is np.dtype(np.float64)
+
+
+def test_ezgetnal_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    cz = cs.ezgetnal(cdem)
+    fz = fs.ezgetnal(fdem)
+
+    cdz = np.zeros(cs.shape)
+    fdz = np.zeros(fs.shape)
+
+    cdz[cs.node_indices] = cz
+    fdz[fs.node_indices] = fz
+
+    assert np.array_equal(cdz, fdz)
+
+
+def test_streampoi_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    ch = cs.streampoi('channelheads')
+    co = cs.streampoi('outlets')
+    cc = cs.streampoi('confluences')
+
+    fh = fs.streampoi('channelheads')
+    fo = fs.streampoi('outlets')
+    fc = fs.streampoi('confluences')
+
+    cp = np.zeros(cs.shape, dtype=np.uint32)
+    fp = np.zeros(fs.shape, dtype=np.uint32)
+
+    cp[cs.node_indices_where(ch)] |= 1
+    cp[cs.node_indices_where(co)] |= 2
+    cp[cs.node_indices_where(cc)] |= 4
+
+    fp[fs.node_indices_where(fh)] |= 1
+    fp[fs.node_indices_where(fo)] |= 2
+    fp[fs.node_indices_where(fc)] |= 4
+
+    assert np.array_equal(cp, fp)
+
 
 def test_subgraph(tall_dem, wide_dem):
     ############
@@ -266,7 +406,7 @@ def test_stream_channelheads(tall_dem, wide_dem):
     s = topo.StreamObject(fd)
 
     assert topo.validate_alignment(fd, s)
-    
+
     channel_heads = s.streampoi("channelheads")
 
     s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
@@ -275,6 +415,34 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
+def test_stream_downstreamto(tall_dem):
+    fd = topo.FlowObject(tall_dem)
+    s = topo.StreamObject(fd)
+
+    ch = s.streampoi("channelheads")
+
+    sc = topo.StreamObject(fd,channelheads=s.stream[ch])
+    sd = s.downstreamto(ch)
+
+    # These two stream networks should be equivalent
+    assert len(set(sd.stream).symmetric_difference(set(sc.stream))) == 0
+
+def test_stream_upstreamto(tall_dem):
+    fd = topo.FlowObject(tall_dem)
+
+    # We clean here in case any 1 pixel streams exist in s.
+    # They won't be identified as outlets, so the reconstructed stream
+    # network would not be identical to the original.
+    s = topo.StreamObject(fd).clean()
+
+    outlets = s.streampoi("outlets")
+
+    su = s.upstreamto(outlets)
+
+    # These two stream networks should be equivalent
+    assert len(set(s.stream).symmetric_difference(set(su.stream))) == 0
+
 
 def test_stream_imposemin(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)

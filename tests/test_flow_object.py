@@ -64,14 +64,79 @@ def test_flowobject_order(order_dems):
 
     # We can construct the isomorphism by recomputing the linear
     # indices of the row-major array in the column-major ordering.
-    idxmap = np.ravel_multi_index(np.unravel_index(
-        np.arange(0, np.prod(cfd.shape)), cfd.shape, order='C'), ffd.shape, order='F')
+    cidxs = cfd.unravel_index(np.arange(0, np.prod(cfd.shape)))
+    idxmap = np.ravel_multi_index(cidxs, ffd.shape, order='F')
 
     # Now test whether the edge sets are identical
     cedges = set(
         map(tuple, np.stack((idxmap[cfd.source], idxmap[cfd.target]), axis=1)))
     fedges = set(map(tuple, np.stack((ffd.source, ffd.target), axis=1)))
     assert cedges == fedges
+
+
+def test_flow_accumulation_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    ca = cfd.flow_accumulation()
+    fa = ffd.flow_accumulation()
+
+    assert np.array_equal(ca, fa)
+
+
+def test_drainagebasins_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cdb = cfd.drainagebasins()
+    fdb = ffd.drainagebasins()
+
+    # This testing logic is rather complicated, so please excuse the
+    # length explanation.
+
+    # The two sets of labels are identical up to a bijection between
+    # the label sets. We construct that bijection here. We need the
+    # set of unique labels, `us`, the indices of a representative pixel
+    # in the drainage basins array that has each label, `idxs`, and, for
+    # each pixel, the index of its label in the label set, `invs`. If we
+    # have B basins in an N x M DEM, `us` is a length B array of basin
+    # labels, `idxs` is an length B array of pixel indices and `invs` is
+    # an N x M array of the indices [0,B-1) into the `us`
+    # array. Fortunately np.unique can provide all of these.
+    cus, cidxs, cinvs = np.unique(cdb, return_index=True, return_inverse=True)
+    fus, fidxs, finvs = np.unique(fdb, return_index=True, return_inverse=True)
+
+    # Now we construct the bijection and apply it to reconstruct the
+    # column-major and row-major drainage basins. Below the "main array"
+    # refers to the array whose pattern we are trying to reconstruct
+    # and the "alternate array" is the one we reconstruct from.
+
+    # First, we use the `idxs` of the alternate array to extract the
+    # `invs` of the main array at each of the representative
+    # pixels. Then we index into the `us` of the main array to find
+    # the labels assigned to each of the representative pixels /in the
+    # order in which they show up in the alternate `idxs` array/,
+    # which is also the order of the labels in the alternate `us`
+    # array. This array represents the bijection between the main
+    # labels and the alternate labels. When we index into this length
+    # B array with the alternate `invs`, we will get the main labels
+    # that should be assigned to each pixel in the alternate array if
+    # the two arrays are identical up to the bijection.
+    frec = fus[np.take(finvs, cidxs)][cinvs]
+
+    # Now we test that the reconstructed array is identical to the
+    # main array. We use flatten because older versions of numpy
+    # return different `invs` of different dimensions.
+    assert np.array_equal(frec.flatten(), fdb.z.flatten())
+
+    # Having done this once, we might as well do it with the main and
+    # alternate arrays swapped.
+    crec = cus[np.take(cinvs, fidxs)][finvs]
+    assert np.array_equal(crec.flatten(), cdb.z.flatten())
 
 
 def test_ezgetnal(wide_dem):
@@ -108,20 +173,70 @@ def test_flowpathextract(wide_dem):
 
     ch = s.streampoi('channelheads')
 
-    s2 = topo.StreamObject(fd, channelheads=s.stream[ch][0:1])
+    for c in s.stream[ch]:
 
-    assert topo.validate_alignment(wide_dem, s2)
+        s2 = topo.StreamObject(fd, channelheads=[c])
 
-    idxs = fd.flowpathextract(s.stream[ch][0])
-    assert np.array_equal(s2.stream, idxs)
+        assert topo.validate_alignment(wide_dem, s2)
 
+        idxs = fd.flowpathextract(c)
+
+        # NOTE(wkearn): StreamObject's stream nodes are not
+        # necessarily topologically sorted, whereas the flow path
+        # returned by flowpathextract is topologically sorted. The two
+        # arrays will contain the same elements but in different
+        # orders. We therefore verify that idxs is the one and only
+        # flow path in s2 by reconstructing the topological order of
+        # s2.stream from the edge list.
+        assert len(idxs) == len(s2.source) + 1
+        for e in np.arange(len(s2.source)):
+            u = s2.stream[s2.source[e]]
+            v = s2.stream[s2.target[e]]
+            assert idxs[e] == u
+            assert idxs[e + 1] == v
+
+def test_flowpathextract_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    # Convert the row-major linear index to column-major
+    ci = np.ravel_multi_index((37, 109), cfd.shape, order=cfd.order)
+    fi = np.ravel_multi_index((37, 109), ffd.shape, order=ffd.order)
+
+    cp = cfd.flowpathextract(ci)
+    fp = ffd.flowpathextract(fi)
+
+    # Convert the column-major flow path indices to row-major
+    fpc = np.ravel_multi_index(ffd.unravel_index(fp),
+                               cfd.shape, order=cfd.order)
+
+    assert np.array_equal(cp, fpc)
+
+def test_distance_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cd = cfd.distance()
+    fd = ffd.distance()
+
+    cdg = np.zeros(cfd.shape)
+    fdg = np.zeros(ffd.shape)
+
+    cdg[cfd.source_indices] = cd
+    fdg[ffd.source_indices] = fd
+
+    assert np.array_equal(cdg, fdg)
 
 def test_imposemin(wide_dem):
     original_dem = wide_dem.z.copy()
     fd = topo.FlowObject(wide_dem)
 
-    g0 = (wide_dem.z[np.unravel_index(fd.source, fd.shape, order='F')] -
-          wide_dem.z[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
+    g0 = (wide_dem.z[fd.source_indices] -
+          wide_dem.z[fd.target_indices])/fd.distance()
 
     # Make sure that the test array has slopes less than the imposed minimum
     assert not np.all(g0 >= 0.1 - 1e-6)
@@ -134,8 +249,8 @@ def test_imposemin(wide_dem):
 
         # The gradient along the flow network should be greater than or
         # equal to the defined slope within some numerical error
-        g = (min_dem.z[np.unravel_index(fd.source, fd.shape, order='F')] -
-             min_dem.z[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
+        g = (min_dem.z[fd.source_indices] -
+             min_dem.z[fd.target_indices])/fd.distance()
         assert np.all(g >= minimum_slope - 1e-6)
 
         # imposemin should not modify the original array
@@ -153,9 +268,20 @@ def test_imposemin_f64(wide_dem):
 
     assert np.all(min_dem <= z)
 
-    g = (min_dem[np.unravel_index(fd.source, fd.shape, order='F')] -
-         min_dem[np.unravel_index(fd.target, fd.shape, order='F')])/fd.distance()
+    g = (min_dem[fd.source_indices] -
+         min_dem[fd.target_indices])/fd.distance()
     assert np.all(g >= 0.001 - 1e-6)
 
     # imposemin should not modify the original array
     assert np.array_equal(original_dem, z)
+
+def test_imposemin_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cminslope = topo.imposemin(cfd, cdem, minimum_slope=0.001)
+    fminslope = topo.imposemin(ffd, fdem, minimum_slope=0.001)
+
+    assert np.array_equal(cminslope, fminslope)
