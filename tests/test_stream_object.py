@@ -9,9 +9,9 @@ import topotoolbox as topo
 def issubgraph(s1  : topo.StreamObject, s2 : topo.StreamObject):
     """Test whether s1 represents a subgraph of s2
     """
-    es1 = set(map(tuple,np.stack((s1.stream[s1.source],s1.stream[s1.target]),axis=1)))
-    es2 = set(map(tuple,np.stack((s2.stream[s2.source],s2.stream[s2.target]),axis=1)))
-    return es1 <= es2
+    e1 = set(zip(zip(*s1.source_indices), zip(*s1.target_indices)))
+    e2 = set(zip(zip(*s2.source_indices), zip(*s2.target_indices)))
+    return e1 <= e2
 
 def isequivalent(s1 : topo.StreamObject, s2 : topo.StreamObject):
     v1 = set(zip(*s1.node_indices))
