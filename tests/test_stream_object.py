@@ -188,6 +188,30 @@ def test_run_chitransform(tall_dem, wide_dem):
     tall_stream.chitransform(tall_acc)
     wide_stream.chitransform(wide_acc)
 
+
+def test_chitransform_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+    ca = cfd.flow_accumulation()
+
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+    fa = cfd.flow_accumulation()
+
+    cchi = cs.chitransform(ca)
+    fchi = fs.chitransform(fa)
+
+    cchimap = np.zeros(cs.shape)
+    fchimap = np.zeros(fs.shape)
+
+    cchimap[cs.node_indices] = cchi
+    fchimap[fs.node_indices] = fchi
+
+    assert np.array_equal(cchimap, fchimap)
+
+
 def test_stream_subgraphs(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
     tall_stream = topo.StreamObject(tall_flow)
