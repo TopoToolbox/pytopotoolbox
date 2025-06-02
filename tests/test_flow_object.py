@@ -7,6 +7,13 @@ import opensimplex
 import topotoolbox as topo
 
 
+def isequivalent(s1 : topo.FlowObject, s2 : topo.FlowObject):
+    e1 = set(zip(zip(*s1.source_indices),zip(*s1.target_indices)))
+    e2 = set(zip(zip(*s2.source_indices),zip(*s2.target_indices)))
+
+    return (s1.shape == s2.shape) and (e1 == e2)
+
+
 @pytest.fixture
 def wide_dem():
     return topo.gen_random(rows=64, columns=128, seed=12)
@@ -57,21 +64,7 @@ def test_flowobject_order(order_dems):
     cfd = topo.FlowObject(cdem)
     ffd = topo.FlowObject(fdem)
 
-    # cfd and ffd should be isomorphic graphs. However, their labels
-    # will differ because of the different memory orders, and their
-    # topological sorts may differ because the two flow direction
-    # arrays are looped over in different orders.
-
-    # We can construct the isomorphism by recomputing the linear
-    # indices of the row-major array in the column-major ordering.
-    cidxs = cfd.unravel_index(np.arange(0, np.prod(cfd.shape)))
-    idxmap = np.ravel_multi_index(cidxs, ffd.shape, order='F')
-
-    # Now test whether the edge sets are identical
-    cedges = set(
-        map(tuple, np.stack((idxmap[cfd.source], idxmap[cfd.target]), axis=1)))
-    fedges = set(map(tuple, np.stack((ffd.source, ffd.target), axis=1)))
-    assert cedges == fedges
+    assert isequivalent(cfd, ffd)
 
 
 def test_flow_accumulation_order(order_dems):
