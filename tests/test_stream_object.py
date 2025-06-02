@@ -13,6 +13,15 @@ def issubgraph(s1  : topo.StreamObject, s2 : topo.StreamObject):
     es2 = set(map(tuple,np.stack((s2.stream[s2.source],s2.stream[s2.target]),axis=1)))
     return es1 <= es2
 
+def isequivalent(s1 : topo.StreamObject, s2 : topo.StreamObject):
+    v1 = set(zip(*s1.node_indices))
+    v2 = set(zip(*s2.node_indices))
+
+    e1 = set(zip(zip(*s1.source_indices),zip(*s1.target_indices)))
+    e2 = set(zip(zip(*s2.source_indices),zip(*s2.target_indices)))
+
+    return v1 == v2 and e1 == e2
+
 @pytest.fixture(name="wide_dem")
 def fixture_wide_dem():
     yield topo.gen_random(rows=64, columns=128)
@@ -91,23 +100,8 @@ def test_streamobject_order(order_dems):
     cs = topo.StreamObject(cfd)
     fs = topo.StreamObject(ffd)
 
-    # The two graphs cs and fs should be isomorphic to one
-    # another.
-    #
-    # First, construct the mapping from column-major linear indices to
-    # row-major linear indices.
-    idxmap = np.ravel_multi_index(np.unravel_index(
-        np.arange(0, np.prod(cfd.shape)), cfd.shape, order=cfd.order), ffd.shape, order=ffd.order)
+    assert isequivalent(cs, fs)
 
-    # Then, compare the vertices.
-    assert np.array_equal(np.sort(idxmap[cs.stream]), np.sort(fs.stream))
-
-    # Finally, compare the edges.
-    cedges = set(
-        map(tuple, np.stack((idxmap[cs.stream[cs.source]], idxmap[cs.stream[cs.target]]), axis=1)))
-    fedges = set(map(tuple, np.stack((fs.stream[fs.source], fs.stream[fs.target]), axis=1)))
-
-    assert cedges == fedges
 
 def test_streamobject_sizes(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
@@ -263,23 +257,8 @@ def test_trunk_order(order_dems):
     ctrunk = cs.trunk()
     ftrunk = fs.trunk()
 
-    # The two graphs cs and fs should be isomorphic to one
-    # another.
-    #
-    # First, construct the mapping from column-major linear indices to
-    # row-major linear indices.
-    idxmap = np.ravel_multi_index(np.unravel_index(
-        np.arange(0, np.prod(cfd.shape)), cfd.shape, order=cfd.order), ffd.shape, order=ffd.order)
+    assert isequivalent(ctrunk, ftrunk)
 
-    # Then, compare the vertices.
-    assert np.array_equal(np.sort(idxmap[ctrunk.stream]), np.sort(ftrunk.stream))
-
-    # Finally, compare the edges.
-    cedges = set(
-        map(tuple, np.stack((idxmap[ctrunk.stream[ctrunk.source]], idxmap[ctrunk.stream[ctrunk.target]]), axis=1)))
-    fedges = set(map(tuple, np.stack((ftrunk.stream[ftrunk.source], ftrunk.stream[ftrunk.target]), axis=1)))
-
-    assert cedges == fedges
 
 def test_klargestconncomps_order(order_dems):
     cdem, fdem = order_dems
@@ -290,26 +269,10 @@ def test_klargestconncomps_order(order_dems):
     ffd = topo.FlowObject(fdem)
     fs = topo.StreamObject(ffd)
 
-    ctrunk = cs.klargestconncomps()
-    ftrunk = fs.klargestconncomps()
+    ck1 = cs.klargestconncomps()
+    fk1 = fs.klargestconncomps()
 
-    # The two graphs cs and fs should be isomorphic to one
-    # another.
-    #
-    # First, construct the mapping from column-major linear indices to
-    # row-major linear indices.
-    idxmap = np.ravel_multi_index(np.unravel_index(
-        np.arange(0, np.prod(cfd.shape)), cfd.shape, order=cfd.order), ffd.shape, order=ffd.order)
-
-    # Then, compare the vertices.
-    assert np.array_equal(np.sort(idxmap[ctrunk.stream]), np.sort(ftrunk.stream))
-
-    # Finally, compare the edges.
-    cedges = set(
-        map(tuple, np.stack((idxmap[ctrunk.stream[ctrunk.source]], idxmap[ctrunk.stream[ctrunk.target]]), axis=1)))
-    fedges = set(map(tuple, np.stack((ftrunk.stream[ftrunk.source], ftrunk.stream[ftrunk.target]), axis=1)))
-
-    assert cedges == fedges
+    assert isequivalent(ck1, fk1)
 
 
 def test_ezgetnal(tall_dem):
