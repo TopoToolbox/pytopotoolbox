@@ -250,6 +250,38 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     assert not issubgraph(wide_trunk, tall_stream)
     assert not issubgraph(tall_trunk, wide_stream)
 
+
+def test_trunk_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+
+    ctrunk = cs.trunk()
+    ftrunk = fs.trunk()
+
+    # The two graphs cs and fs should be isomorphic to one
+    # another.
+    #
+    # First, construct the mapping from column-major linear indices to
+    # row-major linear indices.
+    idxmap = np.ravel_multi_index(np.unravel_index(
+        np.arange(0, np.prod(cfd.shape)), cfd.shape, order=cfd.order), ffd.shape, order=ffd.order)
+
+    # Then, compare the vertices.
+    assert np.array_equal(np.sort(idxmap[ctrunk.stream]), np.sort(ftrunk.stream))
+
+    # Finally, compare the edges.
+    cedges = set(
+        map(tuple, np.stack((idxmap[ctrunk.stream[ctrunk.source]], idxmap[ctrunk.stream[ctrunk.target]]), axis=1)))
+    fedges = set(map(tuple, np.stack((ftrunk.stream[ftrunk.source], ftrunk.stream[ftrunk.target]), axis=1)))
+
+    assert cedges == fedges
+
+
 def test_ezgetnal(tall_dem):
     fd = topo.FlowObject(tall_dem)
     s = topo.StreamObject(fd)
