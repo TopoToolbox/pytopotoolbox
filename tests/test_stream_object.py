@@ -275,6 +275,31 @@ def test_klargestconncomps_order(order_dems):
     assert isequivalent(ck1, fk1)
 
 
+def test_subgraph_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+
+    # Subgraph can take GridObjects/ndarrays as input. Ensure that
+    # those work regardless of memory order
+    cb = np.array(cdem) > 50
+    fb = np.asfortranarray(cb)
+
+    # Try every combination
+    csc = cs.subgraph(cb)
+    csf = cs.subgraph(fb)
+    fsc = fs.subgraph(cb)
+    fsf = fs.subgraph(fb)
+
+    assert isequivalent(csc, csf)
+    assert isequivalent(csc, fsc)
+    assert isequivalent(csc, fsf)
+
+
 def test_ezgetnal(tall_dem):
     fd = topo.FlowObject(tall_dem)
     s = topo.StreamObject(fd)
