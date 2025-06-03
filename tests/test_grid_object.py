@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from rasterio import Affine
+from rasterio import Affine, CRS
 
 import topotoolbox as topo
 
@@ -34,11 +34,13 @@ def order_dems():
         64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
     cdem.cellsize = 13.0
     cdem.transform = Affine.scale(cdem.cellsize)
+    cdem.crs = CRS.from_epsg(3857)
 
     fdem = topo.GridObject()
     fdem.z = np.asfortranarray(cdem.z)
     fdem.cellsize = 13.0
     fdem.transform = Affine.rotation(180) * Affine.scale(fdem.cellsize)
+    fdem.crs = CRS.from_epsg(3857)
 
     return [cdem, fdem]
 
@@ -340,3 +342,14 @@ def test_shufflelabel(order_dems):
 
     assert cs.shape == cdb.shape
     assert fs.shape == fdb.shape
+
+def test_reproject_order(order_dems):
+    cdem, fdem = order_dems
+
+    c2 = cdem.reproject(CRS.from_epsg(32631))
+    assert c2.z.flags.c_contiguous
+
+    f2 = fdem.reproject(CRS.from_epsg(32631))
+    assert f2.z.flags.f_contiguous
+
+    assert np.allclose(f2, c2, equal_nan=True)
