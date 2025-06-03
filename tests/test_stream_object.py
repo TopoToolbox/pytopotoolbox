@@ -517,6 +517,45 @@ def test_stream_upstreamto(tall_dem):
     # These two stream networks should be equivalent
     assert len(set(s.stream).symmetric_difference(set(su.stream))) == 0
 
+def test_upstreamto_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd).clean()
+    fs = topo.StreamObject(ffd).clean()
+
+    b = np.array(cdem) > 50
+
+    cb = cs.upstreamto(b)
+    fb = fs.upstreamto(b)
+
+    # These assertions make sure that this test is doing
+    # something. Otherwise we may need to change the threshold above.
+    assert not isequivalent(cb, cs)
+    assert not isequivalent(fb, fs)
+
+    assert isequivalent(cb, fb)
+
+def test_downstreamto_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    b = np.array(cdem) > 50
+
+    cb = cs.downstreamto(b)
+    fb = fs.downstreamto(b)
+
+    assert not isequivalent(cb, cs)
+    assert not isequivalent(fb, fs)
+
+    assert isequivalent(cb, fb)
 
 def test_stream_imposemin(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
