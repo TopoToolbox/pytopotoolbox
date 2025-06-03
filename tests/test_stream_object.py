@@ -102,6 +102,23 @@ def test_streamobject_order(order_dems):
 
     assert isequivalent(cs, fs)
 
+def test_streamobject_streampixels_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    ca = cfd.flow_accumulation()
+    fa = ffd.flow_accumulation()
+
+    csp = ca.z > 100
+    fsp = fa.z > 100
+
+    cs = topo.StreamObject(cfd, stream_pixels=csp)
+    fs = topo.StreamObject(ffd, stream_pixels=fsp)
+
+    assert isequivalent(cs, fs)
+
 
 def test_streamobject_sizes(tall_dem, wide_dem):
     tall_flow = topo.FlowObject(tall_dem)
