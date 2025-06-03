@@ -119,11 +119,7 @@ class StreamObject():
                     f" does not match FlowObject shape {self.shape}.")
                 raise ValueError(err)
 
-            if isinstance(stream_pixels, GridObject):
-                w = (stream_pixels.z != 0).ravel(order='F')
-
-            elif isinstance(stream_pixels, np.ndarray):
-                w = (stream_pixels != 0).ravel(order='F')
+            w = (np.asarray(stream_pixels) != 0).ravel(order='K')
 
             if threshold != 0:
                 warn = ("Since stream_pixels have been provided, the "
