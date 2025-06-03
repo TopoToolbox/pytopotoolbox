@@ -176,7 +176,7 @@ class GridObject():
         """
         dst = GridObject()
 
-        dst.z, dst.transform = reproject(
+        z, dst.transform = reproject(
             self.z,
             src_transform=self.transform,
             src_crs=self.crs,
@@ -186,9 +186,9 @@ class GridObject():
             dst_resolution=resolution,
             resampling=resampling,
         )
-        # reproject gives us a 3D array, we want the first band
-        # We also want it in column-major order
-        dst.z = np.asfortranarray(dst.z[0, :, :])
+        # reproject gives us a 3D array, we want the first band.
+        dst.z = np.zeros_like(self.z, shape=z.shape[1:3])
+        dst.z[:, :] = z[0, :, :]
 
         dst.crs = crs
 
