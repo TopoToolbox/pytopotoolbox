@@ -556,3 +556,23 @@ def test_stream_imposemin(tall_dem, wide_dem):
         # equal to the defined slope within some numerical error
         g = (minz[s.source] - minz[s.target])/s.distance()
         assert np.all(g >= minimum_slope - 1e-6)
+
+def test_imposemin_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+
+    cminslope = topo.imposemin(cs, cdem, minimum_slope=0.001)
+    cz = np.zeros_like(cdem)
+    cz[cs.node_indices] = cminslope
+
+    fminslope = topo.imposemin(fs, fdem, minimum_slope=0.001)
+    fz = np.zeros_like(fdem)
+    fz[fs.node_indices] = fminslope
+
+    assert np.array_equal(cz, fz)
