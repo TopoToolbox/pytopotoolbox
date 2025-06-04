@@ -519,8 +519,8 @@ def test_streamobject_ch_order(order_dems):
     cch = cs.streampoi("channelheads")
     fch = fs.streampoi("channelheads")
 
-    cs2 = topo.StreamObject(cfd, channelheads=cs.stream[cch])
-    fs2 = topo.StreamObject(ffd, channelheads=fs.stream[fch])
+    cs2 = topo.StreamObject(cfd, channelheads=cs.node_indices_where(cch))
+    fs2 = topo.StreamObject(ffd, channelheads=fs.node_indices_where(fch))
 
     assert isequivalent(cs2,fs2)
 
