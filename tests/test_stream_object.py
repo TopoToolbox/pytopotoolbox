@@ -507,6 +507,23 @@ def test_stream_channelheads(tall_dem, wide_dem):
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
 
+def test_streamobject_ch_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    cch = cs.streampoi("channelheads")
+    fch = fs.streampoi("channelheads")
+
+    cs2 = topo.StreamObject(cfd, channelheads=cs.stream[cch])
+    fs2 = topo.StreamObject(ffd, channelheads=fs.stream[fch])
+
+    assert isequivalent(cs2,fs2)
+
 def test_stream_downstreamto(tall_dem):
     fd = topo.FlowObject(tall_dem)
     s = topo.StreamObject(fd)
