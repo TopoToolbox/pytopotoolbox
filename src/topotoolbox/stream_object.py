@@ -52,11 +52,11 @@ class StreamObject():
         A GridObject or np.ndarray made up of zeros and ones to denote where
         the stream is located. Using this will overwrite any use of the
         threshold argument.
-    channelheads: np.ndarray, optional
-        An np.ndarray with the linear indices in column-major ('F')
-        order indicating the locations of channel heads. All streams
-        downstream of the indicated channel heads will be returned in
-        the StreamObject.
+    channelheads: (rows, cols), optional
+        A tuple of two array-like objects containing the row and
+        column indices of the channel heads. All streams downstream of
+        the indicated channel heads will be returned in the
+        StreamObject.
 
     Raises
     ------
@@ -73,6 +73,7 @@ class StreamObject():
     >>> plt.subplots()
     >>> dem.plot(cmap="terrain")
     >>> s.plot(color='r')
+
         """
         if not isinstance(flow, FlowObject):
             err = f"{flow} is not a topotoolbox.FlowObject."
@@ -126,12 +127,12 @@ class StreamObject():
                         "input for threshold will be ignored.")
                 warnings.warn(warn)
         elif channelheads is not None:
-            ch = np.zeros(flow.shape, dtype=np.uint32, order='F')
-            ch[np.unravel_index(channelheads, flow.shape, order='F')] = 1
+            ch = np.zeros(flow.shape, dtype=np.uint32, order=flow.order)
+            ch[channelheads] = 1
             edges = np.ones(flow.source.size, dtype=np.uint32)
             _stream.traverse_down_u32_or_and(
                 ch, edges, flow.source, flow.target)
-            w = (ch > 0).ravel(order='F')
+            w = (ch > 0).ravel(order='K')
 
         # Create the appropriate threshold matrix based on the threshold input.
         else:
