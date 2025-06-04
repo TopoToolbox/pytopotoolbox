@@ -8,6 +8,7 @@ import numpy.typing as npt
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from scipy.ndimage import (
     convolve,
@@ -1162,6 +1163,7 @@ class GridObject():
                 cmap='terrain', norm=None,
                 blend_mode='soft',
                 extent=None,
+                colorbar = False,
                 **kwargs):
         """Plot a shaded relief map of the GridObject
 
@@ -1269,6 +1271,11 @@ class GridObject():
 
         if extent is None:
             extent = self.extent
+
+        if colorbar:
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cax)
 
         return ax.imshow(np.clip(rgb, 0, 1), extent=extent, **kwargs)
 
