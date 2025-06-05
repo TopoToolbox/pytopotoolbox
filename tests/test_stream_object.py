@@ -486,7 +486,7 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     channel_heads = s.streampoi("channelheads")
 
-    s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
+    s2 = topo.StreamObject(fd, channelheads=s.node_indices_where(channel_heads))
 
     assert topo.validate_alignment(fd, s2)
 
@@ -500,12 +500,29 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     channel_heads = s.streampoi("channelheads")
 
-    s2 = topo.StreamObject(fd, channelheads=s.stream[channel_heads])
+    s2 = topo.StreamObject(fd, channelheads=s.node_indices_where(channel_heads))
 
     assert topo.validate_alignment(fd, s2)
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
+def test_streamobject_ch_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    cch = cs.streampoi("channelheads")
+    fch = fs.streampoi("channelheads")
+
+    cs2 = topo.StreamObject(cfd, channelheads=cs.node_indices_where(cch))
+    fs2 = topo.StreamObject(ffd, channelheads=fs.node_indices_where(fch))
+
+    assert isequivalent(cs2,fs2)
 
 def test_stream_downstreamto(tall_dem):
     fd = topo.FlowObject(tall_dem)
@@ -513,7 +530,7 @@ def test_stream_downstreamto(tall_dem):
 
     ch = s.streampoi("channelheads")
 
-    sc = topo.StreamObject(fd,channelheads=s.stream[ch])
+    sc = topo.StreamObject(fd,channelheads=s.node_indices_where(ch))
     sd = s.downstreamto(ch)
 
     # These two stream networks should be equivalent

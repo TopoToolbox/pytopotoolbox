@@ -168,7 +168,7 @@ def test_flowpathextract(wide_dem):
 
     for c in s.stream[ch]:
 
-        s2 = topo.StreamObject(fd, channelheads=[c])
+        s2 = topo.StreamObject(fd, channelheads=fd.unravel_index(c))
 
         assert topo.validate_alignment(wide_dem, s2)
 
