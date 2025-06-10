@@ -649,3 +649,10 @@ def test_imposemin_order(order_dems):
     fz[fs.node_indices] = fminslope
 
     assert np.array_equal(cz, fz)
+
+def test_gradient(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    g = s.gradient(wide_dem, impose = True)
+
+    assert np.all(g >= 0)
