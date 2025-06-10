@@ -14,6 +14,7 @@ import geopandas as gpd
 from .flow_object import FlowObject
 from .grid_object import GridObject
 from .utils import validate_alignment
+from .stream_functions import imposemin
 
 # pylint: disable=no-name-in-module
 from . import _flow  # type: ignore
@@ -977,6 +978,36 @@ class StreamObject():
         _stream.traverse_down_u32_or_and(nal, edges, self.source, self.target)
 
         return self.subgraph(nal)
+
+    def gradient(self, dem, impose = False) -> 'StreamObject':
+        """Calculates the stream slope for each node in the stream
+        network S based on the associated digital elevation model DEM.
+
+        Parameters
+        ----------
+        nodes: GridObject or np.ndarray
+            A logical node attribute list or grid that is True for the desired nodes.
+
+        Returns
+        -------
+        s
+            stream gradient as node-attribute list
+        """
+
+        # get node attribute list with elevation values
+        z = self.ezgetnal(dem)
+
+        if impose:
+            z = imposemin(self,z)
+
+        # inter-node distance
+        d = self.distance()
+
+        # forward case
+        s = np.zeros(self.stream.size)
+        s[self.source] = (z[self.source]-z[self.target])/d
+
+        return s
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
