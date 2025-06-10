@@ -988,7 +988,6 @@ class StreamObject():
         ----------
         dem: GridObject or np.ndarray
             A node attribute list or grid that provides the elevation that we take the gradient of.
-
         impose: bool
             Minima imposition to avoid negative slopes (see imposemin)
 
@@ -1012,6 +1011,44 @@ class StreamObject():
         s[self.source] = (z[self.source]-z[self.target])/d
 
         return s
+
+    def ksn(self, dem, a, impose = False, theta = 0.45) -> 'np.ndarray':
+        """Returns the normalized steepness index using a default concavity
+        index of 0.45.
+
+        Parameters
+        ----------
+        dem: GridObject or np.ndarray
+            Digital elevation model
+        a: GridObject
+            Flow accumulation as returned by flowacc (GridObject)
+        impose: bool
+            Minima imposition to avoid negative slopes (see imposemin
+        theta: float
+            Concavity (default 0.45)
+
+        Returns
+        -------
+        k
+            Normalized steepness index
+        """
+        z = self.ezgetnal(dem)
+        a = self.ezgetnal(a)
+
+        # minima imposition to avoid negative gradients
+        if impose:
+            z = imposemin(self,z)
+
+        # calculate gradient
+        g = self.gradient(z)
+
+        # upslope area
+        a = a*self.cellsize**2
+
+        # calculate k
+        k = g/(a**(-theta))
+
+        return k
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------

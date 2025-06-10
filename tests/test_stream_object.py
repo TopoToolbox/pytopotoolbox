@@ -656,3 +656,11 @@ def test_gradient(wide_dem):
     g = s.gradient(wide_dem, impose = True)
 
     assert np.all(g >= 0)
+
+def test_ksn(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    A = fd.flow_accumulation()
+    s = topo.StreamObject(fd)
+    theta = 0.45
+    g = s.gradient(wide_dem, impose = True)
+    k = s.ksn(wide_dem, A, theta)
