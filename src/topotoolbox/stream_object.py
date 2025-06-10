@@ -985,8 +985,11 @@ class StreamObject():
 
         Parameters
         ----------
-        nodes: GridObject or np.ndarray
-            A logical node attribute list or grid that is True for the desired nodes.
+        dem: GridObject or np.ndarray
+            A node attribute list or grid that provides the elevation that we take the gradient of.
+
+        impose: bool
+            Minima imposition to avoid negative slopes (see imposemin)
 
         Returns
         -------
