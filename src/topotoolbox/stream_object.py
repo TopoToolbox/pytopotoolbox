@@ -979,7 +979,7 @@ class StreamObject():
 
         return self.subgraph(nal)
 
-    def gradient(self, dem, impose = False) -> 'StreamObject':
+    def gradient(self, dem, impose = False) -> 'np.ndarray':
         """Calculates the stream slope for each node in the stream
         network S based on the associated digital elevation model DEM.
 
