@@ -278,3 +278,25 @@ def test_imposemin_order(order_dems):
     fminslope = topo.imposemin(ffd, fdem, minimum_slope=0.001)
 
     assert np.array_equal(cminslope, fminslope)
+
+def test_downstream_distance(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cd = cfd.downstream_distance()
+    fd = ffd.downstream_distance()
+
+    assert np.array_equal(cd, fd)
+
+def test_upstream_distance(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cd = cfd.upstream_distance()
+    fd = ffd.upstream_distance()
+
+    assert np.array_equal(cd, fd)

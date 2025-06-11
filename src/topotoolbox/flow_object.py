@@ -383,6 +383,40 @@ class FlowObject():
             np.sqrt(np.float32(2.0)))
         return dist
 
+    def downstream_distance(self) -> GridObject:
+        """Calculates the horizontal distance from outlets and ridges
+        along the flow network in the downstream direction.
+
+        Returns
+        -------
+        down_d: GridObject
+            A new GridObject containing the distance grid
+        """
+        # Edge attribute list
+        dist = self.distance()
+
+        down_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
+        _stream.traverse_down_f32_max_add(down_d, dist, self.source, self.target)
+
+        return down_d
+
+    def upstream_distance(self) -> GridObject:
+        """Calculates the horizontal distance from outlets and ridges
+        along the flow network in the upstream direction.
+
+        Returns
+        -------
+        up_d: GridObject
+            A new GridObject containing the distance grid
+        """
+        # Edge attribute list
+        dist = self.distance()
+
+        up_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
+        _stream.traverse_down_f32_max_add(up_d, dist, self.source, self.target)
+
+        return up_d
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
