@@ -398,7 +398,18 @@ class FlowObject():
         down_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
         _stream.traverse_down_f32_max_add(down_d, dist, self.source, self.target)
 
-        return down_d
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
+
+        result.z = down_d
+        result.cellsize = self.cellsize
+
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.crs = self.crs
+
+        return result
 
     def upstream_distance(self) -> GridObject:
         """Calculates the horizontal distance from outlets and ridges
@@ -415,7 +426,18 @@ class FlowObject():
         up_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
         _stream.traverse_down_f32_max_add(up_d, dist, self.source, self.target)
 
-        return up_d
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
+
+        result.z = up_d
+        result.cellsize = self.cellsize
+
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.crs = self.crs
+
+        return result
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
