@@ -300,3 +300,33 @@ def test_upstream_distance(order_dems):
     fd = ffd.upstream_distance()
 
     assert np.array_equal(cd, fd)
+
+def test_dependence_map(order_dems):
+    cdem, fdem = order_dems
+    l_c = cdem.duplicate_with_new_data(np.zeros(cdem.shape, dtype = bool, order = 'C'))
+    l_f = fdem.duplicate_with_new_data(np.zeros(fdem.shape, dtype = bool, order = 'F'))
+    l_c.z[50:100,50:100] = True
+    l_f.z[50:100,50:100] = True
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cd = cfd.dependencemap(l_c)
+    fd = ffd.dependencemap(l_f)
+
+    assert np.array_equal(cd, fd)
+
+def test_influence_map(order_dems):
+    cdem, fdem = order_dems
+    l_c = cdem.duplicate_with_new_data(np.zeros(cdem.shape, dtype = bool, order = 'C'))
+    l_f = fdem.duplicate_with_new_data(np.zeros(fdem.shape, dtype = bool, order = 'F'))
+    l_c.z[50:100,50:100] = True
+    l_f.z[50:100,50:100] = True
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cd = cfd.influencemap(l_c)
+    fd = ffd.influencemap(l_f)
+
+    assert np.array_equal(cd, fd)
