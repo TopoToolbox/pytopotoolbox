@@ -424,7 +424,7 @@ class FlowObject():
         dist = self.distance()
 
         up_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
-        _stream.traverse_down_f32_max_add(up_d, dist, self.source, self.target)
+        _stream.traverse_up_f32_max_add(up_d, dist, self.source, self.target)
 
         result = GridObject()
         result.path = self.path
