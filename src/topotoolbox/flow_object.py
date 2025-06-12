@@ -461,7 +461,7 @@ class FlowObject():
         i = np.ones(self.source.shape, dtype = np.uint32, order=self.order) # turns on all edges
         _stream.traverse_up_u32_or_and(seed, i, self.source, self.target)
 
-        return seed
+        return l.duplicate_with_new_data(np.asarray(seed))
 
     def influencemap(self, l) -> GridObject:
         """Delineate downslope area for specific locations in a DEM.
@@ -485,7 +485,7 @@ class FlowObject():
         i = np.ones(self.source.shape, dtype = np.uint32, order=self.order) # turns on all edges
         _stream.traverse_down_u32_or_and(seed, i, self.source, self.target)
 
-        return seed
+        return l.duplicate_with_new_data(np.asarray(seed))
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
