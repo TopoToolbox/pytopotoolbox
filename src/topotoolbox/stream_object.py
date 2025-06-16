@@ -146,20 +146,14 @@ class StreamObject():
                 else:
                     threshold = np.full(
                         self.shape, threshold, dtype=np.float32)
-            elif isinstance(threshold, np.ndarray):
-                if threshold.shape != self.shape:
-                    err = (f"Threshold array shape {threshold.shape} does not "
-                           f"match FlowObject shape: {self.shape}.")
-                    raise ValueError(err) from None
-                threshold = threshold.astype(np.float32, order='F')
             else:
-                if threshold.shape != self.shape:
+                if not validate_alignment(self, threshold):
                     err = (
                         f"Threshold GridObject shape {threshold.shape} does "
                         f"not match FlowObject shape: {self.shape}.")
                     raise ValueError(err) from None
 
-                threshold = threshold.z.astype(np.float32, order='F')
+                threshold = np.asarray(threshold, dtype=np.float32, order='F')
 
             # Divide the threshold by how many m^2 or km^2 are in a cell to
             # convert the user input to pixels for further computation.
