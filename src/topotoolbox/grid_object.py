@@ -389,7 +389,7 @@ class GridObject():
             err = "Threshold must be a float, int, GridObject, or np.ndarray."
             raise TypeError(err) from None
 
-        if not dem.shape == threshold_slopes.shape:
+        if not validate_alignment(dem, threshold_slopes):
             err = "Threshold array must have the same shape as the DEM."
             raise ValueError(err) from None
 
