@@ -27,6 +27,7 @@ from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
 from . import _grid, _morphology  # type: ignore
+from .interface import validate_alignment
 
 __all__ = ['GridObject']
 
@@ -246,7 +247,7 @@ class GridObject():
             bc[nans] = 1  # Set NaNs to 1
             restore_nans = True
 
-        if bc.shape != self.shape:
+        if not validate_alignment(self, bc):
             err = ("The shape of the provided boundary conditions does not "
                    f"match the shape of the DEM. {self.shape}")
             raise ValueError(err)from None
