@@ -254,17 +254,7 @@ class FlowObject():
         """
         acc = np.zeros(self.shape, dtype=np.float32, order=self.order)
 
-        # This is overly complicated
-        if weights == 1.0:
-            weights = np.ones(self.shape, dtype=np.float32, order=self.order)
-        elif isinstance(weights, np.ndarray):
-            if weights.shape != acc.shape:
-                err = ("The shape of the provided weights ndarray does not "
-                       f"match the shape of the FlowObject. {self.shape}")
-                raise ValueError(err)from None
-        else:
-            weights = np.full(self.shape, weights,
-                              dtype=np.float32, order=self.order)
+        weights = self.ezgetnal(weights, dtype=np.float32)
 
         fraction = np.ones_like(self.source, dtype=np.float32)
 
