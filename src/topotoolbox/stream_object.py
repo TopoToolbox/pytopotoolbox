@@ -115,7 +115,7 @@ class StreamObject():
         # on stream_pixels without the need for a threshold
         w = np.zeros(flow.shape, dtype='bool', order='F').ravel(order='K')
         if stream_pixels is not None:
-            if stream_pixels.shape != self.shape:
+            if not validate_alignment(self, stream_pixels):
                 err = (
                     f"stream_pixels shape {stream_pixels.shape}"
                     f" does not match FlowObject shape {self.shape}.")
