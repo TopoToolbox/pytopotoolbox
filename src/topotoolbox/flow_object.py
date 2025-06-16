@@ -254,12 +254,12 @@ class FlowObject():
         """
         acc = np.zeros(self.shape, dtype=np.float32, order=self.order)
 
-        weights = self.ezgetnal(weights, dtype=np.float32)
+        w = self.ezgetnal(weights, dtype=np.float32)
 
         fraction = np.ones_like(self.source, dtype=np.float32)
 
         _flow.flow_accumulation(
-            acc, self.source, self.target, fraction, weights, self.shape)
+            acc, self.source, self.target, fraction, w, self.shape)
 
         result = GridObject()
         result.path = self.path
