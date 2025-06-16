@@ -9,7 +9,7 @@ from . import _grid  # type: ignore
 from . import _flow  # type: ignore
 from . import _stream  # type: ignore
 from .grid_object import GridObject
-from .utils import validate_alignment
+from .interface import validate_alignment
 
 __all__ = ['FlowObject']
 

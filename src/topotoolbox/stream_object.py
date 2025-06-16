@@ -13,7 +13,7 @@ import geopandas as gpd
 
 from .flow_object import FlowObject
 from .grid_object import GridObject
-from .utils import validate_alignment
+from .interface import validate_alignment
 from .stream_functions import imposemin
 
 # pylint: disable=no-name-in-module
