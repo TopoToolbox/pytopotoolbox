@@ -1241,7 +1241,7 @@ class GridObject():
         if elev is None:
             shade = self
         elif isinstance(elev, GridObject):
-            if not elev.shape == self.shape:
+            if not validate_alignment(self, elev):
                 err = "elev GridObject must have the same shape as the GridObject."
                 raise ValueError(err) from None
             shade = elev
