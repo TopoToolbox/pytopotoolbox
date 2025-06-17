@@ -664,3 +664,22 @@ def test_ksn(wide_dem):
     theta = 0.45
     g = s.gradient(wide_dem, impose = True)
     k = s.ksn(wide_dem, A, theta)
+
+def test_streamorder(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    cds = cs.streamorder()
+    fds = fs.streamorder()
+
+    cdg = np.zeros(cfd.shape)
+    fdg = np.zeros(ffd.shape)
+
+    cdg[cs.node_indices] = cds
+    fdg[fs.node_indices] = fds
+
+    assert np.array_equal(cdg, fdg)

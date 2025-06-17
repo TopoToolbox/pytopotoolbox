@@ -1050,6 +1050,35 @@ class StreamObject():
 
         return k
 
+    def streamorder(self, method = 'strahler') -> np.ndarray:
+        """Calculates stream order from the StreamObject using the Strahler
+        or Shreve method
+
+        Parameters
+        ----------
+        s: StreamObject
+        method: string
+            Strahler (default) or Shreve method
+
+        Returns
+        -------
+        s_order
+            Stream order for each node in StreamObject
+        """
+
+        s_order = self.streampoi('channelheads')
+        s_order = s_order.astype(dtype = np.float32)
+        w = np.ones(self.source.shape, dtype = np.float32)
+
+        if method.lower() == 'strahler':
+            _stream.traverse_down_f32_strahler(s_order, w, self.source, self.target)
+        elif method.lower() == 'shreve':
+            _stream.traverse_down_f32_add_mul(s_order, w, self.source, self.target)
+        else:
+            raise ValueError("Invalid type. Choose 'strahler' or 'shreve'.")
+
+        return s_order
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
