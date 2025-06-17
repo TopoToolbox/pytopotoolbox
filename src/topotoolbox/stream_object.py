@@ -13,7 +13,7 @@ import geopandas as gpd
 
 from .flow_object import FlowObject
 from .grid_object import GridObject
-from .utils import validate_alignment
+from .interface import validate_alignment
 from .stream_functions import imposemin
 
 # pylint: disable=no-name-in-module
@@ -115,7 +115,7 @@ class StreamObject():
         # on stream_pixels without the need for a threshold
         w = np.zeros(flow.shape, dtype='bool', order='F').ravel(order='K')
         if stream_pixels is not None:
-            if stream_pixels.shape != self.shape:
+            if not validate_alignment(self, stream_pixels):
                 err = (
                     f"stream_pixels shape {stream_pixels.shape}"
                     f" does not match FlowObject shape {self.shape}.")
@@ -146,20 +146,14 @@ class StreamObject():
                 else:
                     threshold = np.full(
                         self.shape, threshold, dtype=np.float32)
-            elif isinstance(threshold, np.ndarray):
-                if threshold.shape != self.shape:
-                    err = (f"Threshold array shape {threshold.shape} does not "
-                           f"match FlowObject shape: {self.shape}.")
-                    raise ValueError(err) from None
-                threshold = threshold.astype(np.float32, order='F')
             else:
-                if threshold.shape != self.shape:
+                if not validate_alignment(self, threshold):
                     err = (
                         f"Threshold GridObject shape {threshold.shape} does "
                         f"not match FlowObject shape: {self.shape}.")
                     raise ValueError(err) from None
 
-                threshold = threshold.z.astype(np.float32, order='F')
+                threshold = np.asarray(threshold, dtype=np.float32, order='F')
 
             # Divide the threshold by how many m^2 or km^2 are in a cell to
             # convert the user input to pixels for further computation.

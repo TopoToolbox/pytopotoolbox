@@ -27,6 +27,7 @@ from rasterio.enums import Resampling
 
 # pylint: disable=no-name-in-module
 from . import _grid, _morphology  # type: ignore
+from .interface import validate_alignment
 
 __all__ = ['GridObject']
 
@@ -246,7 +247,7 @@ class GridObject():
             bc[nans] = 1  # Set NaNs to 1
             restore_nans = True
 
-        if bc.shape != self.shape:
+        if not validate_alignment(self, bc):
             err = ("The shape of the provided boundary conditions does not "
                    f"match the shape of the DEM. {self.shape}")
             raise ValueError(err)from None
@@ -388,7 +389,7 @@ class GridObject():
             err = "Threshold must be a float, int, GridObject, or np.ndarray."
             raise TypeError(err) from None
 
-        if not dem.shape == threshold_slopes.shape:
+        if not validate_alignment(dem, threshold_slopes):
             err = "Threshold array must have the same shape as the DEM."
             raise ValueError(err) from None
 
@@ -1240,7 +1241,7 @@ class GridObject():
         if elev is None:
             shade = self
         elif isinstance(elev, GridObject):
-            if not elev.shape == self.shape:
+            if not validate_alignment(self, elev):
                 err = "elev GridObject must have the same shape as the GridObject."
                 raise ValueError(err) from None
             shade = elev
