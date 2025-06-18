@@ -1394,8 +1394,7 @@ class GridObject():
         return result
 
     def resize(self, left: float | int, right: float | int,
-               top: float | int, bottom: float | int,
-               highlight_selected: bool=False) -> 'GridObject':
+               top: float | int, bottom: float | int) -> 'GridObject':
         """Resize the Gridobject by cropping to specified boundaries.
 
         Supports three input modes (percentage, coordinate, pixel) to define
@@ -1404,8 +1403,7 @@ class GridObject():
         the crop region is valid. If coordinate and pixel modes include the
         same values, the coordinate mode takes precedence.
         The resulting grid will have a new transform and bounds based on the
-        specified boundaries. If `highlight_selected` is True, the original
-        grid will be plotted with the selected region highlighted.
+        specified boundaries.
 
         Parameters
         ----------
@@ -1423,8 +1421,6 @@ class GridObject():
             - Pixel: Row index (0 to grid height-1)
         bottom : float or int
             Bottom boundary (same modes as `top`).
-        highlight_selected : bool, optional, default=False
-            If True, plots the original grid with selected region highlighted.
 
         Returns
         -------
@@ -1439,12 +1435,14 @@ class GridObject():
         Example
         -------
         >>> dem = topotoolbox.load_dem('tibet')
-        >>> new_dem = dem.resize(0.6, 0.8, 0.3, 0.5, highlight_selected=True)
-        >>> new_dem = dem.resize(240000, 300000, 2600000, 2500000,
-                                 highlight_selected=True)
-        >>> new_dem = dem.resize(1000, 1500, 600, 1100,
-                                 highlight_selected=True)
-        >>> new_dem.plot()
+        >>> new_dem = dem.resize(0.6, 0.8, 0.3, 0.5)
+        >>> # Visulaizing the selcted area:
+        >>> dem.plot()
+        >>> b = new_dem.bounds
+        >>> plt.plot([b.left, b.right, b.right, b.left, b.left],
+                [b.top, b.top, b.bottom, b.bottom, b.top],
+                'r-', lw=2)
+        >>> plt.show()
         """
         height, width = self.shape[0], self.shape[1]
         left_bound, right_bound = self.extent[0], self.extent[1]
@@ -1493,35 +1491,28 @@ class GridObject():
         result = cp.copy(self)
 
         # Calculate new transform
-        new_x_origin = self.transform.c + x_start * self.transform.a
-        new_y_origin = self.transform.f + y_start * self.transform.e
+        new_x_origin, new_y_origin = self.transform * (x_start, y_start)
+        #new_transform = self.transform * (x_start, y_start)
         new_transform = Affine(
             self.transform.a, self.transform.b, new_x_origin,
             self.transform.d, self.transform.e, new_y_origin)
         result.transform = new_transform
+
         # Calculate new bounds
-        new_left = new_x_origin
-        new_top = new_y_origin
-        new_right = new_x_origin + (x_end - x_start) * self.transform.a
-        new_bottom = new_y_origin + (y_end - y_start) * self.transform.e
+        xs = np.array([x_start, x_end, x_end, x_start])
+        ys = np.array([y_start, y_start, y_end, y_end])
+
+        ws, zs = self.transform * (xs, ys)
+        new_left = min(ws)
+        new_right = max(ws)
+        new_bottom = min(zs)
+        new_top = max(zs)
+
         new_bounds = BoundingBox(new_left, new_bottom, new_right, new_top)
         result.bounds = new_bounds
+
         # Crop DEM
         result.z = result.z[y_start:y_end, x_start:x_end]
-
-        if highlight_selected:
-            _, ax = plt.subplots()
-            # adjust selection rectangle to extent
-            x_start = left_bound + x_start * self.cellsize
-            x_end = left_bound + x_end * self.cellsize
-            y_start = top_bound - y_start * self.cellsize
-            y_end = top_bound - y_end * self.cellsize
-            # plot rectangle
-            x = [x_start, x_end, x_end, x_start, x_start]
-            y = [y_start, y_start, y_end, y_end, y_start]
-            self.plot()
-            ax.plot(x, y, 'r-', linewidth=2)
-
         return result
 
     # 'Magic' functions:
