@@ -12,8 +12,8 @@ from shapely.geometry import LineString
 import geopandas as gpd
 
 import scipy.sparse as sp
-from cvxopt.solvers import qp
-from cvxopt import matrix, spmatrix, sparse
+from kvxopt.solvers import qp
+from kvxopt import matrix, spmatrix, sparse
 
 from .flow_object import FlowObject
 from .grid_object import GridObject

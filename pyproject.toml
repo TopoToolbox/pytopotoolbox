@@ -26,7 +26,8 @@ dependencies = [
     "rasterio",
     "geopandas",
     "shapely",
-    "cvxopt"
+    "cvxopt",
+    "kvxopt"
 ]
 requires-python = ">=3.10"
 keywords = ["TopoToolbox"]
