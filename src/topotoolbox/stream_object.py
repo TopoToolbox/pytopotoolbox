@@ -11,6 +11,10 @@ from scipy.sparse import csr_matrix
 from shapely.geometry import LineString
 import geopandas as gpd
 
+import scipy.sparse as sp
+from cvxopt.solvers import qp
+from cvxopt import matrix, spmatrix, sparse
+
 from .flow_object import FlowObject
 from .grid_object import GridObject
 from .utils import validate_alignment
@@ -911,7 +915,6 @@ class StreamObject():
 
         return self.subgraph(nal)
 
-
     def upstreamto(self, nodes) -> 'StreamObject':
         """Extract the portion of the stream network upstream of the given nodes
 
@@ -980,7 +983,7 @@ class StreamObject():
 
         return self.subgraph(nal)
 
-    def gradient(self, dem, impose = False) -> 'np.ndarray':
+    def gradient(self, dem, impose=False) -> 'np.ndarray':
         """Calculates the stream slope for each node in the stream
         network S based on the associated digital elevation model DEM.
 
@@ -1001,7 +1004,7 @@ class StreamObject():
         z = self.ezgetnal(dem)
 
         if impose:
-            z = imposemin(self,z)
+            z = imposemin(self, z)
 
         # inter-node distance
         d = self.distance()
@@ -1012,7 +1015,7 @@ class StreamObject():
 
         return s
 
-    def ksn(self, dem, a, impose = False, theta = 0.45) -> 'np.ndarray':
+    def ksn(self, dem, a, impose=False, theta=0.45) -> 'np.ndarray':
         """Returns the normalized steepness index using a default concavity
         index of 0.45.
 
@@ -1037,7 +1040,7 @@ class StreamObject():
 
         # minima imposition to avoid negative gradients
         if impose:
-            z = imposemin(self,z)
+            z = imposemin(self, z)
 
         # calculate gradient
         g = self.gradient(z)
@@ -1050,7 +1053,7 @@ class StreamObject():
 
         return k
 
-    def streamorder(self, method = 'strahler') -> np.ndarray:
+    def streamorder(self, method='strahler') -> np.ndarray:
         """Calculates stream order from the StreamObject using the Strahler
         or Shreve method
 
@@ -1067,17 +1070,171 @@ class StreamObject():
         """
 
         s_order = self.streampoi('channelheads')
-        s_order = s_order.astype(dtype = np.float32)
-        w = np.ones(self.source.shape, dtype = np.float32)
+        s_order = s_order.astype(dtype=np.float32)
+        w = np.ones(self.source.shape, dtype=np.float32)
 
         if method.lower() == 'strahler':
-            _stream.traverse_down_f32_strahler(s_order, w, self.source, self.target)
+            _stream.traverse_down_f32_strahler(
+                s_order, w, self.source, self.target)
         elif method.lower() == 'shreve':
-            _stream.traverse_down_f32_add_mul(s_order, w, self.source, self.target)
+            _stream.traverse_down_f32_add_mul(
+                s_order, w, self.source, self.target)
         else:
             raise ValueError("Invalid type. Choose 'strahler' or 'shreve'.")
 
         return s_order
+
+    def crslin(self, dem, k, mingradient=0.0, attachheads=False, attachtomin=False):
+        """ Elevation values along stream networks are frequently affected by
+        large scatter, often as a result of data artifacts or errors. This
+        function returns a node attribute list of elevations calculated by
+        regularized smoothing. This function requires the Optimization
+        Toolbox.
+
+        The algorithm written in this function follows Appendix A2 in the Schwanghart
+        and Scherler 2017 paper.
+
+        Parameters:
+        ----------
+        s: StreamObject
+        dem: DEM
+        k: double
+            positive scalar that dictates the degree of stiffness
+        mingradient: double
+            Minimum downward gradient.
+            Choose carefully, because length profile may dip to steeply.
+            Set this parameter to nan if you do not wish to have a monotonous
+            dowstream elevation decrease.
+        attachtoming: boolean
+            Smoothed elevations will not exceed local minima along the
+            downstream path. (only applicable if 'mingradient' is not nan)
+        attachheads: boolean
+            If true, elevations of channelheads are fixed. (only applicable
+            if 'mingradient' is not nan). Note that for large K, setting
+            attachheads to true can result in excessive smoothing and
+            underestimation of elevation values directly downstream to channelheads.
+
+        Returns
+        ----------
+        zs:
+            node attribute list with smoothed elevation values
+        """
+
+        # get node attribute list with elevation values
+        z = self.ezgetnal(dem, dtype='double')  # elevation values of the dem
+        nr = z.size
+
+        if any(np.isnan(z)):
+            raise ValueError('DEM or z may not contain any NaNs')
+
+        # CRS linear algorithm
+
+        # Identity Matrix
+        identity_matrix = spmatrix(
+            1.0, list(range(nr)), list(range(nr)), (nr, nr))
+
+        # Compute second derivative matrix (C in equation A5)
+        # find upstream and downstream nodes
+        ix = np.array(self.source)  # upstream
+        ixc = np.array(self.target)  # downstraeam
+
+        # boolean array to store nodes that are both sources and targets
+        i = np.isin(ixc, ix)
+        # creates a dictionary to store ix
+        dic = dict(zip(ix, np.arange(self.source.shape[0])))
+        # values as key and their indicies as values
+        keys = np.array([dic[j] for j in ixc[i]])
+
+        # ??
+        # [i-1 (downstream), i, i+1 (upstream)]
+        colix = np.array([ixc[keys], ixc[i], ix[i]]).T
+        nrrows = colix.shape[0]
+        rowix = np.tile(np.arange(nrrows).reshape(-1, 1), 3)
+
+        # compute distance values between nodes
+        # had to use downstream.distance(), so indices and source/target
+        d = self.downstream_distance()
+        # are flipped in the following code
+        xj = d[colix[:, 0]]  # downstream node of i
+        xi = d[colix[:, 1]]
+        xk = d[colix[:, 2]]  # upstream node of i
+
+        # Dense C matrix (equation A4). Must be converted to cvxopt spare matrix for qp
+        values = np.array(
+            [2/((xi-xj)*(xk-xj)), -2/((xk-xi)*(xi-xj)), 2/((xk-xi)*(xk-xj))])
+
+        # Sparse cvxopt second derivative matrix (C)
+        c = spmatrix(values.T.flatten().tolist(), rowix.flatten(
+        ).tolist(), colix.flatten().tolist(), (nrrows, nr))
+
+        # Compute s parameter (equation A7)
+        delta_x = self.cellsize  # spatial resolution
+        n = nr  # number of data points
+        p = nrrows  # num. of second derivative equations = num. of nodes where second derivative
+        # can be computed (number of i nodes --> with both upstream and dowsntream neighbours)
+        s_parameter = ((delta_x)**2)*k*math.sqrt(n/p)
+
+        # Compute matrix A and vector b (equation A9)
+        a_2 = s_parameter*c  # C*s
+        a_matrix = sparse([identity_matrix, a_2])
+        b = matrix([matrix(z.reshape(-1, 1)), matrix(0.0, (nrrows, 1))])
+
+        # Compute function parameters for quadratic programming (equation A11)
+        f = -2*(a_matrix.T * b)
+        h_matrix = 2*(a_matrix.T * a_matrix)
+
+        # Constraints
+        # Equivalent constraint. (second constr. in equation A11)
+        if attachheads:
+            channelheads = self.streampoi('channelheads')
+            nc = np.count_nonzero(channelheads)  # number of channelheads
+            # indices of channelheads positions in array
+            ids = np.where(channelheads)
+
+            # matrix with the channelheads on main diagonal
+            i_eq = sp.coo_matrix((channelheads[channelheads].astype(float),
+                                  (np.arange(nc), ids[0])), shape=(nc, nr))
+            i_eq = spmatrix(i_eq.data.tolist(), i_eq.row.tolist(
+            ), i_eq.col.tolist(), (nc, nr))  # convert to cvxopt matrix
+
+            z_eq = z[channelheads]  # store elevation values at channelheads
+            z_eq = matrix(z_eq)  # convert into cvxopt matrix
+
+        else:
+            i_eq = spmatrix()
+            z_eq = matrix()
+
+        # Inequality constraints
+        # Gradient constraint
+        dd = np.array(1/(d[self.target]-d[self.source]))  # cellsize
+
+        gradient = (sp.coo_matrix((dd, (self.source, self.source)), shape=(
+            nr, nr)) - sp.coo_matrix((dd, (self.source, self.target)), shape=(nr, nr))).tocoo()
+        gradient = spmatrix(gradient.data.tolist(), gradient.row.tolist(
+        ), gradient.col.tolist(), (nr, nr))  # convert to cvxopt matrix
+
+        g_min = np.zeros((nr, 1))  # minimum gradient
+        g_min[self.source] = mingradient
+
+        # Set up matrix G and vector g_min in equation A11. Here they are defined as M and h
+        # M and h contain all inequality constraints, including upperbound (attachtomin).
+        # Each constraint is stacked appropietly in M and h
+
+        if attachtomin:
+            # matrix with inequality constraints [gradient, upper bound]
+            m_matrix = sparse([-gradient, identity_matrix])
+            h = np.vstack([-g_min, z.reshape(-1, 1)])
+        else:
+            m_matrix = sparse([-gradient])
+            h = np.vstack([-g_min])
+
+        h = matrix(h)  # convert to cvxopt
+
+        # Solve quadratic programming with the constraints
+        zs = qp(h_matrix, f, m_matrix, h, i_eq, z_eq,
+                options={'show_progress': False})
+
+        return zs
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
