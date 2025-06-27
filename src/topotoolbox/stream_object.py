@@ -1218,7 +1218,6 @@ class StreamObject():
 
         # Set up matrix G and vector g_min in equation A11. Here they are defined as M and h
         # M and h contain all inequality constraints, including upperbound (attachtomin).
-        # Each constraint is stacked appropietly in M and h
 
         if attachtomin:
             # matrix with inequality constraints [gradient, upper bound]
