@@ -1214,7 +1214,11 @@ class StreamObject():
         ), gradient.col.tolist(), (nr, nr))  # convert to cvxopt matrix
 
         g_min = np.zeros((nr, 1))  # minimum gradient
-        g_min[self.source] = mingradient
+
+        if mingradient != 0:
+            g_min[self.source] = mingradient
+        else:
+            g_min = np.zeros((nr, 1))
 
         # Set up matrix G and vector g_min in equation A11. Here they are defined as M and h
         # M and h contain all inequality constraints, including upperbound (attachtomin).
