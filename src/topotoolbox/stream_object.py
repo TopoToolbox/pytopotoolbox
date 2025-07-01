@@ -1267,6 +1267,8 @@ class StreamObject():
             Minimum downward gradient. 
         fixedoutlet: bool
             If true, elevations of outlets are fixed. 
+        mingradient: float
+            Minimum downward gradient.
 
         Returns
         -------
