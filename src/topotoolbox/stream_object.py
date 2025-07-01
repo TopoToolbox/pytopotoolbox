@@ -1084,12 +1084,11 @@ class StreamObject():
 
         return s_order
 
-    def crslin(self, dem, k, mingradient=0.0, attachheads=False, attachtomin=False):
+    def crslin(self, dem, k = 1, mingradient=0.0, attachheads=False, attachtomin=False):
         """ Elevation values along stream networks are frequently affected by
         large scatter, often as a result of data artifacts or errors. This
         function returns a node attribute list of elevations calculated by
-        regularized smoothing. This function requires the Optimization
-        Toolbox.
+        regularized smoothing.
 
         The algorithm written in this function follows Appendix A2 in the Schwanghart
         and Scherler 2017 paper.
@@ -1097,18 +1096,19 @@ class StreamObject():
         Parameters:
         ----------
         s: StreamObject
-        dem: DEM
-        k: double
-            positive scalar that dictates the degree of stiffness
+        dem: GridObject | np.ndarray
+            DEM
+        k: float
+            positive scalar that dictates the degree of stiffness. Default is 1
         mingradient: double
             Minimum downward gradient.
             Choose carefully, because length profile may dip to steeply.
             Set this parameter to nan if you do not wish to have a monotonous
             dowstream elevation decrease.
-        attachtoming: boolean
+        attachtomin: bool
             Smoothed elevations will not exceed local minima along the
             downstream path. (only applicable if 'mingradient' is not nan)
-        attachheads: boolean
+        attachheads: bool
             If true, elevations of channelheads are fixed. (only applicable
             if 'mingradient' is not nan). Note that for large K, setting
             attachheads to true can result in excessive smoothing and
@@ -1135,8 +1135,8 @@ class StreamObject():
 
         # Compute second derivative matrix (C in equation A5)
         # find upstream and downstream nodes
-        ix = np.array(self.source)  # upstream
-        ixc = np.array(self.target)  # downstraeam
+        ix = self.source  # upstream
+        ixc = self.target  # downstraeam
 
         # boolean array to store nodes that are both sources and targets
         i = np.isin(ixc, ix)
@@ -1201,8 +1201,8 @@ class StreamObject():
             z_eq = matrix(z_eq)  # convert into cvxopt matrix
 
         else:
-            i_eq = spmatrix()
-            z_eq = matrix()
+            i_eq = spmatrix([], [], [])
+            z_eq = matrix([])
 
         # Inequality constraints
         # Gradient constraint
@@ -1214,11 +1214,7 @@ class StreamObject():
         ), gradient.col.tolist(), (nr, nr))  # convert to cvxopt matrix
 
         g_min = np.zeros((nr, 1))  # minimum gradient
-
-        if mingradient != 0:
-            g_min[self.source] = mingradient
-        else:
-            g_min = np.zeros((nr, 1))
+        g_min[self.source] = mingradient
 
         # Set up matrix G and vector g_min in equation A11. Here they are defined as M and h
         # M and h contain all inequality constraints, including upperbound (attachtomin).
@@ -1236,6 +1232,7 @@ class StreamObject():
         # Solve quadratic programming with the constraints
         zs = qp(h_matrix, f, m_matrix, h, i_eq, z_eq,
                 options={'show_progress': False})
+        zs = np.array(zs['x']).flatten()
 
         return zs
 
