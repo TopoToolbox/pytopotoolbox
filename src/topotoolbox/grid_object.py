@@ -1401,12 +1401,14 @@ class GridObject():
         result.z = (self.z - np.nanmean(self.z)) / np.nanstd(self.z)
         return result
 
-    def resize(self, left: float | int, right: float | int,
-               top: float | int, bottom: float | int) -> 'GridObject':
-        """Resize the Gridobject by cropping to specified boundaries.
+    def crop(self, left: float | int, right: float | int,
+               top: float | int, bottom: float | int,
+               mode: str | None = None) -> 'GridObject':
+        """Crop the Gridobject by specifing new boundaries.
 
         Supports three input modes (percentage, coordinate, pixel) to define
-        the crop region. Automatically detects the mode based on input values.
+        the crop region. Thes can be chosen by using the mode. Else it
+        Automatically detects the mode based on input values.
         In case of reversed boundaries, automatically swaps them to ensure
         the crop region is valid. If coordinate and pixel modes include the
         same values, the coordinate mode takes precedence.
@@ -1429,6 +1431,10 @@ class GridObject():
             - Pixel: Row index (0 to grid height-1)
         bottom : float or int
             Bottom boundary (same modes as `top`).
+        mode : str or None, optional
+            The mode of the crop operation. Can be 'percentage', 'coordinate',
+            or 'pixel'. If not provided, the function will automatically
+            determine the mode based on the input values.
 
         Returns
         -------
@@ -1443,8 +1449,7 @@ class GridObject():
         Example
         -------
         >>> dem = topotoolbox.load_dem('tibet')
-        >>> new_dem = dem.resize(0.6, 0.8, 0.3, 0.5)
-        >>> # Visulaizing the selcted area:
+        >>> new_dem = dem.crop(0.6, 0.8, 0.3, 0.5, mode='percentage')
         >>> dem.plot()
         >>> b = new_dem.bounds
         >>> plt.plot([b.left, b.right, b.right, b.left, b.left],
@@ -1455,38 +1460,62 @@ class GridObject():
         height, width = self.shape[0], self.shape[1]
         left_bound, right_bound = self.extent[0], self.extent[1]
         top_bound, bottom_bound = self.extent[3], self.extent[2]
-        # Case 1: Percentage mode (all values between 0 and 1)
-        if all(0.0 <= float(val) <= 1.0 for val in [top, bottom, left, right]):
+
+        if mode == 'percentage':
             y_start = int(top * height)
             y_end = int(bottom * height)
             x_start = int(left * width)
             x_end = int(right * width)
-
-        # Case 2: Coordinate mode
-        elif (all(left_bound<= val <= right_bound for
-                  val in [left, right]) and
-              all(bottom_bound <= val <= top_bound for
-                  val in [top, bottom])):
+        elif mode == 'coordinate':
             y_start = int((top_bound - top) / self.cellsize)
             y_end = int((top_bound - bottom) / self.cellsize)
             x_start = int((left - left_bound) / self.cellsize)
             x_end = int((right - left_bound) / self.cellsize)
-
-        # Case 3: Pixel mode (values are in array indices)
-        elif (all(0 <= val < height for val in [top, bottom]) and
-              all(0 <= val < width for val in [left, right])):
+        elif mode == 'pixel':
             y_start, y_end = int(top), int(bottom)
             x_start, x_end = int(left), int(right)
 
+        # else automatic detection of mode
+        elif mode is None:
+            # Case 1: Percentage mode (all values between 0 and 1)
+            if all(0.0 <= float(val) <= 1.0 for val in [top, bottom, left, right]):
+                y_start = int(top * height)
+                y_end = int(bottom * height)
+                x_start = int(left * width)
+                x_end = int(right * width)
+
+            # Case 2: Coordinate mode
+            elif (all(left_bound<= val <= right_bound for
+                    val in [left, right]) and
+                all(bottom_bound <= val <= top_bound for
+                    val in [top, bottom])):
+                y_start = int((top_bound - top) / self.cellsize)
+                y_end = int((top_bound - bottom) / self.cellsize)
+                x_start = int((left - left_bound) / self.cellsize)
+                x_end = int((right - left_bound) / self.cellsize)
+
+            # Case 3: Pixel mode (values are in array indices)
+            elif (all(0 <= val < height for val in [top, bottom]) and
+                all(0 <= val < width for val in [left, right])):
+                y_start, y_end = int(top), int(bottom)
+                x_start, x_end = int(left), int(right)
+
+            else:
+                err = ("Provided Borders are not in a valid format."
+                    " Please provide values in one of the following formats:\n"
+                    "1. Percentage mode: all values between 0.0 and 1.0\n"
+                    "2. Coordinate mode: all values within the extent of the "
+                    f"GridObject: extent = {self.extent}\n"
+                    "3. Pixel mode: all values are valid indices of the "
+                    f"GridObject: 0 to {self.shape[0]} for rows and 0 to "
+                    f"{self.shape[1]} for columns.")
+                raise ValueError(err) from None
         else:
-            err = ("Provided Borders are not in a valid format."
-                   " Please provide values in one of the following formats:\n"
-                   "1. Percentage mode: all values between 0.0 and 1.0\n"
-                   "2. Coordinate mode: all values within the extent of the "
-                   f"GridObject: extent = {self.extent}\n"
-                   "3. Pixel mode: all values are valid indices of the "
-                   f"GridObject: 0 to {self.shape[0]} for rows and 0 to "
-                   f"{self.shape[1]} for columns.")
+            err = ("Invalid mode provided. Please use one of the following "
+                   "modes:\n 1. 'percentage' for relative values "
+                   "(0.0 to 1.0)\n 2. 'coordinate' for absolute coordinates "
+                   "within the grid bounds\n"
+                   "3. 'pixel' for pixel indices (0 to grid width/height-1)")
             raise ValueError(err) from None
 
         # Ensure x_start < x_end and y_start < y_end to handle switched
