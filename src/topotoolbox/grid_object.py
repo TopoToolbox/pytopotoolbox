@@ -1404,11 +1404,11 @@ class GridObject():
     def crop(self, left: float | int, right: float | int,
                top: float | int, bottom: float | int,
                mode: str | None = None) -> 'GridObject':
-        """Crop the Gridobject by specifing new boundaries.
+        """Crop the Gridobject by specifying new boundaries.
 
         Supports three input modes (percentage, coordinate, pixel) to define
-        the crop region. Methid of crop can be chosen by using the mode. Else
-        it automatically detects the mode based on input values. If mode is 
+        the crop region. Method of crop can be chosen by using the mode. Else
+        it automatically detects the mode based on input values. If mode is
         provided, it will override the automatic detection.
         In case of reversed boundaries, automatically swaps them to ensure
         the crop region is valid. If coordinate and pixel modes include the
