@@ -326,6 +326,20 @@ class StreamObject():
 
         return dds
 
+    def upstream_distance(self) -> np.ndarray:
+        """Compute the upstream distance for a node in the stream network
+
+        Returns
+        -------
+        np.ndarray, float32
+            A node attribute list with the upstream distances
+        """
+        d = self.distance()
+        dds = np.zeros_like(self.stream, dtype=np.float32)
+        _stream.traverse_up_f32_max_add(dds, d, self.source, self.target)
+
+        return dds
+
     def ezgetnal(self, k, dtype=None):
         """Retrieve a node attribute list from k
 
@@ -1145,7 +1159,6 @@ class StreamObject():
         # values as key and their indicies as values
         keys = np.array([dic[j] for j in ixc[i]])
 
-        # ??
         # [i-1 (downstream), i, i+1 (upstream)]
         colix = np.array([ixc[keys], ixc[i], ix[i]]).T
         nrrows = colix.shape[0]
@@ -1153,7 +1166,7 @@ class StreamObject():
 
         # compute distance values between nodes
         # had to use downstream.distance(), so indices and source/target
-        d = self.downstream_distance()
+        d = self.upstream_distance()
         # are flipped in the following code
         xj = d[colix[:, 0]]  # downstream node of i
         xi = d[colix[:, 1]]
@@ -1206,10 +1219,10 @@ class StreamObject():
 
         # Inequality constraints
         # Gradient constraint
-        dd = np.array(1/(d[self.target]-d[self.source]))  # cellsize
+        dd = np.array(1/(d[self.source]-d[self.target]))  # cellsize
 
-        gradient = (sp.coo_matrix((dd, (self.source, self.source)), shape=(
-            nr, nr)) - sp.coo_matrix((dd, (self.source, self.target)), shape=(nr, nr))).tocoo()
+        gradient = (sp.coo_matrix((dd, (self.source, self.target)), shape=(
+            nr, nr)) - sp.coo_matrix((dd, (self.source, self.source)), shape=(nr, nr))).tocoo()
         gradient = spmatrix(gradient.data.tolist(), gradient.row.tolist(
         ), gradient.col.tolist(), (nr, nr))  # convert to cvxopt matrix
 
