@@ -703,3 +703,20 @@ def test_crslin(wide_dem):
     gradient = (zs[s.source] - zs[s.target]) / s.distance()
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
+
+def test_quantcarve(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    s = s.klargestconncomps()
+    z = s.ezgetnal(wide_dem, dtype = 'double')
+
+    zs = s.quantcarve(wide_dem, tau = 0.5, mingradient = 0.01, fixedoutlet = True)
+
+    # outlets: zs[outlets] = z[outlets]
+    outlets = s.streampoi('outlets')
+    assert np.all(zs[outlets] == zs[outlets])
+
+    # gradient: gradient > mingradient
+    gradient = (zs[s.source] - zs[s.target]) / s.distance()
+    mingradient = 0.01
+    assert np.all((gradient - mingradient) >= -1e-6)

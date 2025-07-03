@@ -1311,7 +1311,7 @@ class StreamObject():
         b_eq = z
 
         # solve linear programming problem
-        bhat = op.linprog(f, a_matrix, b, a_eq, b_eq, bounds = list(zip(lb, ub)))
+        bhat = op.linprog(f, a_matrix, -b, a_eq, b_eq, bounds = list(zip(lb, ub)))
         zs = bhat['x'][2*nr:]
 
         return zs
