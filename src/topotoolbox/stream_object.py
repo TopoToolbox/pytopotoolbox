@@ -1316,6 +1316,60 @@ class StreamObject():
 
         return zs
 
+    def lowerenv(self, dem: GridObject | np.ndarray, kn: np.ndarray) -> np.ndarray:
+        """Compute the lower convex envelope of a stream profile
+
+        Parameters
+        ----------
+        dem: GridObject or np.ndarray
+
+            The elevation data of the stream network provided either
+            as a GridObject compatible with this StreamObject or as a
+            node attribute list. The elevation data should be
+            decreasing downstream. Preprocess with imposemin or
+            quantcarve if necessary.
+
+        kn: np.ndarray
+            A logical node attribute list that is true for nodes that
+            should be considered knickpoints, where the stream profile
+            need not be convex.
+
+        Returns
+        -------
+        np.ndarray
+            A node attribute list containing the elevation of the
+            smoothed profile.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd)
+        >>> s = s.klargestconncomps(1)
+        >>> z = topotoolbox.imposemin(s, dem)
+        >>> kn = np.zeros(len(z), dtype=np.bool)
+        >>> ze = s.lowerenv(z, kn)
+        >>> fig,ax = plt.subplots()
+        >>> s.plotdz(dem, ax=ax, color='gray')
+        >>> s.plotdz(ze, ax=ax, color='black')
+        >>> ax.autoscale_view()
+
+        """
+        z = self.ezgetnal(dem, dtype=np.float32)
+        d = self.upstream_distance()
+
+        nv = len(z)
+        ix = np.zeros(nv, dtype=np.int64)
+        onenvelope = np.zeros(nv, dtype=np.uint8)
+
+        _stream.lowerenv(z, kn.astype(np.uint8),
+                         d, ix, onenvelope,
+                         self.source, self.target)
+
+        return z
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 

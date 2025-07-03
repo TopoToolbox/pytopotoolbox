@@ -720,3 +720,70 @@ def test_quantcarve(wide_dem):
     gradient = (zs[s.source] - zs[s.target]) / s.distance()
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
+
+def test_lowerenv_convex(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    s = s.klargestconncomps(1)
+
+    z = topo.imposemin(s, wide_dem)
+
+    kn = np.arange(len(z)) % 13 == 0
+
+    ze = s.lowerenv(z, kn)
+
+    g = np.zeros(len(z))
+    g[s.source] = (ze[s.source] - ze[s.target]) / s.distance()
+
+    # The gradient of any incoming edge to a node should be greater
+    # than the gradient of its outgoing edge, with some room for
+    # numerical errors, except at knickpoints
+    assert np.all((g[s.source] >= g[s.target] - 1e-6) + kn[s.target])
+
+
+def test_lowerenv_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+    cs = cs.klargestconncomps(1)
+
+    cz = topo.imposemin(cs, cdem)
+
+    ckn = np.arange(len(cz)) % 13 == 0
+
+    cze = cs.lowerenv(cz, ckn)
+
+    cg = np.zeros(len(cz))
+    cg[cs.source] = (cze[cs.source] - cze[cs.target]) / cs.distance()
+
+    # The gradient of any incoming edge to a node should be greater
+    # than the gradient of its outgoing edge, with some room for
+    # numerical errors, except at knickpoints
+    assert np.all((cg[cs.source] >= cg[cs.target] - 1e-5) + ckn[cs.target])
+
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+    fs = fs.klargestconncomps(1)
+
+    fz = topo.imposemin(fs, fdem)
+
+    # Make sure the same knickpoints are used in both arrays
+    kn = np.zeros(cs.shape, dtype=np.bool)
+    kn[cs.node_indices] = ckn
+    fkn = kn[fs.node_indices]
+
+    fze = fs.lowerenv(fz, fkn)
+
+    fg = np.zeros(len(fz))
+    fg[fs.source] = (fze[fs.source] - fze[fs.target]) / fs.distance()
+
+    assert np.all((fg[fs.source] >= fg[fs.target] - 1e-5) + fkn[fs.target])
+
+    czz = np.zeros(cs.shape)
+    fzz = np.zeros(fs.shape)
+
+    czz[cs.node_indices] = cze
+    fzz[fs.node_indices] = fze
+
+    assert np.allclose(czz, fzz)
