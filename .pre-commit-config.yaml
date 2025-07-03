@@ -23,6 +23,7 @@ repos:
           - rasterio
           - shapely
           - geopandas
+          - kvxopt
         exclude: |
           (?x)^(
             tests/|

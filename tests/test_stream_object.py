@@ -683,3 +683,23 @@ def test_streamorder(order_dems):
     fdg[fs.node_indices] = fds
 
     assert np.array_equal(cdg, fdg)
+
+def test_crslin(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    s = s.klargestconncomps()
+
+    z = s.ezgetnal(wide_dem, dtype = 'double')
+    zs = s.crslin(wide_dem, k = 1, mingradient = 0.01, attachtomin=True, attachheads=True)
+
+    # attachtomin: zs <= z
+    assert np.all(zs <= z)
+
+    # attachheads: zs(channelheads) = z(channelheads)
+    channelheads = s.streampoi('channelheads')
+    assert np.all(zs[channelheads] == z[channelheads])
+
+    # gradient: gradient > mingradient
+    gradient = (zs[s.source] - zs[s.target]) / s.distance()
+    mingradient = 0.01
+    assert np.all((gradient - mingradient) >= -1e-6)
