@@ -13,7 +13,6 @@ import geopandas as gpd
 import scipy.sparse as sp
 import scipy.optimize as op
 
-import scipy.sparse as sp
 from kvxopt.solvers import qp
 from kvxopt import matrix, spmatrix, sparse
 
@@ -1162,7 +1161,7 @@ class StreamObject():
 
         # compute distance values between nodes
         d = self.upstream_distance()
-        
+
         xj = d[colix[:, 2]]  # downstream node of i
         xi = d[colix[:, 1]]
         xk = d[colix[:, 0]]  # upstream node of i
@@ -1254,7 +1253,7 @@ class StreamObject():
         horizontal distance of the river profile.
 
         The algorithm written in this function follows Appendix A3 in the Schwanghart
-        and Scherler 2017 paper. 
+        and Scherler 2017 paper.
 
         Parameters
         ----------
@@ -1264,9 +1263,9 @@ class StreamObject():
         tau: float
             Quantile. Default is 0.5
         mingradient: positive scalar
-            Minimum downward gradient. 
+            Minimum downward gradient.
         fixedoutlet: bool
-            If true, elevations of outlets are fixed. 
+            If true, elevations of outlets are fixed.
         mingradient: float
             Minimum downward gradient.
 
