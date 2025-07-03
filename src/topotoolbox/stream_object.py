@@ -10,8 +10,9 @@ from matplotlib.collections import LineCollection
 from scipy.sparse import csr_matrix
 from shapely.geometry import LineString
 import geopandas as gpd
-
 import scipy.sparse as sp
+import scipy.optimize as op
+
 from kvxopt.solvers import qp
 from kvxopt import matrix, spmatrix, sparse
 
@@ -1159,9 +1160,8 @@ class StreamObject():
         rowix = np.tile(np.arange(nrrows).reshape(-1, 1), 3)
 
         # compute distance values between nodes
-        # had to use downstream.distance(), so indices and source/target
         d = self.upstream_distance()
-        # are flipped in the following code
+
         xj = d[colix[:, 2]]  # downstream node of i
         xi = d[colix[:, 1]]
         xk = d[colix[:, 0]]  # upstream node of i
@@ -1225,7 +1225,6 @@ class StreamObject():
 
         # Set up matrix G and vector g_min in equation A11. Here they are defined as M and h
         # M and h contain all inequality constraints, including upperbound (attachtomin).
-
         if attachtomin:
             # matrix with inequality constraints [gradient, upper bound]
             m_matrix = sparse([gradient, identity_matrix])
@@ -1240,6 +1239,80 @@ class StreamObject():
         zs = qp(h_matrix, f, m_matrix, h, i_eq, z_eq,
                 options={'show_progress': False})
         zs = np.array(zs['x']).flatten()
+
+        return zs
+
+    def quantcarve(self, dem, tau = 0.5, mingradient = 0.0, fixedoutlet = False) -> np.double:
+        """
+        Elevation values along stream networks are frequently affected by
+        large scatter, often as a result of data artifacts or errors. This
+        function returns a node attribute list of elevations calculated by
+        carving the DEM. Conversely to conventional carving, quantcarve will
+        not run along minimas of the DEM. Instead, quantcarve returns a
+        profile that runs along the tau's quantile of elevation conditional
+        horizontal distance of the river profile.
+
+        The algorithm written in this function follows Appendix A3 in the Schwanghart
+        and Scherler 2017 paper.
+
+        Parameters
+        ----------
+        s: StreamObject
+        dem: GridObject | np.ndarray
+            Digital Elevation Model
+        tau: float
+            Quantile. Default is 0.5
+        mingradient: positive scalar
+            Minimum downward gradient.
+        fixedoutlet: bool
+            If true, elevations of outlets are fixed.
+        mingradient: float
+            Minimum downward gradient.
+
+        Returns
+        -------
+        zs
+            Node attribute list with with smoothed elevation values
+        """
+
+        # get node attribute list with elevation values
+        z = self.ezgetnal(dem, dtype = 'double') # elevation values of the dem
+        nr = z.size
+
+        # Quantcarve algorithm (equation A12)
+        d = self.upstream_distance() # had to use downstream distance
+        f = np.vstack((tau*np.ones((nr, 1)), (1-tau)*np.ones((nr,1)), np.zeros((nr,1))))
+
+        # Constraints
+        # gradient
+        dd = np.array(1/(d[self.source]-d[self.target])) # cellsize
+        gradient = (sp.coo_matrix((dd, (self.source, self.target)), shape=(nr, nr))
+                    - sp.coo_matrix((dd, (self.source, self.source)), shape=(nr, nr))).tocsr()
+        a_matrix = sp.hstack([sp.csr_matrix((nr, nr)), sp.csr_matrix((nr, nr)), gradient])
+
+        b = np.zeros((nr,1)) # min gradient
+        b[self.source] = mingradient
+
+        # bounds constraints
+        lb = np.vstack([np.zeros((nr, 1)), np.zeros((nr, 1)),
+                        -float('inf')*np.ones((nr,1))]) # 2D array
+        lb = lb.flatten() # convert to 1D array
+        ub = np.inf*np.ones(3*nr)
+
+        # equality constraint
+        identity = sp.eye(nr)
+        if fixedoutlet:
+            outlet = self.streampoi('outlets')
+            p = sp.diags((~outlet).astype(int), 0, shape = (nr,nr))
+            a_eq = sp.hstack([p, -p, identity])
+        else:
+            a_eq = sp.hstack([identity, -identity, identity])
+
+        b_eq = z
+
+        # solve linear programming problem
+        bhat = op.linprog(f, a_matrix, -b, a_eq, b_eq, bounds = list(zip(lb, ub)))
+        zs = bhat['x'][2*nr:]
 
         return zs
 
