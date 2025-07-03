@@ -1168,9 +1168,9 @@ class StreamObject():
         # had to use downstream.distance(), so indices and source/target
         d = self.upstream_distance()
         # are flipped in the following code
-        xj = d[colix[:, 0]]  # downstream node of i
+        xj = d[colix[:, 2]]  # downstream node of i
         xi = d[colix[:, 1]]
-        xk = d[colix[:, 2]]  # upstream node of i
+        xk = d[colix[:, 0]]  # upstream node of i
 
         # Dense C matrix (equation A4). Must be converted to cvxopt spare matrix for qp
         values = np.array(
@@ -1234,10 +1234,10 @@ class StreamObject():
 
         if attachtomin:
             # matrix with inequality constraints [gradient, upper bound]
-            m_matrix = sparse([-gradient, identity_matrix])
+            m_matrix = sparse([gradient, identity_matrix])
             h = np.vstack([-g_min, z.reshape(-1, 1)])
         else:
-            m_matrix = sparse([-gradient])
+            m_matrix = sparse([gradient])
             h = np.vstack([-g_min])
 
         h = matrix(h)  # convert to cvxopt
