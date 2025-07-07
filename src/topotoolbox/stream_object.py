@@ -1540,6 +1540,105 @@ class StreamObject():
 
         return z
 
+    def knickpointfinder(self, dem: GridObject | np.ndarray,
+                         tolerance: float = 100.0,
+                         iterations: int = 1000) -> np.ndarray:
+        """Find knickpoints in river profiles
+
+        Rivers that adjust to changing base levels or have diverse
+        lithologies often feature knickzones, i.e. pronounced convex
+        sections that separate the otherwise concave equilibrium
+        profile. The profile should be monotoneously decreasing (see
+        imposemin, quantcarve, crs).
+
+        This function extracts knickpoints, i.e. sharp convex sections
+        in the river profile. This is accomplished by an algorithm
+        that adjusts a strictly concave upward profile to an actual
+        profile in the DEM or node-attribute list z. The algorithm
+        iteratively relaxes the concavity constraint at those nodes in
+        the river profile that have the largest elevation offsets
+        between the strictly concave and actual profile until the
+        offset falls below a user-defined tolerance.
+
+        The function returns the idealized profile zk and outputs the
+        locations of the knickpoints in a structure array kp.
+
+
+        Parameters
+        ----------
+        dem: GridObject or np.ndarray
+
+            The elevation data of the stream network provided either
+            as a GridObject compatible with this StreamObject or as a
+            node attribute list. The elevation data is automatically
+            processed using imposemin to ensure that it is decreasing
+            downstream. If additional smoothing of the stream profile
+            is needed, use a function like quantcarve or crslin and
+            pass the resulting node attribute list to
+            `knickpointfinder`.
+
+        tolerance: float
+
+            The maximum difference between the DEM and a modeled
+            convex profile that will be considered a
+            knickpoint. Setting this higher will identify fewer
+            knickpoints while setting it lower finds more
+            knickpoints. It is set by default to 100 m, but users
+            should choose a tolerance based on their data and needs.
+
+        iterations: int
+
+            The maximum number of iterations that will be
+            run. Currently, `knickpointfinder` identifies one
+            knickpoint per iteration, so this is equivalent to the
+            maximum number of knickpoints that will be identified. If
+            a certain number of knickpoints are desired, set the
+            tolerance to 0 and set the number of iterations to the
+            number of desired knickpoints.
+
+        Returns
+        -------
+        np.ndarray
+            A logical node attribute list that is True for stream
+            network nodes that are identified as knickpoints
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd)
+        >>> s = s.klargestconncomps(1)
+        >>> z = topotoolbox.imposemin(s, dem)
+        >>> kn = np.zeros(len(z), dtype=np.bool)
+        >>> ze = s.lowerenv(z, kn)
+        >>> fig,ax = plt.subplots()
+        >>> s.plotdz(dem, ax=ax, color='gray')
+        >>> s.plotdz(ze, ax=ax, color='black')
+        >>> ax.autoscale_view()
+
+        """
+        z = self.ezgetnal(dem, dtype=np.float32)
+        z = imposemin(self, z)
+
+        nv = self.stream.size
+
+        kp = np.zeros(nv, dtype=np.bool)
+
+        dz = np.inf
+
+        for _ in np.arange(iterations):
+            zs = self.lowerenv(z, kp)
+            ix = np.argmax(z - zs)
+            dz = z[ix] - zs[ix]
+            if dz >= tolerance:
+                kp[ix] = True
+            else:
+                break
+
+        return kp
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
