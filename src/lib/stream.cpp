@@ -198,6 +198,22 @@ void wrap_propagatevaluesupstream_i64(py::array_t<int64_t> data,
                               source.size());
 }
 
+void wrap_lowerenv(py::array_t<float> elevation,
+                   py::array_t<uint8_t> knickpoints,
+                   py::array_t<float> distance,
+                   py::array_t<ptrdiff_t> ix,
+                   py::array_t<uint8_t> onenvelope,
+                   py::array_t<ptrdiff_t> source,
+                   py::array_t<ptrdiff_t> target) {
+
+  ptrdiff_t node_count = elevation.size();
+  ptrdiff_t edge_count = source.size();
+
+  lowerenv(elevation.mutable_data(), knickpoints.mutable_data(), distance.mutable_data(),
+           ix.mutable_data(), onenvelope.mutable_data(), source.mutable_data(),
+           target.mutable_data(), edge_count, node_count);
+}
+
 PYBIND11_MODULE(_stream, m) {
   m.def("streamquad_trapz_f32", &wrap_streamquad_trapz_f32);
   m.def("streamquad_trapz_f64", &wrap_streamquad_trapz_f64);
@@ -211,4 +227,5 @@ PYBIND11_MODULE(_stream, m) {
   m.def("edgelist_degree", &wrap_edgelist_degree);
   m.def("propagatevaluesupstream_u8", &wrap_propagatevaluesupstream_u8);
   m.def("propagatevaluesupstream_i64", &wrap_propagatevaluesupstream_i64);
+  m.def("lowerenv", &wrap_lowerenv);
 }
