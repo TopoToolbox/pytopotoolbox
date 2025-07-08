@@ -1162,9 +1162,9 @@ class StreamObject():
         # compute distance values between nodes
         d = self.upstream_distance()
 
-        xj = d[colix[:, 2]]  # downstream node of i
+        xj = d[colix[:, 0]]  # downstream node of i
         xi = d[colix[:, 1]]
-        xk = d[colix[:, 0]]  # upstream node of i
+        xk = d[colix[:, 2]]  # upstream node of i
 
         # Dense C matrix (equation A4). Must be converted to kvxopt spare matrix for qp
         values = np.array(
