@@ -1166,11 +1166,11 @@ class StreamObject():
         xi = d[colix[:, 1]]
         xk = d[colix[:, 0]]  # upstream node of i
 
-        # Dense C matrix (equation A4). Must be converted to cvxopt spare matrix for qp
+        # Dense C matrix (equation A4). Must be converted to kvxopt spare matrix for qp
         values = np.array(
             [2/((xi-xj)*(xk-xj)), -2/((xk-xi)*(xi-xj)), 2/((xk-xi)*(xk-xj))])
 
-        # Sparse cvxopt second derivative matrix (C)
+        # Sparse kvxopt second derivative matrix (C)
         c = spmatrix(values.T.flatten().tolist(), rowix.flatten(
         ).tolist(), colix.flatten().tolist(), (nrrows, nr))
 
@@ -1202,14 +1202,14 @@ class StreamObject():
             i_eq = sp.coo_matrix((channelheads[channelheads].astype(float),
                                   (np.arange(nc), ids[0])), shape=(nc, nr))
             i_eq = spmatrix(i_eq.data.tolist(), i_eq.row.tolist(
-            ), i_eq.col.tolist(), (nc, nr))  # convert to cvxopt matrix
+            ), i_eq.col.tolist(), (nc, nr))  # convert to kvxopt matrix
 
             z_eq = z[channelheads]  # store elevation values at channelheads
-            z_eq = matrix(z_eq)  # convert into cvxopt matrix
+            z_eq = matrix(z_eq)  # convert into kvxopt matrix
 
         else:
-            i_eq = spmatrix([], [], [])
-            z_eq = matrix([])
+            i_eq = spmatrix([], [], [], (nc, nr))
+            z_eq = matrix(0.0, (nc,1))
 
         # Inequality constraints
         # Gradient constraint
@@ -1218,7 +1218,7 @@ class StreamObject():
         gradient = (sp.coo_matrix((dd, (self.source, self.target)), shape=(
             nr, nr)) - sp.coo_matrix((dd, (self.source, self.source)), shape=(nr, nr))).tocoo()
         gradient = spmatrix(gradient.data.tolist(), gradient.row.tolist(
-        ), gradient.col.tolist(), (nr, nr))  # convert to cvxopt matrix
+        ), gradient.col.tolist(), (nr, nr))  # convert to ckxopt matrix
 
         g_min = np.zeros((nr, 1))  # minimum gradient
         g_min[self.source] = mingradient
@@ -1233,7 +1233,7 @@ class StreamObject():
             m_matrix = sparse([gradient])
             h = np.vstack([-g_min])
 
-        h = matrix(h)  # convert to cvxopt
+        h = matrix(h)  # convert to kvxopt
 
         # Solve quadratic programming with the constraints
         zs = qp(h_matrix, f, m_matrix, h, i_eq, z_eq,
