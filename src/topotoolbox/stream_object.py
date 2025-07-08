@@ -1208,8 +1208,8 @@ class StreamObject():
             z_eq = matrix(z_eq)  # convert into kvxopt matrix
 
         else:
-            i_eq = spmatrix([], [], [], (nc, nr))
-            z_eq = matrix(0.0, (nc,1))
+            i_eq = spmatrix([], [], [], (0, nr))
+            z_eq = matrix(0.0, (0,1))
 
         # Inequality constraints
         # Gradient constraint
