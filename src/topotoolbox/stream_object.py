@@ -1486,7 +1486,7 @@ class StreamObject():
         if knickpoints is None:
             kp = np.zeros(nv, dtype=np.bool)
         else:
-            kp = knickpoints
+            kp = np.array(knickpoints, copy=True)
 
         dz = np.inf
 
