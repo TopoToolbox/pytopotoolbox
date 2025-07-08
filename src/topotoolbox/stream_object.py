@@ -1541,8 +1541,9 @@ class StreamObject():
         return z
 
     def knickpointfinder(self, dem: GridObject | np.ndarray,
+                         knickpoints: np.ndarray | None = None,
                          tolerance: float = 100.0,
-                         iterations: int = 1000) -> np.ndarray:
+                         iterations: int | None = None) -> np.ndarray:
         """Find knickpoints in river profiles
 
         Rivers that adjust to changing base levels or have diverse
@@ -1577,6 +1578,11 @@ class StreamObject():
             pass the resulting node attribute list to
             `knickpointfinder`.
 
+        knickpoints: np.ndarray
+
+            A logical node attribute list that is True for any stream
+            network nodes that should be considered knickpoints.
+
         tolerance: float
 
             The maximum difference between the DEM and a modeled
@@ -1594,7 +1600,10 @@ class StreamObject():
             maximum number of knickpoints that will be identified. If
             a certain number of knickpoints are desired, set the
             tolerance to 0 and set the number of iterations to the
-            number of desired knickpoints.
+            number of desired knickpoints. The default is the number
+            of nodes in the stream network, and the specified
+            iteration count is limited to the number of nodes in the
+            stream network.
 
         Returns
         -------
@@ -1622,9 +1631,18 @@ class StreamObject():
         z = self.ezgetnal(dem, dtype=np.float32)
         z = imposemin(self, z)
 
+        # The number of knickpoints and thus the number of iterations
+        # is bounded by the number of nodes in the stream network.
+        if iterations is None:
+            iterations = self.stream.size
+        iterations = min(iterations, self.stream.size)
+
         nv = self.stream.size
 
-        kp = np.zeros(nv, dtype=np.bool)
+        if knickpoints is None:
+            kp = np.zeros(nv, dtype=np.bool)
+        else:
+            kp = knickpoints
 
         dz = np.inf
 
