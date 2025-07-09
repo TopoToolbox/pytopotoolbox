@@ -804,12 +804,7 @@ class StreamObject():
         nv = self.stream.size
         ne = self.source.size
 
-        # Compute outlets of the stream network
-        # NOTE(wkearn): This can be factored into its own function (`streampoi`)
-        indegree = np.zeros(nv, dtype=np.uint8)
-        outdegree = np.zeros(nv, dtype=np.uint8)
-        _stream.edgelist_degree(indegree, outdegree, self.source, self.target)
-        outlets = (outdegree == 0) & (indegree > 0)
+        outlets = self.streampoi('outlets')
 
         # Count the nodes in each connected component of the stream
         # network.
