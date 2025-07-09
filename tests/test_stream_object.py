@@ -704,6 +704,21 @@ def test_crslin(wide_dem):
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
+def test_crslin_noattachheads(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    s = s.klargestconncomps()
+
+    z = s.ezgetnal(wide_dem, dtype='double')
+    zs = s.crslin(wide_dem, k = 1, mingradient = 0.01, attachtomin=True, attachheads=False)
+
+    assert np.all(zs <= z)
+
+    # gradient: gradient > mingradient
+    gradient = (zs[s.source] - zs[s.target]) / s.distance()
+    mingradient = 0.01
+    assert np.all((gradient - mingradient) >= -1e-6)
+
 def test_quantcarve(wide_dem):
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
