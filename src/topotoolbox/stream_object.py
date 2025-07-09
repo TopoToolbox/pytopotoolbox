@@ -1648,12 +1648,25 @@ class StreamObject():
 
         for _ in np.arange(iterations):
             zs = self.lowerenv(z, kp)
-            ix = np.argmax(z - zs)
-            dz = z[ix] - zs[ix]
-            if dz >= tolerance:
-                kp[ix] = True
-            else:
+            dz = z - zs
+            imax = np.arange(nv)
+
+            for (u,v) in zip(self.source, self.target):
+                if dz[v] < dz[u] and not kp[v]:
+                    dz[v] = dz[u]
+                    imax[v] = imax[u]
+
+            for (u,v) in zip(reversed(self.source), reversed(self.target)):
+                if dz[u] < dz[v] and not kp[v]:
+                    dz[u] = dz[v]
+                    imax[u] = imax[v]
+
+            potential_knicks = np.unique(imax)
+            new_knicks = dz[potential_knicks] >= tolerance
+            if np.count_nonzero(new_knicks) == 0:
                 break
+
+            kp[potential_knicks] = new_knicks
 
         return kp
 
