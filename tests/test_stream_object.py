@@ -802,3 +802,41 @@ def test_lowerenv_order(order_dems):
     fzz[fs.node_indices] = fze
 
     assert np.allclose(czz, fzz)
+
+def test_conncomps(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd).clean()
+    l = s.conncomps()
+
+    # Each node is in the same connected component as its downstream
+    # neighbor.
+    assert np.array_equal(l[s.source], l[s.target])
+
+    # There should be at least one connected component
+    assert np.max(l) > 0
+    # The minimum label should be 1
+    assert np.min(l) == 1
+
+def test_conncomps_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    cs = topo.StreamObject(cfd)
+
+    ffd = topo.FlowObject(fdem)
+    fs = topo.StreamObject(ffd)
+
+    clg = np.zeros(cfd.shape)
+    clg[cs.node_indices] = cs.conncomps()
+
+    flg = np.zeros(ffd.shape)
+    flg[fs.node_indices] = fs.conncomps()
+
+    # Labels are identical up to a bijection. See
+    # tests/test_flow_object.py (test_drainagebasins_order) for
+    # discussion on this approach.
+    cu, cind, cinv = np.unique(clg, return_index=True, return_inverse=True)
+    fu, find, finv = np.unique(flg, return_index=True, return_inverse=True)
+
+    assert np.array_equal(flg, fu[np.take(finv, cind)][cinv])
+    assert np.array_equal(clg, cu[np.take(cinv, find)][finv])
