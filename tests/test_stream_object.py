@@ -817,6 +817,7 @@ def test_conncomps(wide_dem):
     # The minimum label should be 1
     assert np.min(l) == 1
 
+
 def test_conncomps_order(order_dems):
     cdem, fdem = order_dems
 
@@ -835,8 +836,12 @@ def test_conncomps_order(order_dems):
     # Labels are identical up to a bijection. See
     # tests/test_flow_object.py (test_drainagebasins_order) for
     # discussion on this approach.
-    cu, cind, cinv = np.unique(clg, return_index=True, return_inverse=True)
-    fu, find, finv = np.unique(flg, return_index=True, return_inverse=True)
+    cus, cidxs, cinvs = np.unique(clg, return_index=True, return_inverse=True)
+    fus, fidxs, finvs = np.unique(flg, return_index=True, return_inverse=True)
 
-    assert np.array_equal(flg, fu[np.take(finv, cind)][cinv])
-    assert np.array_equal(clg, cu[np.take(cinv, find)][finv])
+    # We use flatten because older versions of numpy
+    # return different `invs` of different dimensions.
+    assert np.array_equal(flg.flatten(),
+                          fus[np.take(finvs, cidxs)][cinvs].flatten())
+    assert np.array_equal(clg.flatten(),
+                          cus[np.take(cinvs, fidxs)][finvs].flatten())
