@@ -776,3 +776,26 @@ def test_conncomps_order(cs, fs):
                           fus[np.take(finvs, cidxs)][cinvs].flatten())
     assert np.array_equal(clg.flatten(),
                           cus[np.take(cinvs, fidxs)][finvs].flatten())
+
+
+def test_knickpoints_none(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    s = s.klargestconncomps(1)
+
+    kp0 = np.arange(s.stream.size) % 13 == 0
+
+    kp = s.knickpointfinder(wide_dem, knickpoints=kp0,
+                            tolerance=0.0, iterations=0)
+
+    assert np.array_equal(kp, kp0)
+
+
+def test_knickpoints_one(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+    s = topo.StreamObject(fd)
+    s = s.klargestconncomps(1)
+
+    kp = s.knickpointfinder(wide_dem, tolerance=0.0, iterations=1)
+
+    assert np.count_nonzero(kp) == 1
