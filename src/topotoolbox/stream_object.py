@@ -1641,8 +1641,6 @@ class StreamObject():
         else:
             kp = np.array(knickpoints, copy=True)
 
-        dz = np.inf
-
         for _ in np.arange(iterations):
             zs = self.lowerenv(z, kp)
             dz = z - zs
