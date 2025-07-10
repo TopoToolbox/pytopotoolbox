@@ -1555,15 +1555,11 @@ class StreamObject():
         This function extracts knickpoints, i.e. sharp convex sections
         in the river profile. This is accomplished by an algorithm
         that adjusts a strictly concave upward profile to an actual
-        profile in the DEM or node-attribute list z. The algorithm
+        profile in the DEM or node-attribute list. The algorithm
         iteratively relaxes the concavity constraint at those nodes in
         the river profile that have the largest elevation offsets
         between the strictly concave and actual profile until the
         offset falls below a user-defined tolerance.
-
-        The function returns the idealized profile zk and outputs the
-        locations of the knickpoints in a structure array kp.
-
 
         Parameters
         ----------
@@ -1581,29 +1577,30 @@ class StreamObject():
         knickpoints: np.ndarray
 
             A logical node attribute list that is True for any stream
-            network nodes that should be considered knickpoints.
+            network nodes that should be considered knickpoints a priori
 
         tolerance: float
 
             The maximum difference between the DEM and a modeled
             convex profile that will be considered a
-            knickpoint. Setting this higher will identify fewer
-            knickpoints while setting it lower finds more
-            knickpoints. It is set by default to 100 m, but users
-            should choose a tolerance based on their data and needs.
+            knickpoint
+
+            Setting this higher will identify fewer knickpoints while
+            setting it lower finds more knickpoints. It is set by
+            default to 100 m, but users should choose a tolerance
+            based on their data and needs.
 
         iterations: int
 
             The maximum number of iterations that will be
-            run. Currently, `knickpointfinder` identifies one
-            knickpoint per iteration, so this is equivalent to the
-            maximum number of knickpoints that will be identified. If
-            a certain number of knickpoints are desired, set the
-            tolerance to 0 and set the number of iterations to the
-            number of desired knickpoints. The default is the number
-            of nodes in the stream network, and the specified
-            iteration count is limited to the number of nodes in the
-            stream network.
+            run
+
+            `knickpointfinder` will identify more than one knickpoint
+            per iteration, so this argument does not completely
+            control the number of knickpoints identified. The default
+            is the number of nodes in the stream network, and the
+            iteration count is always limited to the number of nodes
+            in the stream network.
 
         Returns
         -------
@@ -1613,18 +1610,18 @@ class StreamObject():
 
         Example
         -------
-        >>> import numpy as np
+        >>> import topotoolbox
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('bigtujunga')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd)
         >>> s = s.klargestconncomps(1)
         >>> z = topotoolbox.imposemin(s, dem)
-        >>> kn = np.zeros(len(z), dtype=np.bool)
-        >>> ze = s.lowerenv(z, kn)
+        >>> kp = s.knickpointfinder(z, tolerance=50.0)
+        >>> d = s.upstream_distance()
         >>> fig,ax = plt.subplots()
-        >>> s.plotdz(dem, ax=ax, color='gray')
-        >>> s.plotdz(ze, ax=ax, color='black')
+        >>> s.plotdz(dem, ax=ax, color='k')
+        >>> ax.scatter(d[kp], z[kp])
         >>> ax.autoscale_view()
 
         """
