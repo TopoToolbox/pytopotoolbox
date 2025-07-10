@@ -1363,7 +1363,7 @@ class StreamObject():
         >>> s = topotoolbox.StreamObject(fd)
         >>> s = s.klargestconncomps(1)
         >>> z = topotoolbox.imposemin(s, dem)
-        >>> kn = np.zeros(len(z), dtype=np.bool)
+        >>> kn = np.zeros(len(z), dtype=bool)
         >>> ze = s.lowerenv(z, kn)
         >>> fig,ax = plt.subplots()
         >>> s.plotdz(dem, ax=ax, color='gray')

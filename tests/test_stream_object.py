@@ -6,29 +6,34 @@ import opensimplex
 
 import topotoolbox as topo
 
-def issubgraph(s1  : topo.StreamObject, s2 : topo.StreamObject):
+
+def issubgraph(s1: topo.StreamObject, s2: topo.StreamObject):
     """Test whether s1 represents a subgraph of s2
     """
     e1 = set(zip(zip(*s1.source_indices), zip(*s1.target_indices)))
     e2 = set(zip(zip(*s2.source_indices), zip(*s2.target_indices)))
     return e1 <= e2
 
-def isequivalent(s1 : topo.StreamObject, s2 : topo.StreamObject):
+
+def isequivalent(s1: topo.StreamObject, s2: topo.StreamObject):
     v1 = set(zip(*s1.node_indices))
     v2 = set(zip(*s2.node_indices))
 
-    e1 = set(zip(zip(*s1.source_indices),zip(*s1.target_indices)))
-    e2 = set(zip(zip(*s2.source_indices),zip(*s2.target_indices)))
+    e1 = set(zip(zip(*s1.source_indices), zip(*s1.target_indices)))
+    e2 = set(zip(zip(*s2.source_indices), zip(*s2.target_indices)))
 
     return v1 == v2 and e1 == e2
+
 
 @pytest.fixture(name="wide_dem")
 def fixture_wide_dem():
     yield topo.gen_random(rows=64, columns=128)
 
+
 @pytest.fixture(name="tall_dem")
 def fixture_tall_dem():
     yield topo.gen_random(rows=128, columns=64)
+
 
 @pytest.fixture
 def order_dems():
@@ -47,6 +52,7 @@ def order_dems():
     fdem.cellsize = 13.0
 
     return [cdem, fdem]
+
 
 def test_constructors():
     grid_obj = topo.gen_random(rows=64, columns=64)
@@ -91,6 +97,7 @@ def test_constructors():
         assert issubclass(w[-1].category, Warning)
         assert "threshold will be ignored" in str(w[-1].message)
 
+
 def test_streamobject_order(order_dems):
     cdem, fdem = order_dems
 
@@ -101,6 +108,7 @@ def test_streamobject_order(order_dems):
     fs = topo.StreamObject(ffd)
 
     assert isequivalent(cs, fs)
+
 
 def test_streamobject_streampixels_order(order_dems):
     cdem, fdem = order_dems
@@ -142,8 +150,10 @@ def test_streamobject_sizes(tall_dem, wide_dem):
             tall_stream.direction.size)
 
     # Ensure that no index in stream exceeds the max possible index in the grid
-    assert np.max(wide_stream.stream) <= wide_stream.shape[0] * wide_stream.shape[1]
-    assert np.max(tall_stream.stream) <= tall_stream.shape[0] * tall_stream.shape[1]
+    assert np.max(
+        wide_stream.stream) <= wide_stream.shape[0] * wide_stream.shape[1]
+    assert np.max(
+        tall_stream.stream) <= tall_stream.shape[0] * tall_stream.shape[1]
 
 
 def test_distance_order(order_dems):
@@ -184,6 +194,7 @@ def test_downstream_distance_order(order_dems):
     fdg[fs.node_indices] = fd
 
     assert np.array_equal(cdg, fdg)
+
 
 def test_run_chitransform(tall_dem, wide_dem):
 
@@ -228,7 +239,7 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     tall_stream = topo.StreamObject(tall_flow)
 
     tall_trunk = tall_stream.trunk()
-    tall_k1    = tall_stream.klargestconncomps(1)
+    tall_k1 = tall_stream.klargestconncomps(1)
     tall_k1_trunk = tall_k1.trunk()
 
     assert issubgraph(tall_trunk, tall_stream)
@@ -245,7 +256,7 @@ def test_stream_subgraphs(tall_dem, wide_dem):
     wide_stream = topo.StreamObject(wide_flow)
 
     wide_trunk = wide_stream.trunk()
-    wide_k1    = wide_stream.klargestconncomps(1)
+    wide_k1 = wide_stream.klargestconncomps(1)
     wide_k1_trunk = wide_k1.trunk()
 
     assert issubgraph(wide_trunk, wide_stream)
@@ -420,7 +431,7 @@ def test_subgraph(tall_dem, wide_dem):
     assert issubgraph(sub, s)
 
     # Subgraph should be idempotent
-    nal_all = np.ones(s.stream.size,dtype=np.bool)
+    nal_all = np.ones(s.stream.size, dtype=bool)
     sub_all = s.subgraph(nal_all)
     assert issubgraph(sub, s)
     assert np.array_equal(sub_all.stream, s.stream)
@@ -428,7 +439,7 @@ def test_subgraph(tall_dem, wide_dem):
     assert np.array_equal(sub_all.target, s.target)
 
     # Subgraph of an empty subset should be empty
-    nal_none = np.zeros(s.stream.size, dtype=np.bool)
+    nal_none = np.zeros(s.stream.size, dtype=bool)
     sub_none = s.subgraph(nal_none)
     assert issubgraph(sub, s)
     assert np.size(sub_none.stream) == 0
@@ -463,7 +474,7 @@ def test_subgraph(tall_dem, wide_dem):
     assert issubgraph(sub, s)
 
     # Subgraph should be idempotent
-    nal_all = np.ones(s.stream.size,dtype=np.bool)
+    nal_all = np.ones(s.stream.size, dtype=bool)
     sub_all = s.subgraph(nal_all)
     assert issubgraph(sub, s)
     assert np.array_equal(sub_all.stream, s.stream)
@@ -471,12 +482,13 @@ def test_subgraph(tall_dem, wide_dem):
     assert np.array_equal(sub_all.target, s.target)
 
     # Subgraph of an empty subset should be empty
-    nal_none = np.zeros(s.stream.size, dtype=np.bool)
+    nal_none = np.zeros(s.stream.size, dtype=bool)
     sub_none = s.subgraph(nal_none)
     assert issubgraph(sub, s)
     assert np.size(sub_none.stream) == 0
     assert np.size(sub_none.source) == 0
     assert np.size(sub_none.target) == 0
+
 
 def test_stream_channelheads(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
@@ -486,7 +498,8 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     channel_heads = s.streampoi("channelheads")
 
-    s2 = topo.StreamObject(fd, channelheads=s.node_indices_where(channel_heads))
+    s2 = topo.StreamObject(
+        fd, channelheads=s.node_indices_where(channel_heads))
 
     assert topo.validate_alignment(fd, s2)
 
@@ -500,12 +513,14 @@ def test_stream_channelheads(tall_dem, wide_dem):
 
     channel_heads = s.streampoi("channelheads")
 
-    s2 = topo.StreamObject(fd, channelheads=s.node_indices_where(channel_heads))
+    s2 = topo.StreamObject(
+        fd, channelheads=s.node_indices_where(channel_heads))
 
     assert topo.validate_alignment(fd, s2)
 
     assert np.array_equal(s2.stream[s2.source], s.stream[s.source])
     assert np.array_equal(s2.stream[s2.target], s.stream[s.target])
+
 
 def test_streamobject_ch_order(order_dems):
     cdem, fdem = order_dems
@@ -522,7 +537,8 @@ def test_streamobject_ch_order(order_dems):
     cs2 = topo.StreamObject(cfd, channelheads=cs.node_indices_where(cch))
     fs2 = topo.StreamObject(ffd, channelheads=fs.node_indices_where(fch))
 
-    assert isequivalent(cs2,fs2)
+    assert isequivalent(cs2, fs2)
+
 
 def test_stream_downstreamto(tall_dem):
     fd = topo.FlowObject(tall_dem)
@@ -530,11 +546,12 @@ def test_stream_downstreamto(tall_dem):
 
     ch = s.streampoi("channelheads")
 
-    sc = topo.StreamObject(fd,channelheads=s.node_indices_where(ch))
+    sc = topo.StreamObject(fd, channelheads=s.node_indices_where(ch))
     sd = s.downstreamto(ch)
 
     # These two stream networks should be equivalent
     assert len(set(sd.stream).symmetric_difference(set(sc.stream))) == 0
+
 
 def test_stream_upstreamto(tall_dem):
     fd = topo.FlowObject(tall_dem)
@@ -550,6 +567,7 @@ def test_stream_upstreamto(tall_dem):
 
     # These two stream networks should be equivalent
     assert len(set(s.stream).symmetric_difference(set(su.stream))) == 0
+
 
 def test_upstreamto_order(order_dems):
     cdem, fdem = order_dems
@@ -572,6 +590,7 @@ def test_upstreamto_order(order_dems):
 
     assert isequivalent(cb, fb)
 
+
 def test_downstreamto_order(order_dems):
     cdem, fdem = order_dems
 
@@ -591,13 +610,14 @@ def test_downstreamto_order(order_dems):
 
     assert isequivalent(cb, fb)
 
+
 def test_stream_imposemin(tall_dem, wide_dem):
     fd = topo.FlowObject(tall_dem)
     s = topo.StreamObject(fd)
 
     original_z = s.ezgetnal(tall_dem)
 
-    for minimum_slope in [0.0,0.001,0.01,0.1]:
+    for minimum_slope in [0.0, 0.001, 0.01, 0.1]:
         minz = topo.imposemin(s, tall_dem, minimum_slope)
 
         # imposemin should not modify the original array
@@ -616,7 +636,7 @@ def test_stream_imposemin(tall_dem, wide_dem):
 
     original_z = s.ezgetnal(wide_dem)
 
-    for minimum_slope in [0.0,0.001,0.01,0.1]:
+    for minimum_slope in [0.0, 0.001, 0.01, 0.1]:
         minz = topo.imposemin(s, wide_dem, minimum_slope)
 
         # imposemin should not modify the original array
@@ -630,6 +650,7 @@ def test_stream_imposemin(tall_dem, wide_dem):
         g = (minz[s.source] - minz[s.target])/s.distance()
         assert np.all(g >= minimum_slope - 1e-6)
 
+
 def test_imposemin_order(order_dems):
     cdem, fdem = order_dems
 
@@ -638,7 +659,6 @@ def test_imposemin_order(order_dems):
 
     cs = topo.StreamObject(cfd)
     fs = topo.StreamObject(ffd)
-
 
     cminslope = topo.imposemin(cs, cdem, minimum_slope=0.001)
     cz = np.zeros_like(cdem)
@@ -650,20 +670,23 @@ def test_imposemin_order(order_dems):
 
     assert np.array_equal(cz, fz)
 
+
 def test_gradient(wide_dem):
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
-    g = s.gradient(wide_dem, impose = True)
+    g = s.gradient(wide_dem, impose=True)
 
     assert np.all(g >= 0)
+
 
 def test_ksn(wide_dem):
     fd = topo.FlowObject(wide_dem)
     A = fd.flow_accumulation()
     s = topo.StreamObject(fd)
     theta = 0.45
-    g = s.gradient(wide_dem, impose = True)
+    g = s.gradient(wide_dem, impose=True)
     k = s.ksn(wide_dem, A, theta)
+
 
 def test_streamorder(order_dems):
     cdem, fdem = order_dems
@@ -684,13 +707,15 @@ def test_streamorder(order_dems):
 
     assert np.array_equal(cdg, fdg)
 
+
 def test_crslin(wide_dem):
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
     s = s.klargestconncomps()
 
-    z = s.ezgetnal(wide_dem, dtype = 'double')
-    zs = s.crslin(wide_dem, k = 1, mingradient = 0.01, attachtomin=True, attachheads=True)
+    z = s.ezgetnal(wide_dem, dtype='double')
+    zs = s.crslin(wide_dem, k=1, mingradient=0.01,
+                  attachtomin=True, attachheads=True)
 
     # attachtomin: zs <= z
     assert np.all(zs <= z)
@@ -704,13 +729,15 @@ def test_crslin(wide_dem):
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
+
 def test_crslin_noattachheads(wide_dem):
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
     s = s.klargestconncomps()
 
     z = s.ezgetnal(wide_dem, dtype='double')
-    zs = s.crslin(wide_dem, k = 1, mingradient = 0.01, attachtomin=True, attachheads=False)
+    zs = s.crslin(wide_dem, k=1, mingradient=0.01,
+                  attachtomin=True, attachheads=False)
 
     assert np.all(zs <= z)
 
@@ -719,13 +746,14 @@ def test_crslin_noattachheads(wide_dem):
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
+
 def test_quantcarve(wide_dem):
     fd = topo.FlowObject(wide_dem)
     s = topo.StreamObject(fd)
     s = s.klargestconncomps()
-    z = s.ezgetnal(wide_dem, dtype = 'double')
+    z = s.ezgetnal(wide_dem, dtype='double')
 
-    zs = s.quantcarve(wide_dem, tau = 0.5, mingradient = 0.01, fixedoutlet = True)
+    zs = s.quantcarve(wide_dem, tau=0.5, mingradient=0.01, fixedoutlet=True)
 
     # outlets: zs[outlets] = z[outlets]
     outlets = s.streampoi('outlets')
@@ -735,6 +763,7 @@ def test_quantcarve(wide_dem):
     gradient = (zs[s.source] - zs[s.target]) / s.distance()
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
+
 
 def test_lowerenv_convex(wide_dem):
     fd = topo.FlowObject(wide_dem)
@@ -784,7 +813,7 @@ def test_lowerenv_order(order_dems):
     fz = topo.imposemin(fs, fdem)
 
     # Make sure the same knickpoints are used in both arrays
-    kn = np.zeros(cs.shape, dtype=np.bool)
+    kn = np.zeros(cs.shape, dtype=bool)
     kn[cs.node_indices] = ckn
     fkn = kn[fs.node_indices]
 
@@ -802,6 +831,7 @@ def test_lowerenv_order(order_dems):
     fzz[fs.node_indices] = fze
 
     assert np.allclose(czz, fzz)
+
 
 def test_conncomps(wide_dem):
     fd = topo.FlowObject(wide_dem)
