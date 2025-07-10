@@ -1651,18 +1651,37 @@ class StreamObject():
             dz = z - zs
             imax = np.arange(nv)
 
-            for (u,v) in zip(self.source, self.target):
+            # These loops compute the maximum difference between the
+            # observed elevation and the lower convex envelope over
+            # reaches separated by knickpoints. The first loop
+            # propagates the maximum value and index downstream,
+            # skipping edges that terminate on a knickpoint.
+            for (u, v) in zip(self.source, self.target):
                 if dz[v] < dz[u] and not kp[v]:
                     dz[v] = dz[u]
                     imax[v] = imax[u]
 
-            for (u,v) in zip(reversed(self.source), reversed(self.target)):
+            # The second loop propagates the maximum back upstream, so
+            # each connected component is labeled with the maximum
+            # difference and the node index at which that maximum
+            # occurs.
+            for (u, v) in zip(reversed(self.source), reversed(self.target)):
                 if dz[u] < dz[v] and not kp[v]:
                     dz[u] = dz[v]
                     imax[u] = imax[v]
 
+            # These loops could be implemented in libtopotoolbox for
+            # speed. The maximum-over-reaches logic could be useful
+            # for other applications.
+
+            # The unique node indices are the potential knickpoints
+            # for each reach. We select only those whose difference
+            # exceeds the user-provided tolerance.
             potential_knicks = np.unique(imax)
             new_knicks = dz[potential_knicks] >= tolerance
+
+            # If no new knickpoints have been found, we stop
+            # searching.
             if np.count_nonzero(new_knicks) == 0:
                 break
 
