@@ -93,7 +93,7 @@ class StreamObject():
         # georeference
         self.bounds = flow.bounds
         self.transform = flow.transform
-        self.crs = flow.crs
+        self.georef = flow.georef
 
         cell_area = 0.0
         # Calculate the are of a cell based on the units argument.
@@ -104,8 +104,8 @@ class StreamObject():
         elif units == 'km2':
             cell_area = (self.cellsize*0.001)**2
         elif units == 'mapunits':
-            if self.crs is not None:
-                if self.crs.is_projected:
+            if self.georef is not None:
+                if self.georef.is_projected:
                     # True so cellsize is in meters
                     cell_area = self.cellsize**2
                 else:
@@ -494,7 +494,7 @@ class StreamObject():
         '''
 
         line_geoms = [LineString(coords) for coords in self.xy()]
-        gdf = gpd.GeoDataFrame(geometry=line_geoms, crs=self.crs)
+        gdf = gpd.GeoDataFrame(geometry=line_geoms, georef=self.georef)
         return gdf
 
     def to_shapefile(self, path: str) -> None:
