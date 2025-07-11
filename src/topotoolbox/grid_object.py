@@ -181,9 +181,9 @@ class GridObject():
         z, dst.transform = reproject(
             self.z,
             src_transform=self.transform,
-            src_georef=self.georef,
+            src_crs=self.georef,
             dst_transform=None,  # Let rasterio derive the transform for us
-            dst_georef=georef,
+            dst_crs=georef,
             dst_nodata=np.nan,
             dst_resolution=resolution,
             resampling=resampling,
