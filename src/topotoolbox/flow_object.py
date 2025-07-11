@@ -125,7 +125,7 @@ class FlowObject():
         # georeference
         self.bounds = grid.bounds
         self.transform = grid.transform
-        self.crs = grid.crs
+        self.georef = grid.georef
 
     @property
     def dims(self):
@@ -270,7 +270,7 @@ class FlowObject():
 
         result.bounds = self.bounds
         result.transform = self.transform
-        result.crs = self.crs
+        result.georef = self.georef
 
         return result
 
@@ -317,7 +317,7 @@ class FlowObject():
 
         result.bounds = self.bounds
         result.transform = self.transform
-        result.crs = self.crs
+        result.georef = self.georef
 
         return result
 
@@ -397,7 +397,7 @@ class FlowObject():
 
         result.bounds = self.bounds
         result.transform = self.transform
-        result.crs = self.crs
+        result.georef = self.georef
 
         return result
 
@@ -425,7 +425,7 @@ class FlowObject():
 
         result.bounds = self.bounds
         result.transform = self.transform
-        result.crs = self.crs
+        result.georef = self.georef
 
         return result
 

@@ -34,13 +34,13 @@ def order_dems():
         64 * (opensimplex.noise2array(x/13, y/13) + 1), dtype=np.float32)
     cdem.cellsize = 13.0
     cdem.transform = Affine.permutation() * Affine.rotation(90) * Affine.scale(cdem.cellsize)
-    cdem.crs = CRS.from_epsg(3857)
+    cdem.georef = CRS.from_epsg(3857)
 
     fdem = topo.GridObject()
     fdem.z = np.asfortranarray(cdem.z)
     fdem.cellsize = 13.0
     fdem.transform = Affine.permutation() * Affine.rotation(90) * Affine.scale(fdem.cellsize)
-    fdem.crs = CRS.from_epsg(3857)
+    fdem.georef = CRS.from_epsg(3857)
 
     return [cdem, fdem]
 
