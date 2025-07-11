@@ -24,6 +24,7 @@ repos:
           - shapely
           - geopandas
           - kvxopt
+          - clarabel
         exclude: |
           (?x)^(
             tests/|
