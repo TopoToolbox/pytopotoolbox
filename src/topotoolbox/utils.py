@@ -103,7 +103,7 @@ def read_tif(path: str) -> GridObject:
         grid.cellsize = dataset.res[0]
         grid.bounds = dataset.bounds
         grid.transform = dataset.transform
-        grid.georef = dataset.georef
+        grid.georef = dataset.crs
 
     return grid
 
