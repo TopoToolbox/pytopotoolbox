@@ -1258,7 +1258,7 @@ class StreamObject():
 
         return zs
 
-    def quantcarve(self, dem, tau = 0.5, mingradient = 0.0, fixedoutlet = False) -> np.double:
+    def quantcarve(self, dem, tau = 0.5, mingradient = 0.0, fixedoutlet = False) -> np.ndarray:
         """
         Elevation values along stream networks are frequently affected by
         large scatter, often as a result of data artifacts or errors. This
@@ -1332,7 +1332,7 @@ class StreamObject():
 
         return zs
 
-    def crs(self, dem, tau = 0.5, k = 1, mingradient = 0.0, fixedoutlet = False) -> np.array:
+    def crs(self, dem, tau = 0.5, k = 1, mingradient = 0.0, fixedoutlet = False) -> np.ndarray:
         """
         Elevation values along stream networks are frequently affected by
         large scatter, often as a result of data artifacts or errors. This
@@ -1378,7 +1378,7 @@ class StreamObject():
         # there are less, second derivative matrix is empty, and crs uses quantcarve instead
         if nr < 3:
             print('nr < 3')
-            zs = self.quantcarve(dem, tau, mingradient, fixedoutlet='True')
+            return self.quantcarve(dem, tau, mingradient, fixedoutlet='True')
 
         # CRS Algorithm
         # Identity Matrix & zero matrices
