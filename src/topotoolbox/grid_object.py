@@ -52,7 +52,7 @@ class GridObject():
         # georeference
         self.bounds = None
         self.transform = Affine.identity()
-        self.crs = None
+        self.georef = None
 
     @property
     def shape(self):
@@ -141,19 +141,19 @@ class GridObject():
 
         result.bounds = self.bounds
         result.transform = self.transform
-        result.crs = self.crs
+        result.georef = self.georef
 
         return result
 
     def reproject(self,
-                  crs: 'CRS',
+                  georef: 'CRS',
                   resolution: 'float | None' = None,
                   resampling: 'Resampling' = Resampling.bilinear):
         """Reproject GridObject to a new coordinate system.
 
         Parameters
         ----------
-        crs : rasterio.CRS
+        georef : rasterio.CRS
             Target coordinate system
         resolution : float, optional
             Target resolution.
@@ -181,9 +181,9 @@ class GridObject():
         z, dst.transform = reproject(
             self.z,
             src_transform=self.transform,
-            src_crs=self.crs,
+            src_crs=self.georef,
             dst_transform=None,  # Let rasterio derive the transform for us
-            dst_crs=crs,
+            dst_crs=georef,
             dst_nodata=np.nan,
             dst_resolution=resolution,
             resampling=resampling,
@@ -192,7 +192,7 @@ class GridObject():
         dst.z = np.zeros_like(self.z, shape=z.shape[1:3])
         dst.z[:, :] = z[0, :, :]
 
-        dst.crs = crs
+        dst.georef = georef
 
         # Get cellsize from transform in case we did not specify one
         if dst.transform is not None:
@@ -200,7 +200,7 @@ class GridObject():
 
         if self.bounds:
             dst.bounds = BoundingBox(
-                *transform_bounds(self.crs, dst.crs, *self.bounds))
+                *transform_bounds(self.georef, dst.georef, *self.bounds))
 
         return dst
 
@@ -1112,12 +1112,12 @@ class GridObject():
         print(f"cellsize: {self.cellsize}")
         print(f"bounds: {self.bounds}")
         print(f"transform: {self.transform}")
-        if self.crs is not None and self.crs.is_projected:
-            print(f"coordinate system (Projected): {self.crs}")
-        elif self.crs is not None and self.crs.is_geographic:
-            print(f"coordinate system (Geographic): {self.crs}")
+        if self.georef is not None and self.georef.is_projected:
+            print(f"coordinate system (Projected): {self.georef}")
+        elif self.georef is not None and self.georef.is_geographic:
+            print(f"coordinate system (Geographic): {self.georef}")
         else:
-            print(f"coordinate system: {self.crs}")
+            print(f"coordinate system: {self.georef}")
         print(f"maximum z-value: {np.nanmax(self.z)}")
         print(f"minimum z-value: {np.nanmin(self.z)}")
 
@@ -1351,7 +1351,7 @@ class GridObject():
         """Duplicate a GridObject with different data
 
         This function is helpful when one wants to create a GridObject from
-        a numpy array with the exact same properties (e.g. crs, ...) but
+        a numpy array with the exact same properties (e.g. georef, ...) but
         different data
 
         Parameters
@@ -1745,12 +1745,12 @@ class GridObject():
 
         # Determine the coordinate system
         str_coord = ''
-        if self.crs is not None and self.crs.is_projected:
-            str_coord = f'coordinate system (Projected): {self.crs}'
-        elif self.crs is not None and self.crs.is_geographic:
-            str_coord = f'coordinate system (Geographic): {self.crs}'
+        if self.georef is not None and self.georef.is_projected:
+            str_coord = f'coordinate system (Projected): {self.georef}'
+        elif self.georef is not None and self.georef.is_geographic:
+            str_coord = f'coordinate system (Geographic): {self.georef}'
         else:
-            str_coord = f'coordinate system: {self.crs}'
+            str_coord = f'coordinate system: {self.georef}'
 
         return f"""name: {self.name}
         path: {self.path}
