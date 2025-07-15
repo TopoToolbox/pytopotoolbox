@@ -665,6 +665,20 @@ def test_quantcarve(wide_dem, wide_stream):
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
+def test_crs(wide_dem, wide_stream):
+    s = wide_stream.klargestconncomps()
+    z = s.ezgetnal(wide_dem, dtype='double')
+
+    zs = s.crs(wide_dem, tau=0.5, mingradient=0.01, fixedoutlet=True)
+
+    # outlets: zs[outlets] = z[outlets]
+    outlets = s.streampoi('outlets')
+    assert np.allclose(zs[outlets], z[outlets])
+
+    # gradient: gradient > mingradient
+    gradient = (zs[s.source] - zs[s.target]) / s.distance()
+    mingradient = 0.01
+    assert np.all((gradient - mingradient) >= -1e-6)
 
 def test_lowerenv_convex(wide_dem, wide_stream):
     s = wide_stream.klargestconncomps(1)

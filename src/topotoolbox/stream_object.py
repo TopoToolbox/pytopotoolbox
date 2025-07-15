@@ -15,6 +15,8 @@ import scipy.optimize as op
 
 from kvxopt.solvers import qp
 from kvxopt import matrix, spmatrix, sparse
+# pylint: disable=no-name-in-module
+from clarabel import ZeroConeT, NonnegativeConeT, DefaultSettings, DefaultSolver
 
 from .flow_object import FlowObject
 from .grid_object import GridObject
@@ -1327,6 +1329,160 @@ class StreamObject():
         # solve linear programming problem
         bhat = op.linprog(f, a_matrix, -b, a_eq, b_eq, bounds = list(zip(lb, ub)))
         zs = bhat['x'][2*nr:]
+
+        return zs
+
+    def crs(self, dem, tau = 0.5, k = 1, mingradient = 0.0, fixedoutlet = False) -> np.array:
+        """
+        Elevation values along stream networks are frequently affected by
+        large scatter, often as a result of data artifacts or errors. This
+        function returns a node attribute list of smoothed elevation values
+        calculated by nonparametric quantile regression with monotonicity
+        constraints.
+
+        The algorithm written in this function follows Appendix A4 in the Schwanghart
+        and Scherler 2017 paper.
+
+        Parameters:
+        ----------
+        s: StreamObject
+        dem: GridObject | np.ndarray
+            DEM
+        tau: float
+            Quantile. Default is 0.5
+        k: float
+            positive scalar that dictates the degree of stiffness. Default is 1
+        mingradient: double
+            Minimum downward gradient.
+            Choose carefully, because length profile may dip to steeply.
+            Set this parameter to nan if you do not wish to have a monotonous
+            dowstream elevation decrease.
+        fixedoutlet: bool
+            If true, elevations of outlets are fixed.
+
+        Returns
+        ----------
+        zs:
+            node attribute list with smoothed elevation values
+        """
+
+        # get node attribute list with elevation values
+        z = self.ezgetnal(dem, dtype=np.float64)  # node_data[:,0]
+        if any(np.isnan(z)):
+            raise ValueError('DEM or z may not contain any NaNs')
+
+        nr = z.size # num. of nodes
+        ne = self.source.size # num of edges
+
+        # a special case. The stream network needs at least three nodes in a row. If
+        # there are less, second derivative matrix is empty, and crs uses quantcarve instead
+        if nr < 3:
+            print('nr < 3')
+            zs = self.quantcarve(dem, tau, mingradient, fixedoutlet='True')
+
+        # CRS Algorithm
+        # Identity Matrix & zero matrices
+        identity_matrix = sp.eye_array(nr)
+        zero_matrix = sp.csc_array((nr, nr))
+        zero_edge_matrix = sp.csc_array((ne, nr))
+
+        #########################################
+        # Compute Second Derivative Matrix (C in equation A5)
+        # find upstream and downstream nodes
+        ix = self.source
+        ixc = self.target
+
+        # boolean array to store nodes that are both sources and targets
+        i = np.isin(ixc, ix)
+        dic = dict(zip(ix, np.arange(self.source.shape[0]))) # dictionary to store ix
+        keys = np.array([dic[j] for j in ixc[i]]) # values as key and their indicies as values
+
+        # [i-1 (downstream), i, i+1 (upstream)]
+        colix = np.array([ixc[keys], ixc[i], ix[i]]).T
+        nrrows = colix.shape[0]
+        rowix = np.tile(np.arange(nrrows).reshape(-1, 1), 3)
+
+        d = self.upstream_distance()
+
+        xj = d[colix[:, 0]] # downstream node of i
+        xi = d[colix[:, 1]]
+        xk = d[colix[:, 2]] # upstream node of i
+
+        # C matrix (equation A4)
+        values = np.array([2/((xi - xj) * (xk - xj)), -2 /
+                        ((xk-xi)*(xi-xj)), 2/((xk-xi)*(xk - xj))]).T
+        c = sp.csc_array(
+            (values.flatten(), (rowix.flatten(), colix.flatten())), (nrrows, nr))
+
+        #########################################
+        # Compute s parameter (equation A7)
+        delta_x = self.cellsize
+        n = nr
+        p = nrrows
+        s_parameter = ((delta_x)**2) * k * np.sqrt(n/p)
+
+        #########################################
+        # Compute function parameters for quadratic part of the problem
+        # Compute matrix D (equation A15)
+        d_2 = s_parameter*c
+        d_matrix = sp.block_array([[zero_matrix], [d_2]])
+        b_matrix = 2*(d_matrix.T @ d_matrix)
+        h_matrix = sp.block_diag(
+                [zero_matrix, zero_matrix, b_matrix], format='csc')
+
+        # Compute function parameters for linear part of the problem
+        f = np.concatenate((tau*np.ones(nr), (1-tau)*np.ones(nr), np.zeros(nr)))
+
+        #########################################
+        # Constraints
+        # Gradient
+        delta = 1/(d[self.source] - d[self.target])
+
+        gradient = sp.csc_array((delta, (np.arange(ne), self.target)), shape=(
+            ne, nr)) - sp.csc_array((delta, (np.arange(ne), self.source)), shape=(ne, nr))
+
+        b = mingradient * np.ones(ne) # min gradient
+
+        # Bounds
+        lb = np.concatenate([np.zeros(nr), np.zeros(nr)])
+
+        # Inequality Constraints
+        m_matrix = sp.block_array(
+            [[zero_edge_matrix, zero_edge_matrix, gradient],
+            [-identity_matrix, zero_matrix, zero_matrix],
+            [zero_matrix, -identity_matrix, zero_matrix]
+            ])
+
+        h = np.concatenate([-b, lb])
+
+        # Equality Constraint
+        if fixedoutlet:
+            outlet = self.streampoi('outlets')
+            p = sp.diags_array((~outlet).astype(np.int64), offsets = 0,
+                               shape = (nr,nr), format='csc')
+            a_eq = sp.block_array([[p, -p, identity_matrix]])
+        else:
+            a_eq = sp.block_array(
+                [[identity_matrix, -identity_matrix, identity_matrix]])
+
+        b_eq = np.array(z, copy=True)
+
+        a_matrix = sp.vstack([a_eq, m_matrix], format='csc')
+        g = np.concatenate([b_eq, h])
+
+        cones = [ZeroConeT(nr), NonnegativeConeT(ne + 2 * nr)]
+
+        settings = DefaultSettings()
+        settings.verbose = False
+
+        #########################################
+        # Compute algorithm solution
+        solver = DefaultSolver(h_matrix, f, a_matrix, g, cones, settings)
+        sol = solver.solve()
+
+        #us = np.array(sol.x[0:nr])
+        #vs = np.array(sol.x[nr:2*nr])
+        zs = np.array(sol.x[2*nr:3*nr])
 
         return zs
 

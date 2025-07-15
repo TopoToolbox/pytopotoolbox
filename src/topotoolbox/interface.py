@@ -37,4 +37,4 @@ def validate_alignment(s1, s2) -> bool:
     return (s1.shape == s2.shape) and all(
         (not hasattr(s1, attr) or not hasattr(s2, attr))
         or (getattr(s1, attr) == getattr(s2, attr))
-        for attr in ["bounds", "crs", "transform"])
+        for attr in ["bounds", "georef", "transform"])
