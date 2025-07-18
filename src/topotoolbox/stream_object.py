@@ -1540,6 +1540,150 @@ class StreamObject():
 
         return z
 
+    def knickpointfinder(self, dem: GridObject | np.ndarray,
+                         knickpoints: np.ndarray | None = None,
+                         tolerance: float = 100.0,
+                         iterations: int | None = None) -> np.ndarray:
+        """Find knickpoints in river profiles
+
+        Rivers that adjust to changing base levels or have diverse
+        lithologies often feature knickzones, i.e. pronounced convex
+        sections that separate the otherwise concave equilibrium
+        profile. The profile should be monotoneously decreasing (see
+        imposemin, quantcarve, crs).
+
+        This function extracts knickpoints, i.e. sharp convex sections
+        in the river profile. This is accomplished by an algorithm
+        that adjusts a strictly concave upward profile to an actual
+        profile in the DEM or node-attribute list. The algorithm
+        iteratively relaxes the concavity constraint at those nodes in
+        the river profile that have the largest elevation offsets
+        between the strictly concave and actual profile until the
+        offset falls below a user-defined tolerance.
+
+        Parameters
+        ----------
+        dem: GridObject or np.ndarray
+
+            The elevation data of the stream network provided either
+            as a GridObject compatible with this StreamObject or as a
+            node attribute list. The elevation data is automatically
+            processed using imposemin to ensure that it is decreasing
+            downstream. If additional smoothing of the stream profile
+            is needed, use a function like quantcarve or crslin and
+            pass the resulting node attribute list to
+            `knickpointfinder`.
+
+        knickpoints: np.ndarray
+
+            A logical node attribute list that is True for any stream
+            network nodes that should be considered knickpoints a priori
+
+        tolerance: float
+
+            The maximum difference between the DEM and a modeled
+            convex profile that will be considered a
+            knickpoint
+
+            Setting this higher will identify fewer knickpoints while
+            setting it lower finds more knickpoints. It is set by
+            default to 100 m, but users should choose a tolerance
+            based on their data and needs.
+
+        iterations: int
+
+            The maximum number of iterations that will be
+            run
+
+            `knickpointfinder` will identify more than one knickpoint
+            per iteration, so this argument does not completely
+            control the number of knickpoints identified. The default
+            is the number of nodes in the stream network, and the
+            iteration count is always limited to the number of nodes
+            in the stream network.
+
+        Returns
+        -------
+        np.ndarray
+            A logical node attribute list that is True for stream
+            network nodes that are identified as knickpoints
+
+        Example
+        -------
+        >>> import topotoolbox
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd)
+        >>> s = s.klargestconncomps(1)
+        >>> z = topotoolbox.imposemin(s, dem)
+        >>> kp = s.knickpointfinder(z, tolerance=50.0)
+        >>> d = s.upstream_distance()
+        >>> fig,ax = plt.subplots()
+        >>> s.plotdz(dem, ax=ax, color='k')
+        >>> ax.scatter(d[kp], z[kp])
+        >>> ax.autoscale_view()
+
+        """
+        z = self.ezgetnal(dem, dtype=np.float32)
+        z = imposemin(self, z)
+
+        # The number of knickpoints and thus the number of iterations
+        # is bounded by the number of nodes in the stream network.
+        if iterations is None:
+            iterations = self.stream.size
+        iterations = min(iterations, self.stream.size)
+
+        nv = self.stream.size
+
+        if knickpoints is None:
+            kp = np.zeros(nv, dtype=np.bool)
+        else:
+            kp = np.array(knickpoints, copy=True)
+
+        for _ in np.arange(iterations):
+            zs = self.lowerenv(z, kp)
+            dz = z - zs
+            imax = np.arange(nv)
+
+            # These loops compute the maximum difference between the
+            # observed elevation and the lower convex envelope over
+            # reaches separated by knickpoints. The first loop
+            # propagates the maximum value and index downstream,
+            # skipping edges that terminate on a knickpoint.
+            for (u, v) in zip(self.source, self.target):
+                if dz[v] < dz[u] and not kp[v]:
+                    dz[v] = dz[u]
+                    imax[v] = imax[u]
+
+            # The second loop propagates the maximum back upstream, so
+            # each connected component is labeled with the maximum
+            # difference and the node index at which that maximum
+            # occurs.
+            for (u, v) in zip(reversed(self.source), reversed(self.target)):
+                if dz[u] < dz[v] and not kp[v]:
+                    dz[u] = dz[v]
+                    imax[u] = imax[v]
+
+            # These loops could be implemented in libtopotoolbox for
+            # speed. The maximum-over-reaches logic could be useful
+            # for other applications.
+
+            # The unique node indices are the potential knickpoints
+            # for each reach. We select only those whose difference
+            # exceeds the user-provided tolerance.
+            potential_knicks = np.unique(imax)
+            new_knicks = dz[potential_knicks] >= tolerance
+
+            # If no new knickpoints have been found, we stop
+            # searching.
+            if np.count_nonzero(new_knicks) == 0:
+                break
+
+            kp[potential_knicks] = new_knicks
+
+        return kp
+
     # 'Magic' functions:
     # ------------------------------------------------------------------------
 
