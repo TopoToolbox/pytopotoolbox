@@ -20,7 +20,7 @@ __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
 DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
 OPEN_TOPO_SOURCE = "https://portal.opentopography.org/API/globaldem"
-OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E'
+OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E',
                       'SRTM15Plus', 'NASADEM', 'COP30', 'COP90', 'EU_DTM',
                       'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo',
                       'CA_MRDEM_DTM', 'CA_MRDEM_DSM')
