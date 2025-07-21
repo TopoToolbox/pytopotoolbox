@@ -815,3 +815,7 @@ def test_knickpoints_kpcopy(wide_dem):
     assert np.array_equal(kp_copy, kp0)
 
     assert np.count_nonzero(kp) >= np.count_nonzero(kp0)
+
+
+def test_togeodataframe(wide_stream):
+    wide_stream.to_geodataframe()

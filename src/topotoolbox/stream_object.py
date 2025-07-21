@@ -496,7 +496,7 @@ class StreamObject():
         '''
 
         line_geoms = [LineString(coords) for coords in self.xy()]
-        gdf = gpd.GeoDataFrame(geometry=line_geoms, georef=self.georef)
+        gdf = gpd.GeoDataFrame(geometry=line_geoms, crs=self.georef)
         return gdf
 
     def to_shapefile(self, path: str) -> None:
