@@ -788,12 +788,12 @@ class StreamObject():
         """
         outlets = self.streampoi('outlets')
 
-        l = np.zeros(self.stream.size, dtype=np.int64)
-        l[outlets] = np.arange(np.count_nonzero(outlets)) + 1
+        labels = np.zeros(self.stream.size, dtype=np.int64)
+        labels[outlets] = np.arange(np.count_nonzero(outlets)) + 1
 
-        _stream.propagatevaluesupstream_i64(l, self.source, self.target)
+        _stream.propagatevaluesupstream_i64(labels, self.source, self.target)
 
-        return l
+        return labels
 
     def klargestconncomps(self, k=1) -> 'StreamObject':
         """Extract the k largest connected components of the stream network
