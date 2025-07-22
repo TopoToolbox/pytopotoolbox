@@ -75,12 +75,15 @@ class StreamObject():
 
     Example
     -------
+    >>> import topotoolbox
+    >>> import matplotlib.pyplot as plt
     >>> dem = topotoolbox.load_dem('perfectworld')
     >>> fd = topotoolbox.FlowObject(dem)
     >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-    >>> plt.subplots()
-    >>> dem.plot(cmap="terrain")
-    >>> s.plot(color='r')
+    >>> fig, ax = plt.subplots()
+    >>> _= dem.plot(cmap="terrain")
+    >>> _= s.plot(color='r')
+    >>> plt.show()
 
         """
         if not isinstance(flow, FlowObject):
@@ -294,10 +297,11 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> print(s.distance())
+        >>> print(s.distance()) # doctest: +SKIP
         """
         d = np.abs(self.stream[self.source] - self.stream[self.target])
 
@@ -489,10 +493,12 @@ class StreamObject():
 
         Example
         -------
-        dem = tt3.load_dem('bigtujunga')
-        fd = tt3.FlowObject(dem)
-        s = tt3.StreamObject(fd)
-        s_gdf = s.to_geodataframe()
+        >>> import topotoolbox
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd)
+        >>> s_gdf = s.to_geodataframe()
         '''
 
         line_geoms = [LineString(coords) for coords in self.xy()]
@@ -509,10 +515,12 @@ class StreamObject():
 
         Example
         -------
-        dem = tt3.load_dem('bigtujunga')
-        fd = tt3.FlowObject(dem)
-        s = tt3.StreamObject(fd)
-        s.to_shapefile('stream_network.shp')
+        >>> import topotoolbox
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> s = topotoolbox.StreamObject(fd)
+        >>> s.to_shapefile('stream_network.shp')
         '''
         gdf = self.to_geodataframe()
         gdf.to_file(path)
@@ -542,13 +550,15 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> plt.subplots()
-        >>> dem.plot(cmap="terrain")
-        >>> s.plot(color='r')
+        >>> fig, ax = plt.subplots()
+        >>> _= dem.plot(cmap="terrain")
+        >>> _= s.plot(color='r')
+        >>> plt.show()
         """
 
         if ax is None:
@@ -730,6 +740,7 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
@@ -737,10 +748,11 @@ class StreamObject():
         >>> s2 = s.klargestconncomps(1)
         >>> st = s2.trunk()
         >>> fig,ax = plt.subplots()
-        >>> dem.plot(ax=ax,cmap="terrain")
-        >>> s.plot(ax=ax, color='r')
-        >>> s2.plot(ax=ax,color='k')
-        >>> st.plot(ax=ax, color='b')
+        >>> _= dem.plot(ax=ax,cmap="terrain")
+        >>> _= s.plot(ax=ax, color='r')
+        >>> _= s2.plot(ax=ax,color='k')
+        >>> _= st.plot(ax=ax, color='b')
+        >>> plt.show()
         """
 
         stream_network_size = len(self.stream)
@@ -812,14 +824,15 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
         >>> s2 = s.klargestconncomps(1)
         >>> fig, ax = plt.subplots()
-        >>> dem.plot(ax=ax,cmap="terrain")
-        >>> s2.plot(ax=ax,color='k')
+        >>> _= dem.plot(ax=ax,cmap="terrain")
+        >>> _= s2.plot(ax=ax,color='k')
         >>> plt.show()
         """
         nv = self.stream.size
@@ -876,6 +889,7 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
@@ -886,8 +900,9 @@ class StreamObject():
         >>> arr = (np.arange(np.prod(shape))<np.prod(shape)//4).reshape(shape)
         >>> s2 = s.subgraph(arr)
         >>> fig,ax = plt.subplots()
-        >>> dem.plot(ax=ax,cmap="terrain")
-        >>> s2.plot(ax=ax,color='k')
+        >>> _= dem.plot(ax=ax,cmap="terrain")
+        >>> _= s2.plot(ax=ax,color='k')
+        >>> plt.show()
         """
 
         nal = self.ezgetnal(nal)
@@ -924,6 +939,7 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('bigtujunga')
@@ -956,6 +972,7 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
@@ -964,8 +981,9 @@ class StreamObject():
         >>> confluences = s.streampoi('confluences')
         >>> s2 = s.upstreamto(confluences)
         >>> fig,ax = plt.subplots()
-        >>> dem.plot(ax=ax,cmap="terrain")
-        >>> s2.plot(ax=ax,color='k')
+        >>> _= dem.plot(ax=ax,cmap="terrain")
+        >>> _= s2.plot(ax=ax,color='k')
+        >>> plt.show()
         """
         nal = self.ezgetnal(nodes, dtype=np.uint32)
 
@@ -990,16 +1008,18 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
         >>> confluences = s.streampoi('confluences')
-        >>> s2 = s.downstream(confluences)
+        >>> s2 = s.downstreamto(confluences)
         >>> fig,ax = plt.subplots()
-        >>> dem.plot(ax=ax,cmap="terrain")
-        >>> s2.plot(ax=ax,color='k')
+        >>> _= dem.plot(ax=ax,cmap="terrain")
+        >>> _= s2.plot(ax=ax,color='k')
+        >>> plt.show()
         """
         nal = self.ezgetnal(nodes, dtype=np.uint32)
 
@@ -1512,6 +1532,7 @@ class StreamObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('bigtujunga')
@@ -1522,9 +1543,10 @@ class StreamObject():
         >>> kn = np.zeros(len(z), dtype=bool)
         >>> ze = s.lowerenv(z, kn)
         >>> fig,ax = plt.subplots()
-        >>> s.plotdz(dem, ax=ax, color='gray')
-        >>> s.plotdz(ze, ax=ax, color='black')
+        >>> _= s.plotdz(dem, ax=ax, color='gray')
+        >>> _= s.plotdz(ze, ax=ax, color='black')
         >>> ax.autoscale_view()
+        >>> plt.show()
 
         """
         z = self.ezgetnal(dem, dtype=np.float32)
@@ -1620,9 +1642,10 @@ class StreamObject():
         >>> kp = s.knickpointfinder(z, tolerance=50.0)
         >>> d = s.upstream_distance()
         >>> fig,ax = plt.subplots()
-        >>> s.plotdz(dem, ax=ax, color='k')
-        >>> ax.scatter(d[kp], z[kp])
-        >>> ax.autoscale_view()
+        >>> _= s.plotdz(dem, ax=ax, color='k')
+        >>> _= ax.scatter(d[kp], z[kp])
+        >>> _= ax.autoscale_view()
+        >>> plt.show()
 
         """
         z = self.ezgetnal(dem, dtype=np.float32)
