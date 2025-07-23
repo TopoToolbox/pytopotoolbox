@@ -1235,7 +1235,7 @@ class StreamObject():
             (delta, (np.arange(ne), self.target)),shape=(ne, nr)) - sp.csc_array(
                 (delta, (np.arange(ne), self.source)), shape=(ne, nr))
 
-        g_min = np.zeros((nr, 1))  # minimum gradient
+        g_min = np.zeros(nr)  # minimum gradient
         g_min[self.source] = mingradient
 
         # Set up matrix G and vector g_min in equation A11. Here they are defined as M and h
