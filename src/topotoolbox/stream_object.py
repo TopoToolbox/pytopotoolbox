@@ -11,7 +11,6 @@ from scipy.sparse import csr_matrix
 from shapely.geometry import LineString
 import geopandas as gpd
 import scipy.sparse as sp
-import scipy.optimize as op
 
 from kvxopt.solvers import qp
 from kvxopt import matrix, spmatrix, sparse
@@ -1294,41 +1293,68 @@ class StreamObject():
         # get node attribute list with elevation values
         z = self.ezgetnal(dem, dtype = 'double') # elevation values of the dem
         nr = z.size
+        ne = self.source.size # number of edges
 
         # Quantcarve algorithm (equation A12)
         d = self.upstream_distance() # had to use downstream distance
         f = np.vstack((tau*np.ones((nr, 1)), (1-tau)*np.ones((nr,1)), np.zeros((nr,1))))
+        f = f.flatten()
 
+        identity_matrix = sp.eye(nr).tocsc()
+        zero_matrix = sp.csc_array((nr, nr))
+        zero_edge_matrix = sp.csc_array((ne, nr))
+
+        #########################################
         # Constraints
         # gradient
-        dd = np.array(1/(d[self.source]-d[self.target])) # cellsize
-        gradient = (sp.coo_matrix((dd, (self.source, self.target)), shape=(nr, nr))
-                    - sp.coo_matrix((dd, (self.source, self.source)), shape=(nr, nr))).tocsr()
-        a_matrix = sp.hstack([sp.csr_matrix((nr, nr)), sp.csr_matrix((nr, nr)), gradient])
+        delta = np.array(1/(d[self.source]-d[self.target])) # cellsize
+        gradient = gradient = sp.csc_array(
+            (delta, (np.arange(ne), self.target)), shape=(ne, nr)) - sp.csc_array(
+                (delta, (np.arange(ne), self.source)), shape=(ne, nr))
 
-        b = np.zeros((nr,1)) # min gradient
-        b[self.source] = mingradient
+        h_matrix = sp.csc_array((3*nr,3*nr)).tocsc() # set quadratic part of the problem
+                                                     # to 0 to make it linear
+
+        b = mingradient * np.ones(ne) # min gradient
 
         # bounds constraints
-        lb = np.vstack([np.zeros((nr, 1)), np.zeros((nr, 1)),
-                        -float('inf')*np.ones((nr,1))]) # 2D array
-        lb = lb.flatten() # convert to 1D array
-        ub = np.inf*np.ones(3*nr)
+        lb = np.concatenate([np.zeros(nr), np.zeros(nr)])
+
+        # stacked inequality constraints
+        m_matrix = sp.block_array(
+                    [[zero_edge_matrix, zero_edge_matrix, gradient],
+                    [-identity_matrix, zero_matrix, zero_matrix],
+                    [zero_matrix, -identity_matrix, zero_matrix]
+                    ])
+        h = np.concatenate([-b, lb])
 
         # equality constraint
-        identity = sp.eye(nr)
         if fixedoutlet:
             outlet = self.streampoi('outlets')
-            p = sp.diags((~outlet).astype(int), 0, shape = (nr,nr))
-            a_eq = sp.hstack([p, -p, identity])
+            p = sp.diags_array((~outlet).astype(int), offsets = 0, shape = (nr,nr), format='csc')
+            a_eq = sp.block_array([[p, -p, identity_matrix]]).tocsc()
         else:
-            a_eq = sp.hstack([identity, -identity, identity])
+            a_eq = sp.block_array([[identity_matrix, -identity_matrix, identity_matrix]]).tocsc()
 
-        b_eq = z
+        b_eq = np.array(z, copy = True)
 
+        # All constraints stacked
+        m_matrix_2 = sp.vstack([a_eq, m_matrix], format = 'csc')
+        h_2 = np.concatenate([b_eq, h])
+
+        #########################################
         # solve linear programming problem
-        bhat = op.linprog(f, a_matrix, -b, a_eq, b_eq, bounds = list(zip(lb, ub)))
-        zs = bhat['x'][2*nr:]
+        cones = [ZeroConeT(nr), NonnegativeConeT(ne + 2 * nr)]
+
+        settings = DefaultSettings()
+        settings.verbose = True
+
+        solver = DefaultSolver(h_matrix, f, m_matrix_2, h_2, cones, settings)
+        sol = solver.solve()
+
+        #us = np.array(sol.x[0:nr])
+        #vs = np.array(sol.x[nr:2*nr])
+        zs = np.array(sol.x[2*nr:3*nr])
 
         return zs
 
