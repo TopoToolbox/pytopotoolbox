@@ -23,7 +23,6 @@ repos:
           - rasterio
           - shapely
           - geopandas
-          - kvxopt
           - clarabel
         exclude: |
           (?x)^(
