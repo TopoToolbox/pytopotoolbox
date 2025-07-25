@@ -1187,7 +1187,7 @@ class StreamObject():
             [2/((xi-xj)*(xk-xj)), -2/((xk-xi)*(xi-xj)), 2/((xk-xi)*(xk-xj))])
 
         # Second derivative matrix (C)
-        c = sp.csc_array((values.flatten(), (rowix.flatten(), colix.flatten())), (nrrows, nr))
+        c = sp.csc_array((values.T.flatten(), (rowix.flatten(), colix.flatten())), (nrrows, nr))
 
         #########################################
         # Compute s parameter (equation A7)
@@ -1202,11 +1202,10 @@ class StreamObject():
         # Compute matrix A and vector b (equation A9)
         a_2 = s_parameter*c  # C*s
         a_matrix = sp.vstack([identity_matrix, a_2], format = 'csc')
-        b = np.concatenate([(z.reshape(-1, 1)), np.zeros((nrrows, 1))])
+        b = np.concatenate([z, np.zeros(nrrows)])
 
         # Compute function parameters for quadratic programming (equation A11)
         f = -2*(a_matrix.T @ b)
-        f = f.flatten()
         h_matrix = 2*(a_matrix.T @ a_matrix).tocsc()
 
         #########################################
@@ -1254,7 +1253,7 @@ class StreamObject():
         cones = [ZeroConeT(i_eq.shape[0]), NonnegativeConeT(m_matrix.shape[0])]
 
         settings = DefaultSettings()
-        settings.verbose = True
+        settings.verbose = False
 
         solver = DefaultSolver(h_matrix, f, m_matrix_2, h, cones, settings)
         sol = solver.solve()
