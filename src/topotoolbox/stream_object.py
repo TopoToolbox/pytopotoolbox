@@ -12,8 +12,6 @@ from shapely.geometry import LineString
 import geopandas as gpd
 import scipy.sparse as sp
 
-from kvxopt.solvers import qp
-from kvxopt import matrix, spmatrix, sparse
 # pylint: disable=no-name-in-module
 from clarabel import ZeroConeT, NonnegativeConeT, DefaultSettings, DefaultSolver
 
@@ -1147,16 +1145,18 @@ class StreamObject():
         # get node attribute list with elevation values
         z = self.ezgetnal(dem, dtype='double')  # elevation values of the dem
         nr = z.size
+        ne = self.source.size # num of edges
 
         if any(np.isnan(z)):
             raise ValueError('DEM or z may not contain any NaNs')
 
         # CRS linear algorithm
 
+        # Clarabel only accepts csc arrays
         # Identity Matrix
-        identity_matrix = spmatrix(
-            1.0, list(range(nr)), list(range(nr)), (nr, nr))
+        identity_matrix = sp.eye_array(nr).tocsc()
 
+        #########################################
         # Compute second derivative matrix (C in equation A5)
         # find upstream and downstream nodes
         ix = self.source  # upstream
@@ -1185,10 +1185,10 @@ class StreamObject():
         values = np.array(
             [2/((xi-xj)*(xk-xj)), -2/((xk-xi)*(xi-xj)), 2/((xk-xi)*(xk-xj))])
 
-        # Sparse kvxopt second derivative matrix (C)
-        c = spmatrix(values.T.flatten().tolist(), rowix.flatten(
-        ).tolist(), colix.flatten().tolist(), (nrrows, nr))
+        # Second derivative matrix (C)
+        c = sp.csc_array((values.T.flatten(), (rowix.flatten(), colix.flatten())), (nrrows, nr))
 
+        #########################################
         # Compute s parameter (equation A7)
         delta_x = self.cellsize  # spatial resolution
         n = nr  # number of data points
@@ -1196,15 +1196,18 @@ class StreamObject():
         # can be computed (number of i nodes --> with both upstream and dowsntream neighbours)
         s_parameter = ((delta_x)**2)*k*math.sqrt(n/p)
 
+        #########################################
+        # Compute parameters for quad programming
         # Compute matrix A and vector b (equation A9)
         a_2 = s_parameter*c  # C*s
-        a_matrix = sparse([identity_matrix, a_2])
-        b = matrix([matrix(z.reshape(-1, 1)), matrix(0.0, (nrrows, 1))])
+        a_matrix = sp.vstack([identity_matrix, a_2], format = 'csc')
+        b = np.concatenate([z, np.zeros(nrrows)])
 
         # Compute function parameters for quadratic programming (equation A11)
-        f = -2*(a_matrix.T * b)
-        h_matrix = 2*(a_matrix.T * a_matrix)
+        f = -2*(a_matrix.T @ b)
+        h_matrix = 2*(a_matrix.T @ a_matrix).tocsc()
 
+        #########################################
         # Constraints
         # Equivalent constraint. (second constr. in equation A11)
         if attachheads:
@@ -1214,46 +1217,47 @@ class StreamObject():
             ids = np.where(channelheads)
 
             # matrix with the channelheads on main diagonal
-            i_eq = sp.coo_matrix((channelheads[channelheads].astype(float),
+            i_eq = sp.csc_array((channelheads[channelheads].astype(float),
                                   (np.arange(nc), ids[0])), shape=(nc, nr))
-            i_eq = spmatrix(i_eq.data.tolist(), i_eq.row.tolist(
-            ), i_eq.col.tolist(), (nc, nr))  # convert to kvxopt matrix
-
-            z_eq = z[channelheads]  # store elevation values at channelheads
-            z_eq = matrix(z_eq)  # convert into kvxopt matrix
+            z_eq = z[channelheads]
 
         else:
-            i_eq = spmatrix([], [], [], (0, nr))
-            z_eq = matrix(0.0, (0,1))
+            i_eq = sp.csc_array((0, nr))
+            z_eq = np.zeros(0)
 
         # Inequality constraints
         # Gradient constraint
-        dd = np.array(1/(d[self.source]-d[self.target]))  # cellsize
+        delta = np.array(1/(d[self.source]-d[self.target]))  # cellsize
 
-        gradient = (sp.coo_matrix((dd, (self.source, self.target)), shape=(
-            nr, nr)) - sp.coo_matrix((dd, (self.source, self.source)), shape=(nr, nr))).tocoo()
-        gradient = spmatrix(gradient.data.tolist(), gradient.row.tolist(
-        ), gradient.col.tolist(), (nr, nr))  # convert to ckxopt matrix
+        gradient = sp.csc_array(
+            (delta, (np.arange(ne), self.target)),shape=(ne, nr)) - sp.csc_array(
+                (delta, (np.arange(ne), self.source)), shape=(ne, nr))
 
-        g_min = np.zeros((nr, 1))  # minimum gradient
-        g_min[self.source] = mingradient
+        g_min = np.full(ne, mingradient)
 
         # Set up matrix G and vector g_min in equation A11. Here they are defined as M and h
         # M and h contain all inequality constraints, including upperbound (attachtomin).
         if attachtomin:
             # matrix with inequality constraints [gradient, upper bound]
-            m_matrix = sparse([gradient, identity_matrix])
-            h = np.vstack([-g_min, z.reshape(-1, 1)])
+            m_matrix = sp.vstack([gradient, identity_matrix], format = 'csc')
+            h = np.concatenate([-g_min, z])
         else:
-            m_matrix = sparse([gradient])
-            h = np.vstack([-g_min])
+            m_matrix = gradient
+            h = -g_min
 
-        h = matrix(h)  # convert to kvxopt
+        m_matrix_2 = sp.vstack([i_eq, m_matrix]).tocsc()
+        h = np.concatenate([z_eq, h])
 
         # Solve quadratic programming with the constraints
-        zs = qp(h_matrix, f, m_matrix, h, i_eq, z_eq,
-                options={'show_progress': False})
-        zs = np.array(zs['x']).flatten()
+        cones = [ZeroConeT(i_eq.shape[0]), NonnegativeConeT(m_matrix.shape[0])]
+
+        settings = DefaultSettings()
+        settings.verbose = False
+
+        solver = DefaultSolver(h_matrix, f, m_matrix_2, h, cones, settings)
+        sol = solver.solve()
+
+        zs = np.array(sol.x[0:nr])
 
         return zs
 

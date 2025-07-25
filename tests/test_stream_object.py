@@ -628,11 +628,12 @@ def test_crslin(wide_dem, wide_stream):
 
     # attachheads: zs(channelheads) = z(channelheads)
     channelheads = s.streampoi('channelheads')
-    assert np.all(zs[channelheads] == z[channelheads])
+    assert np.allclose(zs[channelheads], z[channelheads])
 
     # gradient: gradient > mingradient
     gradient = (zs[s.source] - zs[s.target]) / s.distance()
     mingradient = 0.01
+
     assert np.all((gradient - mingradient) >= -1e-6)
 
 
