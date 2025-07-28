@@ -514,20 +514,29 @@ class StreamObject():
         gdf = self.to_geodataframe()
         gdf.to_file(path)
 
-    def plot(self, ax=None, **kwargs):
+    def plot(self, ax=None, scalex=True, scaley=True, **kwargs):
         """Plot the StreamObject
 
         Stream segments as computed by StreamObject.xy are plotted
-        using a LineCollection. Note that collections are not used in
-        autoscaling the provided axis. If the axis limits are not
-        already set, by another underlying plot, for example, call
-        ax.autoscale_view() on the returned axes to show the plot.
+        using a LineCollection.
 
         Parameters
         ----------
         ax: matplotlib.axes.Axes, optional
             The axes in which to plot the StreamObject. If no axes are
             given, the current axes are used.
+
+        scalex: bool, optional
+            Autoscale the x-axis limits. Defaults to `True`. If the
+            x-axis limits have been set manually with `set_xlim`, the
+            autoscaling will not be applied regardless of the value of
+            `scalex`.
+
+        scaley: bool, optional
+            Autoscale the y-axis limits. Defaults to `True`. If the
+            y-axis limits have been set manually with `set_ylim`, the
+            autoscaling will not be applied regardless of the value of
+            `scaley`.
 
         **kwargs
             Additional keyword arguments are forwarded to LineCollection
@@ -552,15 +561,12 @@ class StreamObject():
             ax = plt.gca()
         collection = LineCollection(self.xy(), **kwargs)
         ax.add_collection(collection)
+        ax.autoscale_view(scalex=scalex, scaley=scaley)
         return ax
 
-    def plotdz(self, z, ax=None, dunit: str = 'm', doffset: float = 0, **kwargs):
+    def plotdz(self, z, ax=None, dunit: str = 'm', doffset: float = 0,
+               scalex=True, scaley=True, **kwargs):
         """Plot a node attribute list against upstream distance
-
-        Note that collections are not used in
-        autoscaling the provided axis. If the axis limits are not
-        already set, by another underlying plot, for example, call
-        ax.autoscale_view() on the returned axes to show the plot.
 
         Parameters
         ----------
@@ -579,6 +585,18 @@ class StreamObject():
             An offset to be applied to the upstream distance.
             `doffset` should be in the units specified by `dunit`.
 
+        scalex: bool, optional
+            Autoscale the x-axis limits. Defaults to `True`. If the
+            x-axis limits have been set manually with `set_xlim`, the
+            autoscaling will not be applied regardless of the value of
+            `scalex`.
+
+        scaley: bool, optional
+            Autoscale the y-axis limits. Defaults to `True`. If the
+            y-axis limits have been set manually with `set_ylim`, the
+            autoscaling will not be applied regardless of the value of
+            `scaley`.
+
         **kwargs
             Additional keyword arguments are forwarded to LineCollection
 
@@ -591,6 +609,7 @@ class StreamObject():
         ------
         ValueError
             If `dunit` is not one of 'm' or 'km'.
+
         """
 
         if ax is None:
@@ -615,6 +634,7 @@ class StreamObject():
 
         collection = LineCollection(self.xy((dist, z)), **kwargs)
         ax.add_collection(collection)
+        ax.autoscale_view(scalex=scalex, scaley=scaley)
         return ax
 
     def chitransform(self,
@@ -1554,7 +1574,6 @@ class StreamObject():
         >>> fig,ax = plt.subplots()
         >>> s.plotdz(dem, ax=ax, color='gray')
         >>> s.plotdz(ze, ax=ax, color='black')
-        >>> ax.autoscale_view()
 
         """
         z = self.ezgetnal(dem, dtype=np.float32)
@@ -1652,7 +1671,6 @@ class StreamObject():
         >>> fig,ax = plt.subplots()
         >>> s.plotdz(dem, ax=ax, color='k')
         >>> ax.scatter(d[kp], z[kp])
-        >>> ax.autoscale_view()
 
         """
         z = self.ezgetnal(dem, dtype=np.float32)
