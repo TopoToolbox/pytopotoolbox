@@ -268,6 +268,20 @@ void wrap_hillshade(py::array_t<float> output,
             dims_array.data());
 }
 
+void wrap_hillshade_fused(py::array_t<float> output,
+                          py::array_t<float> dem,
+                          float azimuth, float altitude, float cellsize,
+                          std::tuple<ptrdiff_t, ptrdiff_t> dims) {
+
+  float *output_ptr = output.mutable_data();
+
+  float *dem_ptr = dem.mutable_data();
+
+  std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
+  hillshade_fused(output_ptr, dem_ptr, azimuth, altitude,
+                  cellsize, dims_array.data());
+}
+
 // Make wrap_funcname() function available as funcname() to be used by
 // by functions in the pytopotoolbox package
 
@@ -283,4 +297,5 @@ PYBIND11_MODULE(_grid, m) {
     m.def("flow_routing_d8_edgelist", &wrap_flow_routing_d8_edgelist);
     m.def("gradient8", &wrap_gradient8);
     m.def("hillshade", &wrap_hillshade);
+    m.def("hillshade_fused", &wrap_hillshade_fused);
 }

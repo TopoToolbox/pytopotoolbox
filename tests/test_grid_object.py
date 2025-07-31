@@ -225,6 +225,16 @@ def test_hillshade_order(order_dems):
         assert topo.validate_alignment(fdem, hf)
 
 
+def test_hillshade_fused(wide_dem):
+    for azimuth in np.arange(0.0, 360.0, 2.3):
+        h1 = wide_dem.hillshade(azimuth=azimuth, fused=True)
+        h2 = wide_dem.hillshade(azimuth=azimuth, fused=False)
+        assert np.allclose(h1, h2)
+
+        assert topo.validate_alignment(wide_dem, h1)
+        assert topo.validate_alignment(wide_dem, h2)
+
+
 def test_hillshade_types(types_dems):
     dem32, dem64 = types_dems
 

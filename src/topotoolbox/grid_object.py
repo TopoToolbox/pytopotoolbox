@@ -933,7 +933,8 @@ class GridObject():
     def hillshade(self,
                   azimuth: float = 315.0,
                   altitude: float = 60.0,
-                  exaggerate: float = 1.0):
+                  exaggerate: float = 1.0,
+                  fused=True):
         """Compute a hillshade of a digital elevation model
 
         Parameters
@@ -947,6 +948,12 @@ class GridObject():
         exaggerate : float
             The amount of vertical exaggeration. Increase to emphasize
             elevation differences in flat terrain. Defaults to 1.0
+        fused : bool, optional
+            If true, use the fused hillshade computation in
+            libtopotoolbox, which requires less memory but can be
+            slightly slower. If you have a small DEM, and are
+            repeatedly creating hillshades consider
+            setting to False for increased performance. Defaults to True.
 
         Returns
         -------
@@ -959,12 +966,11 @@ class GridObject():
         >>> hillshade = dem.hillshade()
         >>> hillshade.plot(cmap='gray')
         >>> dem.plot(cmap='terrain', alpha=0.2)
+
         """
 
         z = np.asarray(self, dtype=np.float32)
         h = np.zeros_like(z)
-        nx = np.zeros_like(z)
-        ny = np.zeros_like(z)
 
         # Computing the azimuth angle is a bit tricky
         gt = self.transform
@@ -1009,9 +1015,16 @@ class GridObject():
 
         altitude_radians = np.deg2rad(altitude)
 
-        _grid.hillshade(h, nx, ny, exaggerate * z,
-                        azimuth_radians, altitude_radians,
-                        self.cellsize, self.dims)
+        if fused:
+            _grid.hillshade_fused(h, exaggerate * z,
+                                  azimuth_radians, altitude_radians,
+                                  self.cellsize, self.dims)
+        else:
+            nx = np.zeros_like(z)
+            ny = np.zeros_like(z)
+            _grid.hillshade(h, nx, ny, exaggerate * z,
+                            azimuth_radians, altitude_radians,
+                            self.cellsize, self.dims)
 
         result = cp.copy(self)
         result.z = h
