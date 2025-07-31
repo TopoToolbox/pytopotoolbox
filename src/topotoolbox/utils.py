@@ -60,7 +60,7 @@ def write_tif(dem: GridObject, path: str) -> None:
             height=dem.rows,
             width=dem.columns,
             dtype=np.float32,
-            georef=dem.georef,
+            crs=dem.georef,
             transform=dem.transform
     ) as dataset:
         dataset.write(dem.z, 1)
