@@ -8,6 +8,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/topotoolbox)](https://pypi.org/project/topotoolbox/)
 [![Tests](https://github.com/topotoolbox/pytopotoolbox/workflows/CI/badge.svg)](https://github.com/topotoolbox/pytopotoolbox/actions)
 [![GitHub License](https://img.shields.io/github/license/topotoolbox/pytopotoolbox)](https://github.com/TopoToolbox/pytopotoolbox#GPL-3.0-1-ov-file)
+[![DOI](https://zenodo.org/badge/777258209.svg)](https://doi.org/10.5281/zenodo.16742408)
 
 # pytopotoolbox
 
