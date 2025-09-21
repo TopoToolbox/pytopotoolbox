@@ -1,6 +1,4 @@
-"""This module contains the GFObject class for graph-based flood routing.
-
-Author: Boris Gailleton
+"""This module contains the GFObject class.
 """
 from copy import deepcopy
 
@@ -45,8 +43,9 @@ class GFObject():
         self.grid = deepcopy(grid)
         self.grid.z = self.grid.z.astype(np.float64)
 
-        # Initialize water height array
-        self._hw = np.zeros_like(self.grid.z)
+        # Initialize water height GridObject
+        self._hw = deepcopy(self.grid)
+        self._hw.z = np.zeros_like(self.grid.z)
 
         # Process boundary conditions
         if bcs is None:
@@ -54,18 +53,12 @@ class GFObject():
             self._bcs = np.ones((grid.rows, grid.columns), dtype=np.uint8)
             self._bcs[[0, -1], :] = 3  # Open boundary on top/bottom
             self._bcs[:, [0, -1]] = 3  # Open boundary on left/right
-            self._bcs = self._bcs.ravel(order="C")
         else:
             # Validate boundary condition dimensions
             if bcs.shape != grid.shape:
                 raise RuntimeError(
                     "Boundary conditions must match grid dimensions"
                 )
-            # Convert to flattened uint8 array
-            if isinstance(bcs, GridObject):
-                self._bcs = bcs.z.ravel(order="C").astype(np.uint8)
-            else:
-                self._bcs = bcs.ravel(order="C").astype(np.uint8)
 
         # Process precipitation input
         if isinstance(p, np.ndarray):
@@ -79,10 +72,10 @@ class GFObject():
                 raise RuntimeError(
                     "Precipitation GridObject must match grid dimensions"
                 )
-            self._precipitations = p.z.ravel(order="C")
+            self._precipitations = p.z
         else:
             # Uniform precipitation across grid
-            self._precipitations = np.full_like(self.grid.z.ravel(), p)
+            self._precipitations = np.full_like(self.grid.z, p)
 
         # Process Manning roughness coefficient
         if isinstance(manning, np.ndarray):
@@ -90,32 +83,38 @@ class GFObject():
                 raise RuntimeError(
                     "Manning coefficient array must match grid dimensions"
                 )
-            self._manning = manning.ravel(order="C")
+            self._manning = manning
         elif isinstance(manning, GridObject):
             if manning.shape != grid.shape:
                 raise RuntimeError(
                     "Manning coefficient GridObject must match grid dimensions"
                 )
-            self._manning = manning.z.ravel(order="C")
+            self._manning = manning.z
         else:
             # Uniform Manning coefficient across grid
-            self._manning = np.full_like(self.grid.z.ravel(), manning)
+            self._manning = np.full_like(self.grid.z, manning)
 
         # Placeholder for the results from the model
         self.res = None
 
     # Water height getters and setters
     @property
-    def hw(self) -> np.ndarray:
-        """Get water height array."""
+    def hw(self) -> GridObject:
+        """Get water height GridObject."""
         return self._hw
 
     @hw.setter
-    def hw(self, value: np.ndarray) -> None:
+    def hw(self, value: np.ndarray | GridObject) -> None:
         """Set water height array."""
-        if value.shape != self._hw.shape:
-            raise ValueError("Water height array must match grid dimensions")
-        self._hw = value.astype(np.float64)
+        if isinstance(value, GridObject):
+            if value.shape != self.grid.shape:
+                raise ValueError("Water height GridObject must match grid dimensions")
+            self._hw = deepcopy(value)
+            self._hw.z = self._hw.z.astype(np.float64)
+        else:
+            if value.shape != self.grid.shape:
+                raise ValueError("Water height array must match grid dimensions")
+            self._hw.z = value.astype(np.float64)
 
     # Boundary conditions getters and setters
     @property
@@ -196,7 +195,7 @@ class GFObject():
         # Run the graphflood simulation with current parameters
         self.res = tgf.run_graphflood(
             self.grid,
-            initial_hw=self._hw,
+            initial_hw=self._hw.z,
             bcs=self.bcs,
             dt=dt,
             p=self._precipitations,
@@ -206,7 +205,11 @@ class GFObject():
             n_iterations=n_iterations)
 
         # Update water height from results and remove from res dict
-        self._hw = self.res['hw']
+        self._hw.z = self.res['hw']
+        if isinstance(self.res['hw'], GridObject):
+            self._hw = self.res['hw']
+        else:
+            self._hw.z = self.res['hw']
         del self.res['hw']
 
     # Model output getters (read-only)
@@ -350,11 +353,11 @@ class GFObject():
             raise RuntimeError("Model must be run before computing shear stress")
 
         # Create mask for valid flow cells
-        mask = (self._bcs > 0) & (self._hw > 0) & (self.sw.z > 0)
+        mask = (self._bcs > 0) & (self._hw.z > 0) & (self.sw.z > 0)
 
         # River shear stress calculation
-        tau = np.zeros_like(self._hw)
-        tau[mask] = self.sw.z[mask] * self._hw[mask] * flow_density * gravity
+        tau = np.zeros_like(self._hw.z)
+        tau[mask] = self.sw.z[mask] * self._hw.z[mask] * flow_density * gravity
 
         # Return as GridObject with same georeferencing as input grid
         tau_grid = deepcopy(self.grid)
@@ -388,7 +391,7 @@ class GFObject():
         mask = self._bcs > 0
 
         # Initialize convergence map with default value of 1 (perfect conservation)
-        convergence_map = np.zeros_like(self._hw)
+        convergence_map = np.zeros_like(self._hw.z)
         convergence_map[mask] = 1.0
 
         # Update mask to include cells with positive incoming discharge
@@ -405,7 +408,42 @@ class GFObject():
 
         # Calculate percentile statistics for convergence assessment
         conv = {}
+        cperc = []
+        vperc = []
         for perc in np.arange(1, 100, 4):
-            conv[perc] = np.percentile(convergence_map.ravel(), perc)
+            cperc.append(perc)
+            vperc.append(np.nanpercentile(convergence_map.ravel(), perc))
 
+        conv['percentiles'] = np.array(cperc)
+        conv['values'] = np.array(vperc)
         return convergence_map_grid, conv
+
+
+    def plot_convergence(self):
+
+        convergence_map_grid, conv = self.get_convergence_metrics()
+
+
+        import matplotlib.pyplot as plt
+
+        fig,ax = plt.subplots(1,2)
+
+        self.grid.plot_hs(ax=ax[0])
+
+        # Getting the extent
+        im = ax[0].images[0]        # first image in this Axes
+        ext = im.get_extent()
+
+        im = ax[0].imshow(convergence_map_grid.z, cmap = 'RdBu_r', vmin = 0.8, vmax = 1.2, extent = ext)
+        plt.colorbar(im, label = 'Convergence (perfect = 1.)')
+
+
+        ax[1].plot(conv['percentiles'],conv['values'], color = 'k')
+        ax[1].grid('--')
+        ax[1].set_xlabel('Percentiles')
+        ax[1].set_ylabel('Values')
+
+        return fig, ax
+
+
+
