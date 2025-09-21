@@ -1,0 +1,411 @@
+"""This module contains the GFObject class for graph-based flood routing.
+
+Author: Boris Gailleton
+"""
+from copy import deepcopy
+
+import numpy as np
+
+# pylint: disable=no-name-in-module
+from . import graphflood as tgf
+from .grid_object import GridObject
+
+__all__ = ['GFObject']
+
+
+class GFObject():
+    """GraphFlood object for stationnary, large-scale ready hydrodynamic modeling.
+
+    See Gailleton et al. 2024 for details (https://esurf.copernicus.org/articles/12/1295/2024/)
+
+    Contains flow information and parameters for water routing on a DEM.
+    Handles boundary conditions, precipitation, and Manning roughness coefficients.
+    """
+
+    def __init__(self,
+        grid: GridObject,
+        bcs: np.ndarray | GridObject | None = None,
+        p: float | np.ndarray | GridObject = 10 * 1e-3 / 3600,
+        manning: float | np.ndarray | GridObject = 0.033
+    ):
+        """Initialize flood routing object.
+
+        Parameters
+        ----------
+        grid : GridObject
+            Topographic grid object
+        bcs : ndarray or GridObject, optional
+            Boundary conditions (None for default open boundaries)
+        p : float or ndarray or GridObject, optional
+            Precipitation rate [m/s] (default: 10mm/h)
+        manning : float or ndarray or GridObject, optional
+            Manning roughness coefficient (default: 0.033)
+        """
+        # Deep copy grid and ensure float64 precision for elevation
+        self.grid = deepcopy(grid)
+        self.grid.z = self.grid.z.astype(np.float64)
+
+        # Initialize water height array
+        self._hw = np.zeros_like(self.grid.z)
+
+        # Process boundary conditions
+        if bcs is None:
+            # Default: open boundaries on edges, internal cells are normal flow
+            self._bcs = np.ones((grid.rows, grid.columns), dtype=np.uint8)
+            self._bcs[[0, -1], :] = 3  # Open boundary on top/bottom
+            self._bcs[:, [0, -1]] = 3  # Open boundary on left/right
+            self._bcs = self._bcs.ravel(order="C")
+        else:
+            # Validate boundary condition dimensions
+            if bcs.shape != grid.shape:
+                raise RuntimeError(
+                    "Boundary conditions must match grid dimensions"
+                )
+            # Convert to flattened uint8 array
+            if isinstance(bcs, GridObject):
+                self._bcs = bcs.z.ravel(order="C").astype(np.uint8)
+            else:
+                self._bcs = bcs.ravel(order="C").astype(np.uint8)
+
+        # Process precipitation input
+        if isinstance(p, np.ndarray):
+            if p.shape != grid.shape:
+                raise RuntimeError(
+                    "Precipitation array must match grid dimensions"
+                )
+            self._precipitations = p.ravel(order="C")
+        elif isinstance(p, GridObject):
+            if p.shape != grid.shape:
+                raise RuntimeError(
+                    "Precipitation GridObject must match grid dimensions"
+                )
+            self._precipitations = p.z.ravel(order="C")
+        else:
+            # Uniform precipitation across grid
+            self._precipitations = np.full_like(self.grid.z.ravel(), p)
+
+        # Process Manning roughness coefficient
+        if isinstance(manning, np.ndarray):
+            if manning.shape != grid.shape:
+                raise RuntimeError(
+                    "Manning coefficient array must match grid dimensions"
+                )
+            self._manning = manning.ravel(order="C")
+        elif isinstance(manning, GridObject):
+            if manning.shape != grid.shape:
+                raise RuntimeError(
+                    "Manning coefficient GridObject must match grid dimensions"
+                )
+            self._manning = manning.z.ravel(order="C")
+        else:
+            # Uniform Manning coefficient across grid
+            self._manning = np.full_like(self.grid.z.ravel(), manning)
+
+        # Placeholder for the results from the model
+        self.res = None
+
+    # Water height getters and setters
+    @property
+    def hw(self) -> np.ndarray:
+        """Get water height array."""
+        return self._hw
+
+    @hw.setter
+    def hw(self, value: np.ndarray) -> None:
+        """Set water height array."""
+        if value.shape != self._hw.shape:
+            raise ValueError("Water height array must match grid dimensions")
+        self._hw = value.astype(np.float64)
+
+    # Boundary conditions getters and setters
+    @property
+    def bcs(self) -> np.ndarray:
+        """Get boundary conditions array."""
+        return self._bcs
+
+    @bcs.setter
+    def bcs(self, value: np.ndarray | GridObject) -> None:
+        """Set boundary conditions array."""
+        if isinstance(value, GridObject):
+            if value.shape != self.grid.shape:
+                raise ValueError("Boundary conditions must match grid dimensions")
+            self._bcs = value.z.ravel(order="C").astype(np.uint8)
+        else:
+            if value.size != self.grid.z.size:
+                raise ValueError("Boundary conditions must match grid size")
+            self._bcs = value.ravel(order="C").astype(np.uint8)
+
+    # Precipitation getters and setters
+    @property
+    def precipitations(self) -> np.ndarray:
+        """Get precipitation array."""
+        return self._precipitations
+
+    @precipitations.setter
+    def precipitations(self, value: float | np.ndarray | GridObject) -> None:
+        """Set precipitation array."""
+        if isinstance(value, np.ndarray):
+            if value.size != self.grid.z.size:
+                raise ValueError("Precipitation array must match grid size")
+            self._precipitations = value.ravel(order="C")
+        elif isinstance(value, GridObject):
+            if value.shape != self.grid.shape:
+                raise ValueError("Precipitation GridObject must match grid dimensions")
+            self._precipitations = value.z.ravel(order="C")
+        else:
+            self._precipitations = np.full_like(self.grid.z.ravel(), value)
+
+    # Manning coefficient getters and setters
+    @property
+    def manning(self) -> np.ndarray:
+        """Get Manning roughness coefficient array."""
+        return self._manning
+
+    @manning.setter
+    def manning(self, value: float | np.ndarray | GridObject) -> None:
+        """Set Manning roughness coefficient array."""
+        if isinstance(value, np.ndarray):
+            if value.size != self.grid.z.size:
+                raise ValueError("Manning coefficient array must match grid size")
+            self._manning = value.ravel(order="C")
+        elif isinstance(value, GridObject):
+            if value.shape != self.grid.shape:
+                raise ValueError("Manning coefficient GridObject must match grid dimensions")
+            self._manning = value.z.ravel(order="C")
+        else:
+            self._manning = np.full_like(self.grid.z.ravel(), value)
+
+    def run_n_iterations(self, dt: float = 1e-3, sfd: bool = False,
+                         d8: bool = True, n_iterations: int = 100):
+        """Run graphflood model for n iterations.
+
+        Executes the hydrodynamic simulation using the graphflood algorithm.
+        Updates water height and stores flow outputs in self.res.
+
+        Parameters
+        ----------
+        dt : float, optional
+            Time step in seconds (default: 1e-3)
+        sfd : bool, optional
+            Use single flow direction routing (default: False)
+        d8 : bool, optional
+            Use D8 flow routing (default: True)
+        n_iterations : int, optional
+            Number of simulation iterations (default: 100)
+        """
+        # Run the graphflood simulation with current parameters
+        self.res = tgf.run_graphflood(
+            self.grid,
+            initial_hw=self._hw,
+            bcs=self.bcs,
+            dt=dt,
+            p=self._precipitations,
+            manning=self._manning,
+            sfd=sfd,
+            d8=d8,
+            n_iterations=n_iterations)
+
+        # Update water height from results and remove from res dict
+        self._hw = self.res['hw']
+        del self.res['hw']
+
+    # Model output getters (read-only)
+    @property
+    def qvol_i(self) -> GridObject:
+        """Incoming discharge GridObject [m³/s]
+
+        Returns
+        -------
+        GridObject
+            Incoming discharge for each cell
+
+        Raises
+        ------
+        RuntimeError
+            If model hasn't been run yet
+        """
+        if self.res is None:
+            raise RuntimeError("Model must be run before accessing results")
+        return self.res['Qi']
+
+    @property
+    def qvol_o(self) -> GridObject:
+        """Outgoing discharge GridObject [m³/s]
+
+        Returns
+        -------
+        GridObject
+            Outgoing discharge for each cell
+
+        Raises
+        ------
+        RuntimeError
+            If model hasn't been run yet
+        """
+        if self.res is None:
+            raise RuntimeError("Model must be run before accessing results")
+        return self.res['Qo']
+
+    @property
+    def q(self) -> GridObject:
+        """Specific outgoing discharge GridObject [m²/s]
+
+        Returns
+        -------
+        GridObject
+            Outgoing discharge per unit width for each cell
+
+        Raises
+        ------
+        RuntimeError
+            If model hasn't been run yet
+        """
+        if self.res is None:
+            raise RuntimeError("Model must be run before accessing results")
+        return self.res['qo']
+
+    @property
+    def u(self) -> GridObject:
+        """Flow velocity GridObject [m/s]
+
+        Returns
+        -------
+        GridObject
+            Flow velocity for each cell
+
+        Raises
+        ------
+        RuntimeError
+            If model hasn't been run yet
+        """
+        if self.res is None:
+            raise RuntimeError("Model must be run before accessing results")
+        return self.res['u']
+
+    @property
+    def sw(self) -> GridObject:
+        """Wetted area GridObject [m²]
+
+        Returns
+        -------
+        GridObject
+            Wetted surface area for each cell
+
+        Raises
+        ------
+        RuntimeError
+            If model hasn't been run yet
+        """
+        if self.res is None:
+            raise RuntimeError("Model must be run before accessing results")
+        return self.res['Sw']
+
+    # API methods (equivalent to property getters)
+    def get_qvol_i(self) -> GridObject:
+        """Incoming discharge GridObject [m³/s]
+        """
+        return self.qvol_i
+
+    def get_qvol_o(self) -> GridObject:
+        """Outgoing discharge GridObject [m³/s]
+        """
+        return self.qvol_o
+
+    def get_q(self) -> GridObject:
+        """Specific outgoing discharge GridObject [m²/s]
+        """
+        return self.q
+
+    def get_u(self) -> GridObject:
+        """Flow velocity GridObject [m/s]
+        """
+        return self.u
+
+    def get_sw(self) -> GridObject:
+        """Wetted area GridObject [m²]
+        """
+        return self.sw
+
+    def compute_tau(self, gravity: float = 9.81, flow_density: float = 1000) -> GridObject:
+        """Compute 2D maps of river shear stress (following Manning's approximation).
+
+        Parameters
+        ----------
+        gravity : float, optional
+            Gravitational acceleration [m/s²] (default: 9.81)
+        flow_density : float, optional
+            Water density [kg/m³] (default: 1000)
+
+        Returns
+        -------
+        GridObject
+            GridObject containing shear stress values [Pa]
+
+        Raises
+        ------
+        RuntimeError
+            If model hasn't been run yet
+        """
+        if self.res is None:
+            raise RuntimeError("Model must be run before computing shear stress")
+
+        # Create mask for valid flow cells
+        mask = (self._bcs > 0) & (self._hw > 0) & (self.sw.z > 0)
+
+        # River shear stress calculation
+        tau = np.zeros_like(self._hw)
+        tau[mask] = self.sw.z[mask] * self._hw[mask] * flow_density * gravity
+
+        # Return as GridObject with same georeferencing as input grid
+        tau_grid = deepcopy(self.grid)
+        tau_grid.z = tau
+        return tau_grid
+
+
+    def get_convergence_metrics(self):
+        """Compute convergence metrics for flow conservation analysis.
+
+        Calculates the ratio of outgoing to incoming discharge for each cell
+        to assess flow conservation and model convergence quality.
+
+        Returns
+        -------
+        tuple
+            - convergence_map_grid : GridObject
+                GridObject containing convergence ratios (Qo/Qi) for each cell
+            - conv : dict
+                Dictionary with percentile statistics of convergence ratios
+
+        Raises
+        ------
+        RuntimeError
+            If model hasn't been run yet
+        """
+        if self.res is None:
+            raise RuntimeError("Model must be run before accessing convergence metrics")
+
+        # Create mask for valid flow cells (excluding boundaries)
+        mask = self._bcs > 0
+
+        # Initialize convergence map with default value of 1 (perfect conservation)
+        convergence_map = np.zeros_like(self._hw)
+        convergence_map[mask] = 1.0
+
+        # Update mask to include cells with positive incoming discharge
+        mask = mask & (self.qvol_i.z >= 0)
+
+        # Calculate convergence ratio (outgoing/incoming discharge)
+        # Values close to 1 indicate good conservation
+        with np.errstate(divide='ignore', invalid='ignore'):
+            convergence_map[mask] = self.qvol_o.z[mask] / self.qvol_i.z[mask]
+
+        # Return as GridObject with same georeferencing as input grid
+        convergence_map_grid = deepcopy(self.grid)
+        convergence_map_grid.z = convergence_map
+
+        # Calculate percentile statistics for convergence assessment
+        conv = {}
+        for perc in np.arange(1, 100, 4):
+            conv[perc] = np.percentile(convergence_map.ravel(), perc)
+
+        return convergence_map_grid, conv
