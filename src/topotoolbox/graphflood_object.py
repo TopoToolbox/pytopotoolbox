@@ -3,6 +3,7 @@
 from copy import deepcopy
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 # pylint: disable=no-name-in-module
 from . import graphflood as tgf
@@ -369,7 +370,9 @@ class GFObject():
         """Compute convergence metrics for flow conservation analysis.
 
         Calculates the ratio of outgoing to incoming discharge for each cell
-        to assess flow conservation and model convergence quality.
+        to assess flow conservation and model convergence quality. Data is binned
+        by log10(incoming discharge) and comprehensive percentile statistics are
+        computed for each bin.
 
         Returns
         -------
@@ -377,7 +380,11 @@ class GFObject():
             - convergence_map_grid : GridObject
                 GridObject containing convergence ratios (Qo/Qi) for each cell
             - conv : dict
-                Dictionary with percentile statistics of convergence ratios
+                Dictionary containing:
+                - 'bin_centers': discharge bin centers [m³/s]
+                - 'bin_counts': number of cells in each bin
+                - 'percentile_X': percentile X of convergence ratios for each bin
+                  (where X = 1, 5, 9, 13, ..., 97 - every 4th percentile)
 
         Raises
         ------
@@ -406,25 +413,96 @@ class GFObject():
         convergence_map_grid = deepcopy(self.grid)
         convergence_map_grid.z = convergence_map
 
-        # Calculate percentile statistics for convergence assessment
+        # Calculate binned percentile statistics based on log10(qvol_i)
         conv = {}
-        cperc = []
-        vperc = []
-        for perc in np.arange(1, 100, 4):
-            cperc.append(perc)
-            vperc.append(np.nanpercentile(convergence_map.ravel(), perc))
 
-        conv['percentiles'] = np.array(cperc)
-        conv['values'] = np.array(vperc)
+        # Flatten arrays for binning
+        qvol_i_flat = self.qvol_i.z.ravel()
+        convergence_flat = convergence_map.ravel()
+
+        # Create mask for valid data (non-NaN and positive discharge)
+        valid_mask = ~np.isnan(qvol_i_flat) & ~np.isnan(convergence_flat) & (qvol_i_flat > 0)
+        qvol_i_valid = qvol_i_flat[valid_mask]
+        convergence_valid = convergence_flat[valid_mask]
+
+        if len(qvol_i_valid) > 0:
+            # Transform to log10 space for binning
+            log_qvol_i_valid = np.log10(qvol_i_valid)
+
+            # Create linear bins in log10 space
+            n_bins = 20
+            log_min = np.min(log_qvol_i_valid)
+            log_max = np.max(log_qvol_i_valid)
+            bin_edges = np.linspace(log_min, log_max, n_bins + 1)
+
+            # Digitize log10(qvol_i) values into bins
+            bin_indices = np.digitize(log_qvol_i_valid, bin_edges)
+
+            # Define percentile values to calculate (every 4th from 1 to 100)
+            percentile_values = np.arange(1, 101, 4)
+
+            # Initialize storage for results
+            bin_centers = []
+            percentiles_dict = {f'percentile_{p}': [] for p in percentile_values}
+            bin_counts = []
+
+            # Calculate statistics for each bin
+            for i in range(1, len(bin_edges)):
+                bin_mask = bin_indices == i
+                if np.sum(bin_mask) > 0:
+                    bin_convergence = convergence_valid[bin_mask]
+                    bin_log_qvol = log_qvol_i_valid[bin_mask]
+
+                    # Store bin center in original (non-log) space
+                    bin_centers.append(10**np.mean(bin_log_qvol))
+
+                    # Calculate all percentiles for this bin
+                    for p in percentile_values:
+                        percentiles_dict[f'percentile_{p}'].append(
+                            np.percentile(bin_convergence, p))
+
+                    bin_counts.append(len(bin_convergence))
+
+            # Convert to numpy arrays
+            conv['bin_centers'] = np.array(bin_centers)
+            conv['bin_counts'] = np.array(bin_counts)
+
+            # Add all percentiles to conv dictionary
+            for p in percentile_values:
+                conv[f'percentile_{p}'] = np.array(percentiles_dict[f'percentile_{p}'])
+
+        else:
+            # No valid data - initialize empty arrays
+            conv['bin_centers'] = np.array([])
+            conv['bin_counts'] = np.array([])
+
+            # Initialize empty arrays for all percentiles
+            percentile_values = np.arange(1, 101, 4)
+            for p in percentile_values:
+                conv[f'percentile_{p}'] = np.array([])
         return convergence_map_grid, conv
 
 
     def plot_convergence(self):
+        """Plot convergence metrics as spatial map and log10(discharge)-binned statistics.
 
+        Creates a two-panel plot showing:
+        1. Spatial map of convergence ratios (Qo/Qi)
+        2. Convergence percentiles vs log10(incoming discharge) with uncertainty bands
+
+        The convergence analysis bins data by log10(qvol_i) and calculates every 4th
+        percentile from 1 to 100, providing comprehensive statistical information
+        about flow conservation across different discharge magnitudes.
+
+        Returns
+        -------
+        tuple
+            - fig : matplotlib.figure.Figure
+                The figure object
+            - ax : array of matplotlib.axes.Axes
+                Array containing the two subplot axes [spatial_map, percentiles_plot]
+        """
         convergence_map_grid, conv = self.get_convergence_metrics()
-
-
-        import matplotlib.pyplot as plt
 
         fig,ax = plt.subplots(1,2)
 
@@ -434,16 +512,29 @@ class GFObject():
         im = ax[0].images[0]        # first image in this Axes
         ext = im.get_extent()
 
-        im = ax[0].imshow(convergence_map_grid.z, cmap = 'RdBu_r', vmin = 0.8, vmax = 1.2, extent = ext)
+        im = ax[0].imshow(convergence_map_grid.z, cmap='RdBu_r',
+                         vmin=0.8, vmax=1.2, extent=ext)
         plt.colorbar(im, label = 'Convergence (perfect = 1.)')
 
 
-        ax[1].plot(conv['percentiles'],conv['values'], color = 'k')
-        ax[1].grid('--')
-        ax[1].set_xlabel('Percentiles')
-        ax[1].set_ylabel('Values')
+        # Plot convergence percentiles vs discharge bins
+        if len(conv['bin_centers']) > 0:
+            # Plot key percentiles with fill_between for uncertainty bands
+            ax[1].fill_between(conv['bin_centers'], conv['percentile_5'],
+                             conv['percentile_97'], alpha=0.2, color='lightblue',
+                             label='5th-97th percentile')
+            ax[1].fill_between(conv['bin_centers'], conv['percentile_25'],
+                             conv['percentile_73'], alpha=0.3, color='blue',
+                             label='25th-73rd percentile')
+            ax[1].plot(conv['bin_centers'], conv['percentile_49'],
+                      color='red', linewidth=2, label='~Median (49th percentile)')
+            ax[1].axhline(y=1.0, color='black', linestyle='--', alpha=0.7,
+                         label='Perfect conservation')
+            ax[1].set_xscale('log')
+            ax[1].legend()
+
+        ax[1].grid(True, alpha=0.3)
+        ax[1].set_xlabel('Incoming Discharge [m³/s]')
+        ax[1].set_ylabel('Convergence Ratio (Qo/Qi)')
 
         return fig, ax
-
-
-
