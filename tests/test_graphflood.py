@@ -110,7 +110,7 @@ def test_analytical_solution():
 	hwstar = (manning * qvolin_unit/(cellsize*(s0**0.5)))**(3./5.)
 	
 	# Simulation
-	hw = ttb.run_graphflood(grid, bcs=bcs, dt=dt, p=p, manning=manning, n_iterations=5000)
+	hw = ttb.run_graphflood(grid, bcs=bcs, dt=dt, p=p, manning=manning, n_iterations=5000)['hw']
 	
 	# Checking if it works within an error margin
 	# Note that I cherry picked these value to be representative of the right solution while minimising the iterations
