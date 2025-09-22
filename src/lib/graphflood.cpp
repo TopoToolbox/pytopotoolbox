@@ -57,6 +57,42 @@ void wrap_graphflood_full(
 }
 
 
+void wrap_graphflood_metrics(
+    py::array_t<GF_FLOAT> Z,
+    py::array_t<GF_FLOAT> hw,
+    py::array_t<uint8_t>  BCs,
+    py::array_t<GF_FLOAT> Precipitations,
+    py::array_t<GF_FLOAT> manning,
+    py::array_t<GF_FLOAT> Qi,
+    py::array_t<GF_FLOAT> Qo,
+    py::array_t<GF_FLOAT> qo,
+    py::array_t<GF_FLOAT> u,
+    py::array_t<GF_FLOAT> Sw,
+    py::array_t<GF_UINT>  dim,
+    GF_FLOAT              dx,
+    bool                  D8,
+    GF_FLOAT              step
+    ){
+
+    // numpy arrays to pointers
+    GF_FLOAT* Z_ptr              = Z.mutable_data()              ;
+    GF_FLOAT* hw_ptr             = hw.mutable_data()             ;
+    GF_FLOAT* Qi_ptr             = Qi.mutable_data()             ;
+    GF_FLOAT* Qo_ptr             = Qo.mutable_data()             ;
+    GF_FLOAT* qo_ptr             = qo.mutable_data()             ;
+    GF_FLOAT* u_ptr              = u.mutable_data()              ;
+    GF_FLOAT* Sw_ptr             = Sw.mutable_data()             ;
+    uint8_t*  BCs_ptr            = BCs.mutable_data()            ;
+    GF_FLOAT* Precipitations_ptr = Precipitations.mutable_data() ;
+    GF_FLOAT* manning_ptr        = manning.mutable_data()        ;
+    GF_UINT*  dim_ptr            = dim.mutable_data()            ;
+
+    // calling the C function
+    graphflood_metrics(Z_ptr, hw_ptr, BCs_ptr, Precipitations_ptr, manning_ptr, dim_ptr, 
+        dx, D8, step, Qi_ptr, Qo_ptr, qo_ptr, u_ptr, Sw_ptr);
+}
+
+
 /*
 Computes a single flow graph compatible with the boundary conditions system of graphflood
 
@@ -162,10 +198,10 @@ void wrap_compute_priority_flood(
 
 PYBIND11_MODULE(_graphflood, m) {
     m.def("graphflood_run_full", &wrap_graphflood_full);
+    m.def("graphflood_metrics", &wrap_graphflood_metrics);
     m.def("graphflood_sfgraph", &wrap_compute_sfgraph);
     m.def("compute_priority_flood_plus_topological_ordering", &wrap_compute_priority_flood_plus_stack);
     m.def("compute_priority_flood", &wrap_compute_priority_flood);
     m.def("compute_drainage_area_single_flow", &wrap_compute_drainage_area_single_flow);
-    
 
 }

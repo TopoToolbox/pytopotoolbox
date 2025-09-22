@@ -13,6 +13,7 @@ from .grid_object import GridObject
 # exposing function as string dictionary
 funcdict = {
     "run_full": _graphflood.graphflood_run_full,
+    "run_metrics": _graphflood.graphflood_metrics,
     "sfgraph": _graphflood.graphflood_sfgraph,
     "priority_flood_TO":
     _graphflood.compute_priority_flood_plus_topological_ordering,
@@ -173,12 +174,42 @@ def run_graphflood(
         # in case precipitation is a scalar
         manning = np.full_like(z, manning)
 
+    tz = z.astype(np.float64)
+    thw = hw.astype(np.float64)
+    precipitations = precipitations.astype(np.float64)
+    manning = manning.astype(np.float64)
+
     _graphflood.graphflood_run_full(
-        z, hw, tbcs, precipitations, manning,
+        tz, thw, tbcs, precipitations, manning,
         dim, dt, dx, sfd, d8, n_iterations, 1e-3
     )
-    res = deepcopy(grid)
 
-    res.z = hw.reshape(grid.shape)
+
+    qvol_i = np.zeros_like(thw)
+    qvol_o = np.zeros_like(thw)
+    qo = np.zeros_like(thw)
+    u = np.zeros_like(thw)
+    sw = np.zeros_like(thw)
+
+    _graphflood.graphflood_metrics(
+        tz, thw, tbcs, precipitations, manning,
+        qvol_i, qvol_o, qo, u, sw, dim, dx, d8, 1e-3 )
+
+
+    res = {}
+
+    resw = deepcopy(grid)
+    resw.z = thw.reshape(grid.shape) #.astype(np.float32)
+    res['hw'] = deepcopy(resw)
+    resw.z = qvol_i.reshape(grid.shape) #.astype(np.float32)
+    res['Qi'] = deepcopy(resw)
+    resw.z = qvol_o.reshape(grid.shape) #.astype(np.float32)
+    res['Qo'] = deepcopy(resw)
+    resw.z = qo.reshape(grid.shape) #.astype(np.float32)
+    res['qo'] = deepcopy(resw)
+    resw.z = u.reshape(grid.shape) #.astype(np.float32)
+    res['u'] = deepcopy(resw)
+    resw.z = sw.reshape(grid.shape) #.astype(np.float32)
+    res['Sw'] = deepcopy(resw)
 
     return res
