@@ -185,17 +185,15 @@ def run_graphflood(
     )
 
 
-    
-
-    Qi = np.zeros_like(thw)
-    Qo = np.zeros_like(thw)
+    qvol_i = np.zeros_like(thw)
+    qvol_o = np.zeros_like(thw)
     qo = np.zeros_like(thw)
     u = np.zeros_like(thw)
-    Sw = np.zeros_like(thw)
+    sw = np.zeros_like(thw)
 
     _graphflood.graphflood_metrics(
         tz, thw, tbcs, precipitations, manning,
-        Qi, Qo, qo, u, Sw, dim, dx, d8, 1e-3 )
+        qvol_i, qvol_o, qo, u, sw, dim, dx, d8, 1e-3 )
 
 
     res = {}
@@ -203,15 +201,15 @@ def run_graphflood(
     resw = deepcopy(grid)
     resw.z = thw.reshape(grid.shape) #.astype(np.float32)
     res['hw'] = deepcopy(resw)
-    resw.z = Qi.reshape(grid.shape) #.astype(np.float32)
+    resw.z = qvol_i.reshape(grid.shape) #.astype(np.float32)
     res['Qi'] = deepcopy(resw)
-    resw.z = Qo.reshape(grid.shape) #.astype(np.float32)
+    resw.z = qvol_o.reshape(grid.shape) #.astype(np.float32)
     res['Qo'] = deepcopy(resw)
     resw.z = qo.reshape(grid.shape) #.astype(np.float32)
     res['qo'] = deepcopy(resw)
     resw.z = u.reshape(grid.shape) #.astype(np.float32)
     res['u'] = deepcopy(resw)
-    resw.z = Sw.reshape(grid.shape) #.astype(np.float32)
+    resw.z = sw.reshape(grid.shape) #.astype(np.float32)
     res['Sw'] = deepcopy(resw)
 
     return res
