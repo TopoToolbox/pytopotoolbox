@@ -96,7 +96,7 @@ class GFObject():
             self._manning = np.full_like(self.grid.z, manning)
 
         # Placeholder for the results from the model
-        self.res = None
+        self.res: dict = {}
 
     # Water height getters and setters
     @property
@@ -206,7 +206,6 @@ class GFObject():
             n_iterations=n_iterations)
 
         # Update water height from results and remove from res dict
-        self._hw.z = self.res['hw']
         if isinstance(self.res['hw'], GridObject):
             self._hw = self.res['hw']
         else:
@@ -228,7 +227,7 @@ class GFObject():
         RuntimeError
             If model hasn't been run yet
         """
-        if self.res is None:
+        if not self.res:
             raise RuntimeError("Model must be run before accessing results")
         return self.res['Qi']
 
@@ -246,7 +245,7 @@ class GFObject():
         RuntimeError
             If model hasn't been run yet
         """
-        if self.res is None:
+        if not self.res:
             raise RuntimeError("Model must be run before accessing results")
         return self.res['Qo']
 
@@ -264,7 +263,7 @@ class GFObject():
         RuntimeError
             If model hasn't been run yet
         """
-        if self.res is None:
+        if not self.res:
             raise RuntimeError("Model must be run before accessing results")
         return self.res['qo']
 
@@ -282,7 +281,7 @@ class GFObject():
         RuntimeError
             If model hasn't been run yet
         """
-        if self.res is None:
+        if not self.res:
             raise RuntimeError("Model must be run before accessing results")
         return self.res['u']
 
@@ -300,7 +299,7 @@ class GFObject():
         RuntimeError
             If model hasn't been run yet
         """
-        if self.res is None:
+        if not self.res:
             raise RuntimeError("Model must be run before accessing results")
         return self.res['Sw']
 
@@ -350,7 +349,7 @@ class GFObject():
         RuntimeError
             If model hasn't been run yet
         """
-        if self.res is None:
+        if not self.res:
             raise RuntimeError("Model must be run before computing shear stress")
 
         # Create mask for valid flow cells
@@ -391,7 +390,7 @@ class GFObject():
         RuntimeError
             If model hasn't been run yet
         """
-        if self.res is None:
+        if not self.res:
             raise RuntimeError("Model must be run before accessing convergence metrics")
 
         # Create mask for valid flow cells (excluding boundaries)
