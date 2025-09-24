@@ -60,6 +60,11 @@ class GFObject():
                 raise RuntimeError(
                     "Boundary conditions must match grid dimensions"
                 )
+            if isinstance(bcs, GridObject):
+                self._bcs = bcs.z
+            else:
+                self._bcs = bcs
+
 
         # Process precipitation input
         if isinstance(p, np.ndarray):
@@ -197,7 +202,7 @@ class GFObject():
         self.res = tgf.run_graphflood(
             self.grid,
             initial_hw=self._hw.z,
-            bcs=self.bcs,
+            bcs=self._bcs,
             dt=dt,
             p=self._precipitations,
             manning=self._manning,
