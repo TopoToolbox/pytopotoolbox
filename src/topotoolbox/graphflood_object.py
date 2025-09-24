@@ -60,7 +60,11 @@ class GFObject():
                 raise RuntimeError(
                     "Boundary conditions must match grid dimensions"
                 )
-            self._bcs = bcs
+            if isinstance(bcs, GridObject):
+                self._bcs = bcs.z
+            else:
+                self._bcs = bcs
+
 
         # Process precipitation input
         if isinstance(p, np.ndarray):
