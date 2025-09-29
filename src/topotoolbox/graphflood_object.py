@@ -72,7 +72,7 @@ class GFObject():
                 raise RuntimeError(
                     "Precipitation array must match grid dimensions"
                 )
-            self._precipitations = p.ravel(order="C")
+            self._precipitations = p
         elif isinstance(p, GridObject):
             if p.shape != grid.shape:
                 raise RuntimeError(
