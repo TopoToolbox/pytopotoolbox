@@ -116,3 +116,44 @@ def test_analytical_solution():
 	# Note that I cherry picked these value to be representative of the right solution while minimising the iterations
 	assert abs(np.mean(hw[1:50,1:-1]) - hwstar) < 0.02
 
+
+
+def test_graphflood_object():
+	'''
+	Tests that the graphflood object actually runs smoothly.
+	Does not test the physics, tests the object/functions.
+	'''
+
+	dem = ttb.load_dem('greenriver') # example dem
+
+	# default test
+	gf = ttb.GFObject(dem)
+	gf.run_n_iterations(n_iterations=1)
+
+	# Testing with 2D numpy inputs
+	# Boundary conditions (if not given to model, will default to 4 edges can out)
+	# 1 = data, 3 = can out, 0 = no data, here we open every border and nodata region
+	bcs = np.full_like(dem.z,1).astype(np.uint8)
+	bcs[~np.isfinite(dem.z)] = 3 # no data is np.nan, so here we say where nodata can out (flow won't cross)
+	bcs[[-1,0],:] = 3
+	bcs[:,[-1,0]] = 3
+	prec = np.full_like(dem.z,10e-3/3600) # can be 2D
+	manning = np.full_like(dem.z,0.033) # can be 2D
+	gf = ttb.GFObject(dem,p=prec,bcs=bcs,manning=manning)
+	gf.run_n_iterations(n_iterations=1,dt=5e-3)
+
+	# Testing with GridObject inputs
+	prec = dem.duplicate_with_new_data(prec)
+	bcs = dem.duplicate_with_new_data(bcs)
+	manning = dem.duplicate_with_new_data(manning)
+	gf = ttb.GFObject(dem,p=prec,bcs=bcs,manning=manning)
+	gf.run_n_iterations(n_iterations=1,dt=5e-3)
+
+	# getting the outputs
+	tval = gf.get_qvol_i()
+	tval = gf.get_qvol_o()
+	tval = gf.get_q()
+	tval = gf.get_u()
+	tval = gf.get_sw()
+	tval = gf.compute_tau()
+	tval = gf.get_convergence_metrics()
