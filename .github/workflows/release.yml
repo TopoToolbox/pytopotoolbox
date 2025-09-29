@@ -50,11 +50,16 @@ jobs:
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: pytest {package}/tests
           CIBW_TEST_EXTRAS: opensimplex
-          # Assure wheels pour les installs de test (Linux seulement)
-          CIBW_TEST_ENVIRONMENT_LINUX: PIP_ONLY_BINARY=":all:"
-          # Optionnel: pip récent avant build
+
+          # Use newer glibc so pyproj has wheels
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+
+          # Keep pip recent during build isolation
           CIBW_BEFORE_BUILD: python -m pip install -U pip
 
+          # Force wheels during (Linux) test-time installs
+          CIBW_ENVIRONMENT_LINUX: PIP_ONLY_BINARY=":all:"
+          CIBW_TEST_ENVIRONMENT_LINUX: PIP_ONLY_BINARY=":all:"
 
       - uses: actions/upload-artifact@v4
         with:
