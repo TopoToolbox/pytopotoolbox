@@ -158,7 +158,7 @@ class GFObject():
                 raise ValueError("Precipitation GridObject must match grid dimensions")
             self._precipitations = value.z
         else:
-            self._precipitations = np.full_like(self.grid.z.ravel(), value)
+            self._precipitations = np.full_like(self.grid.z, value)
 
     # Manning coefficient getters and setters
     @property
@@ -178,7 +178,7 @@ class GFObject():
                 raise ValueError("Manning coefficient GridObject must match grid dimensions")
             self._manning = value.z
         else:
-            self._manning = np.full_like(self.grid.z.ravel(), value)
+            self._manning = np.full_like(self.grid.z, value)
 
     def run_n_iterations(self, dt: float = 1e-3, sfd: bool = False,
                          d8: bool = True, n_iterations: int = 100):
