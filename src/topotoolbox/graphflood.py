@@ -157,7 +157,7 @@ def run_graphflood(
     if isinstance(manning, np.ndarray):
         if manning.shape != grid.shape:
             raise RuntimeError(
-                """Feeding the model with precipitations requires a
+                """Feeding the model with manning requires a
                 2D numpy array or a GridObject of the same dimension
                  of the topographic grid"""
             )
@@ -165,7 +165,7 @@ def run_graphflood(
     elif isinstance(manning, GridObject):
         if manning.shape != grid.shape:
             raise RuntimeError(
-                """Feeding the model with precipitations requires a
+                """Feeding the model with manning requires a
                 2D numpy array or a GridObject of the same dimension
                 of the topographic grid"""
             )
