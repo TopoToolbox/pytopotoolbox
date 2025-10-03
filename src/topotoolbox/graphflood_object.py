@@ -134,11 +134,11 @@ class GFObject():
         if isinstance(value, GridObject):
             if value.shape != self.grid.shape:
                 raise ValueError("Boundary conditions must match grid dimensions")
-            self._bcs = value.z.ravel(order="C").astype(np.uint8)
+            self._bcs = value.z.astype(np.uint8)
         else:
             if value.size != self.grid.z.size:
                 raise ValueError("Boundary conditions must match grid size")
-            self._bcs = value.ravel(order="C").astype(np.uint8)
+            self._bcs = value.astype(np.uint8)
 
     # Precipitation getters and setters
     @property
@@ -152,11 +152,11 @@ class GFObject():
         if isinstance(value, np.ndarray):
             if value.size != self.grid.z.size:
                 raise ValueError("Precipitation array must match grid size")
-            self._precipitations = value.ravel(order="C")
+            self._precipitations = value
         elif isinstance(value, GridObject):
             if value.shape != self.grid.shape:
                 raise ValueError("Precipitation GridObject must match grid dimensions")
-            self._precipitations = value.z.ravel(order="C")
+            self._precipitations = value.z
         else:
             self._precipitations = np.full_like(self.grid.z.ravel(), value)
 
@@ -172,11 +172,11 @@ class GFObject():
         if isinstance(value, np.ndarray):
             if value.size != self.grid.z.size:
                 raise ValueError("Manning coefficient array must match grid size")
-            self._manning = value.ravel(order="C")
+            self._manning = value
         elif isinstance(value, GridObject):
             if value.shape != self.grid.shape:
                 raise ValueError("Manning coefficient GridObject must match grid dimensions")
-            self._manning = value.z.ravel(order="C")
+            self._manning = value.z
         else:
             self._manning = np.full_like(self.grid.z.ravel(), value)
 
