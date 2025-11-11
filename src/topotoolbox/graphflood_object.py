@@ -217,6 +217,77 @@ class GFObject():
             self._hw.z = self.res['hw']
         del self.res['hw']
 
+    def run_n_iterations_dynamic_graph(self, input_Qw: np.ndarray | GridObject,
+                                       dt: float = 1e-3, d8: bool = True,
+                                       n_iterations: int = 100):
+        """Run graphflood dynamic graph model for n iterations.
+
+        Executes the hydrodynamic simulation using the dynamic induced graph
+        graphflood algorithm. Updates water height and stores flow outputs in self.res.
+
+        Parameters
+        ----------
+        input_Qw : np.ndarray or GridObject
+            Input discharge locations array [m³/s].
+            Must have the same shape as the grid.
+        dt : float, optional
+            Time step in seconds (default: 1e-3)
+        d8 : bool, optional
+            Use D8 flow routing (default: True)
+        n_iterations : int, optional
+            Number of simulation iterations (default: 100)
+        """
+        # Run the dynamic graph graphflood simulation with current parameters
+        self.res = tgf.run_graphflood_dynamic_graph(
+            self.grid,
+            input_Qw=input_Qw,
+            initial_hw=self._hw.z,
+            bcs=self._bcs,
+            dt=dt,
+            p=self._precipitations,
+            manning=self._manning,
+            d8=d8,
+            n_iterations=n_iterations)
+
+        # Update water height from results and remove from res dict
+        if isinstance(self.res['hw'], GridObject):
+            self._hw = self.res['hw']
+        else:
+            self._hw.z = self.res['hw']
+        del self.res['hw']
+
+    def compute_input_Qw_from_area_threshold(self, area_threshold: float,
+                                             d8: bool = True, step: float = 1e-3) -> GridObject:
+        """Compute input discharge array from drainage area threshold.
+
+        Identifies channel heads where drainage area crosses a threshold and assigns
+        precipitation-weighted discharge at those entry points for use with the dynamic
+        graph graphflood algorithm.
+
+        Parameters
+        ----------
+        area_threshold : float
+            Drainage area threshold for entry points [m²]
+        d8 : bool, optional
+            Use D8 flow routing (default: True)
+        step : float, optional
+            Delta_Z to apply minimum elevation increase and avoid flats during
+            priority flooding (default: 1e-3)
+
+        Returns
+        -------
+        GridObject
+            Grid object with computed input discharge array [m³/s]
+        """
+        return tgf.compute_input_Qw_from_area_threshold(
+            self.grid,
+            area_threshold=area_threshold,
+            hw=self._hw.z,
+            bcs=self._bcs,
+            p=self._precipitations,
+            d8=d8,
+            step=step)
+
     # Model output getters (read-only)
     @property
     def qvol_i(self) -> GridObject:
