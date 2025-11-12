@@ -382,8 +382,10 @@ def run_graphflood_dynamic_graph(
     precipitations = precipitations.astype(np.float64)
     manning = manning.astype(np.float64)
 
+    qwin = np.zeros_like(thw)
+
     _graphflood.graphflood_dynamic_graph(
-        tz, thw, tbcs, precipitations, manning, tinput_Qw,
+        tz, thw, tbcs, precipitations, manning, tinput_Qw, qwin,
         dim, dt, dx, d8, n_iterations
     )
 
@@ -402,7 +404,7 @@ def run_graphflood_dynamic_graph(
     resw = deepcopy(grid)
     resw.z = thw.reshape(grid.shape)
     res['hw'] = deepcopy(resw)
-    resw.z = qvol_i.reshape(grid.shape)
+    resw.z = qwin.reshape(grid.shape)
     res['Qi'] = deepcopy(resw)
     resw.z = qvol_o.reshape(grid.shape)
     res['Qo'] = deepcopy(resw)

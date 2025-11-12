@@ -202,6 +202,7 @@ BCs:            1D numpy array (n nodes) of boundary codes (type np.uint8)
 Precipitations: 1D numpy array (n nodes) of precipitation rates in m.s-1 (type np.float32)
 manning:        1D numpy array (n nodes) of friction coefficient (type np.float32)
 input_Qw:       1D numpy array (n nodes) of input discharge locations (type np.float32)
+Qwin:           1D numpy array (n nodes) of input discharge output (type np.float32)
 dim:            [nrows,ncolumns] for row major (e.g. python) or [ncolumns, nrows] for column major. Numpy array as np.uint64.
 dt:             time step (s)
 dx:             spatial step (m)
@@ -215,6 +216,7 @@ void wrap_graphflood_dynamic_graph(
     py::array_t<GF_FLOAT> Precipitations,
     py::array_t<GF_FLOAT> manning,
     py::array_t<GF_FLOAT> input_Qw,
+    py::array_t<GF_FLOAT> Qwin,
     py::array_t<GF_UINT>  dim,
     GF_FLOAT              dt,
     GF_FLOAT              dx,
@@ -229,10 +231,11 @@ void wrap_graphflood_dynamic_graph(
     GF_FLOAT* Precipitations_ptr = Precipitations.mutable_data() ;
     GF_FLOAT* manning_ptr        = manning.mutable_data()        ;
     GF_FLOAT* input_Qw_ptr       = input_Qw.mutable_data()       ;
+    GF_FLOAT* Qwin_ptr           = Qwin.mutable_data()           ;
     GF_UINT*  dim_ptr            = dim.mutable_data()            ;
 
     // calling the C function
-    graphflood_dynamic_graph(Z_ptr, hw_ptr, BCs_ptr, Precipitations_ptr, manning_ptr, input_Qw_ptr, dim_ptr, dt, dx, D8, N_iterations);
+    graphflood_dynamic_graph(Z_ptr, hw_ptr, BCs_ptr, Precipitations_ptr, manning_ptr, input_Qw_ptr, Qwin_ptr, dim_ptr, dt, dx, D8, N_iterations);
 }
 
 void wrap_compute_input_Qw_from_area_threshold(
