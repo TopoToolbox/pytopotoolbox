@@ -134,11 +134,11 @@ class GFObject():
         if isinstance(value, GridObject):
             if value.shape != self.grid.shape:
                 raise ValueError("Boundary conditions must match grid dimensions")
-            self._bcs = value.z.ravel(order="C").astype(np.uint8)
+            self._bcs = value.z.astype(np.uint8)
         else:
             if value.size != self.grid.z.size:
                 raise ValueError("Boundary conditions must match grid size")
-            self._bcs = value.ravel(order="C").astype(np.uint8)
+            self._bcs = value.astype(np.uint8)
 
     # Precipitation getters and setters
     @property
@@ -152,13 +152,13 @@ class GFObject():
         if isinstance(value, np.ndarray):
             if value.size != self.grid.z.size:
                 raise ValueError("Precipitation array must match grid size")
-            self._precipitations = value.ravel(order="C")
+            self._precipitations = value
         elif isinstance(value, GridObject):
             if value.shape != self.grid.shape:
                 raise ValueError("Precipitation GridObject must match grid dimensions")
-            self._precipitations = value.z.ravel(order="C")
+            self._precipitations = value.z
         else:
-            self._precipitations = np.full_like(self.grid.z.ravel(), value)
+            self._precipitations = np.full_like(self.grid.z, value)
 
     # Manning coefficient getters and setters
     @property
@@ -172,13 +172,13 @@ class GFObject():
         if isinstance(value, np.ndarray):
             if value.size != self.grid.z.size:
                 raise ValueError("Manning coefficient array must match grid size")
-            self._manning = value.ravel(order="C")
+            self._manning = value
         elif isinstance(value, GridObject):
             if value.shape != self.grid.shape:
                 raise ValueError("Manning coefficient GridObject must match grid dimensions")
-            self._manning = value.z.ravel(order="C")
+            self._manning = value.z
         else:
-            self._manning = np.full_like(self.grid.z.ravel(), value)
+            self._manning = np.full_like(self.grid.z, value)
 
     def run_n_iterations(self, dt: float = 1e-3, sfd: bool = False,
                          d8: bool = True, n_iterations: int = 100):
@@ -216,6 +216,77 @@ class GFObject():
         else:
             self._hw.z = self.res['hw']
         del self.res['hw']
+
+    def run_n_iterations_dynamic_graph(self, input_qvol: np.ndarray | GridObject,
+                                       dt: float = 1e-3, d8: bool = True,
+                                       n_iterations: int = 100):
+        """Run graphflood dynamic graph model for n iterations.
+
+        Executes the hydrodynamic simulation using the dynamic induced graph
+        graphflood algorithm. Updates water height and stores flow outputs in self.res.
+
+        Parameters
+        ----------
+        input_qvol : np.ndarray or GridObject
+            Input discharge locations array [m³/s].
+            Must have the same shape as the grid.
+        dt : float, optional
+            Time step in seconds (default: 1e-3)
+        d8 : bool, optional
+            Use D8 flow routing (default: True)
+        n_iterations : int, optional
+            Number of simulation iterations (default: 100)
+        """
+        # Run the dynamic graph graphflood simulation with current parameters
+        self.res = tgf.run_graphflood_dynamic_graph(
+            self.grid,
+            input_qvol=input_qvol,
+            initial_hw=self._hw.z,
+            bcs=self._bcs,
+            dt=dt,
+            p=self._precipitations,
+            manning=self._manning,
+            d8=d8,
+            n_iterations=n_iterations)
+
+        # Update water height from results and remove from res dict
+        if isinstance(self.res['hw'], GridObject):
+            self._hw = self.res['hw']
+        else:
+            self._hw.z = self.res['hw']
+        del self.res['hw']
+
+    def compute_input_qvol_from_area_threshold(self, area_threshold: float,
+                                             d8: bool = True, step: float = 1e-3) -> GridObject:
+        """Compute input discharge array from drainage area threshold.
+
+        Identifies channel heads where drainage area crosses a threshold and assigns
+        precipitation-weighted discharge at those entry points for use with the dynamic
+        graph graphflood algorithm.
+
+        Parameters
+        ----------
+        area_threshold : float
+            Drainage area threshold for entry points [m²]
+        d8 : bool, optional
+            Use D8 flow routing (default: True)
+        step : float, optional
+            Delta_Z to apply minimum elevation increase and avoid flats during
+            priority flooding (default: 1e-3)
+
+        Returns
+        -------
+        GridObject
+            Grid object with computed input discharge array [m³/s]
+        """
+        return tgf.compute_input_qvol_from_area_threshold(
+            self.grid,
+            area_threshold=area_threshold,
+            hw=self._hw.z,
+            bcs=self._bcs,
+            p=self._precipitations,
+            d8=d8,
+            step=step)
 
     # Model output getters (read-only)
     @property

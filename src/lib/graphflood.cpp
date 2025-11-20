@@ -177,19 +177,90 @@ void wrap_compute_priority_flood_plus_stack(
 }
 
 void wrap_compute_priority_flood(
-    py::array_t<GF_FLOAT>    topo, 
+    py::array_t<GF_FLOAT>    topo,
     py::array_t<uint8_t>     BCs,
     py::array_t<GF_UINT>     dim,
     bool D8 ,
     GF_FLOAT step
     ){
-    
+
     GF_FLOAT* topo_ptr = topo.mutable_data();
     uint8_t* BCs_ptr = BCs.mutable_data();
     GF_UINT* dim_ptr = dim.mutable_data();
-    
+
     // First priority flooding and calculating stack
     compute_priority_flood(topo_ptr, BCs_ptr, dim_ptr, D8,step);
+}
+
+
+/*
+Runs the dynamic induced graph graphflood algorithm
+
+Z:              1D numpy array (n nodes) of topography (type np.float32)
+hw:             1D numpy array (n nodes) of flow depth type np.float32)
+BCs:            1D numpy array (n nodes) of boundary codes (type np.uint8)
+Precipitations: 1D numpy array (n nodes) of precipitation rates in m.s-1 (type np.float32)
+manning:        1D numpy array (n nodes) of friction coefficient (type np.float32)
+input_Qw:       1D numpy array (n nodes) of input discharge locations (type np.float32)
+Qwin:           1D numpy array (n nodes) of input discharge output (type np.float32)
+dim:            [nrows,ncolumns] for row major (e.g. python) or [ncolumns, nrows] for column major. Numpy array as np.uint64.
+dt:             time step (s)
+dx:             spatial step (m)
+D8:             true to include diagonal paths
+N_iterations:   how many iterations to run
+*/
+void wrap_graphflood_dynamic_graph(
+    py::array_t<GF_FLOAT> Z,
+    py::array_t<GF_FLOAT> hw,
+    py::array_t<uint8_t>  BCs,
+    py::array_t<GF_FLOAT> Precipitations,
+    py::array_t<GF_FLOAT> manning,
+    py::array_t<GF_FLOAT> input_Qw,
+    py::array_t<GF_FLOAT> Qwin,
+    py::array_t<GF_UINT>  dim,
+    GF_FLOAT              dt,
+    GF_FLOAT              dx,
+    bool                  D8,
+    GF_UINT               N_iterations
+    ){
+
+    // numpy arrays to pointers
+    GF_FLOAT* Z_ptr              = Z.mutable_data()              ;
+    GF_FLOAT* hw_ptr             = hw.mutable_data()             ;
+    uint8_t*  BCs_ptr            = BCs.mutable_data()            ;
+    GF_FLOAT* Precipitations_ptr = Precipitations.mutable_data() ;
+    GF_FLOAT* manning_ptr        = manning.mutable_data()        ;
+    GF_FLOAT* input_Qw_ptr       = input_Qw.mutable_data()       ;
+    GF_FLOAT* Qwin_ptr           = Qwin.mutable_data()           ;
+    GF_UINT*  dim_ptr            = dim.mutable_data()            ;
+
+    // calling the C function
+    graphflood_dynamic_graph(Z_ptr, hw_ptr, BCs_ptr, Precipitations_ptr, manning_ptr, input_Qw_ptr, Qwin_ptr, dim_ptr, dt, dx, D8, N_iterations);
+}
+
+void wrap_compute_input_Qw_from_area_threshold(
+    py::array_t<GF_FLOAT> input_Qw,
+    py::array_t<GF_FLOAT> Z,
+    py::array_t<GF_FLOAT> hw,
+    py::array_t<uint8_t>  BCs,
+    py::array_t<GF_FLOAT> Precipitations,
+    GF_FLOAT              area_threshold,
+    py::array_t<GF_UINT>  dim,
+    GF_FLOAT              dx,
+    bool                  D8,
+    GF_FLOAT              step
+    ){
+
+    // numpy arrays to pointers
+    GF_FLOAT* input_Qw_ptr       = input_Qw.mutable_data()       ;
+    GF_FLOAT* Z_ptr              = Z.mutable_data()              ;
+    GF_FLOAT* hw_ptr             = hw.mutable_data()             ;
+    uint8_t*  BCs_ptr            = BCs.mutable_data()            ;
+    GF_FLOAT* Precipitations_ptr = Precipitations.mutable_data() ;
+    GF_UINT*  dim_ptr            = dim.mutable_data()            ;
+
+    // calling the C function
+    compute_input_Qw_from_area_threshold(input_Qw_ptr, Z_ptr, hw_ptr, BCs_ptr, Precipitations_ptr, area_threshold, dim_ptr, dx, D8, step);
 }
 
 
@@ -199,9 +270,11 @@ void wrap_compute_priority_flood(
 PYBIND11_MODULE(_graphflood, m) {
     m.def("graphflood_run_full", &wrap_graphflood_full);
     m.def("graphflood_metrics", &wrap_graphflood_metrics);
+    m.def("graphflood_dynamic_graph", &wrap_graphflood_dynamic_graph);
     m.def("graphflood_sfgraph", &wrap_compute_sfgraph);
     m.def("compute_priority_flood_plus_topological_ordering", &wrap_compute_priority_flood_plus_stack);
     m.def("compute_priority_flood", &wrap_compute_priority_flood);
     m.def("compute_drainage_area_single_flow", &wrap_compute_drainage_area_single_flow);
+    m.def("compute_input_qvol_from_area_threshold", &wrap_compute_input_Qw_from_area_threshold);
 
 }
