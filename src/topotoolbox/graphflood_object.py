@@ -217,7 +217,7 @@ class GFObject():
             self._hw.z = self.res['hw']
         del self.res['hw']
 
-    def run_n_iterations_dynamic_graph(self, input_Qw: np.ndarray | GridObject,
+    def run_n_iterations_dynamic_graph(self, input_qvol: np.ndarray | GridObject,
                                        dt: float = 1e-3, d8: bool = True,
                                        n_iterations: int = 100):
         """Run graphflood dynamic graph model for n iterations.
@@ -227,7 +227,7 @@ class GFObject():
 
         Parameters
         ----------
-        input_Qw : np.ndarray or GridObject
+        input_qvol : np.ndarray or GridObject
             Input discharge locations array [m³/s].
             Must have the same shape as the grid.
         dt : float, optional
@@ -240,7 +240,7 @@ class GFObject():
         # Run the dynamic graph graphflood simulation with current parameters
         self.res = tgf.run_graphflood_dynamic_graph(
             self.grid,
-            input_Qw=input_Qw,
+            input_qvol=input_qvol,
             initial_hw=self._hw.z,
             bcs=self._bcs,
             dt=dt,
@@ -256,7 +256,7 @@ class GFObject():
             self._hw.z = self.res['hw']
         del self.res['hw']
 
-    def compute_input_Qw_from_area_threshold(self, area_threshold: float,
+    def compute_input_qvol_from_area_threshold(self, area_threshold: float,
                                              d8: bool = True, step: float = 1e-3) -> GridObject:
         """Compute input discharge array from drainage area threshold.
 
@@ -279,7 +279,7 @@ class GFObject():
         GridObject
             Grid object with computed input discharge array [m³/s]
         """
-        return tgf.compute_input_Qw_from_area_threshold(
+        return tgf.compute_input_qvol_from_area_threshold(
             self.grid,
             area_threshold=area_threshold,
             hw=self._hw.z,
