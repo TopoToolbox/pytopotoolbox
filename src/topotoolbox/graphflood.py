@@ -20,11 +20,14 @@ funcdict = {
     "priority_flood": _graphflood.compute_priority_flood,
     "drainage_area_single_flow": _graphflood.compute_drainage_area_single_flow,
     "dynamic_graph": _graphflood.graphflood_dynamic_graph,
-    "compute_input_Qw_from_area_threshold": _graphflood.compute_input_Qw_from_area_threshold,
+    "compute_input_qvol_from_area_threshold": _graphflood.compute_input_qvol_from_area_threshold,
 }
 
-__all__ = ["run_graphflood", "run_graphflood_dynamic_graph", "compute_input_Qw_from_area_threshold"]
-
+__all__ = [
+    "run_graphflood",
+    "run_graphflood_dynamic_graph",
+    "compute_input_qvol_from_area_threshold"
+    ]
 
 def run_graphflood(
     grid: GridObject,
@@ -219,7 +222,7 @@ def run_graphflood(
 
 def run_graphflood_dynamic_graph(
     grid: GridObject,
-    input_Qw: np.ndarray | GridObject,
+    input_qvol: np.ndarray | GridObject,
     initial_hw: np.ndarray | GridObject | None = None,
     bcs: np.ndarray | GridObject | None = None,
     dt: float = 1e-3,
@@ -235,7 +238,7 @@ def run_graphflood_dynamic_graph(
     ----------
     grid : GridObject
         A GridObject representing the digital elevation model.
-    input_Qw : np.ndarray or GridObject
+    input_qvol : np.ndarray or GridObject
         Input discharge locations array [m³/s].
         Must have the same shape as 'grid'.
     initial_hw : np.ndarray or GridObject, optional
@@ -273,7 +276,7 @@ def run_graphflood_dynamic_graph(
     Raises
     ------
     RuntimeError
-        If the shape of `input_Qw`, `initial_hw`, `bcs`, `p`, or `manning` does not match
+        If the shape of `input_qvol`, `initial_hw`, `bcs`, `p`, or `manning` does not match
         the shape of the 'grid' GridObject`.
     """
 
@@ -286,18 +289,18 @@ def run_graphflood_dynamic_graph(
     # Order C for vectorised topography
     z = grid.z.ravel(order="C")
 
-    # Ingesting input_Qw
-    if input_Qw.shape != grid.z.shape:
+    # Ingesting input_qvol
+    if input_qvol.shape != grid.z.shape:
         raise RuntimeError(
             """Feeding the model with input discharge requires a
             2D numpy array or a GridObject of the same dimension
             of the topographic grid"""
         )
 
-    if isinstance(input_Qw, GridObject):
-        tinput_Qw = input_Qw.z.ravel(order="C")
+    if isinstance(input_qvol, GridObject):
+        tinput_qvol = input_qvol.z.ravel(order="C")
     else:
-        tinput_Qw = input_Qw.ravel(order="C")
+        tinput_qvol = input_qvol.ravel(order="C")
 
     # Ingesting the flow depth
     if initial_hw is None:
@@ -378,14 +381,14 @@ def run_graphflood_dynamic_graph(
 
     tz = z.astype(np.float64)
     thw = hw.astype(np.float64)
-    tinput_Qw = tinput_Qw.astype(np.float64)
+    tinput_qvol = tinput_qvol.astype(np.float64)
     precipitations = precipitations.astype(np.float64)
     manning = manning.astype(np.float64)
 
     qwin = np.zeros_like(thw)
 
     _graphflood.graphflood_dynamic_graph(
-        tz, thw, tbcs, precipitations, manning, tinput_Qw, qwin,
+        tz, thw, tbcs, precipitations, manning, tinput_qvol, qwin,
         dim, dt, dx, d8, n_iterations
     )
 
@@ -418,7 +421,7 @@ def run_graphflood_dynamic_graph(
     return res
 
 
-def compute_input_Qw_from_area_threshold(
+def compute_input_qvol_from_area_threshold(
     grid: GridObject,
     area_threshold: float,
     hw: np.ndarray | GridObject | None = None,
@@ -477,7 +480,7 @@ def compute_input_Qw_from_area_threshold(
     z = grid.z.ravel(order="C")
 
     # Initialize output array
-    input_Qw = np.zeros_like(z)
+    input_qvol = np.zeros_like(z)
 
     # Ingesting the water depth
     if hw is None:
@@ -537,15 +540,15 @@ def compute_input_Qw_from_area_threshold(
 
     tz = z.astype(np.float64)
     thw = thw.astype(np.float64)
-    input_Qw = input_Qw.astype(np.float64)
+    input_qvol = input_qvol.astype(np.float64)
     precipitations = precipitations.astype(np.float64)
 
-    _graphflood.compute_input_Qw_from_area_threshold(
-        input_Qw, tz, thw, tbcs, precipitations,
+    _graphflood.compute_input_qvol_from_area_threshold(
+        input_qvol, tz, thw, tbcs, precipitations,
         area_threshold, dim, dx, d8, step
     )
 
     res = deepcopy(grid)
-    res.z = input_Qw.reshape(grid.shape)
+    res.z = input_qvol.reshape(grid.shape)
 
     return res
