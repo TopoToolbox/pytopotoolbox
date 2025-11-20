@@ -275,6 +275,6 @@ PYBIND11_MODULE(_graphflood, m) {
     m.def("compute_priority_flood_plus_topological_ordering", &wrap_compute_priority_flood_plus_stack);
     m.def("compute_priority_flood", &wrap_compute_priority_flood);
     m.def("compute_drainage_area_single_flow", &wrap_compute_drainage_area_single_flow);
-    m.def("compute_input_Qw_from_area_threshold", &wrap_compute_input_Qw_from_area_threshold);
+    m.def("compute_input_qvol_from_area_threshold", &wrap_compute_input_Qw_from_area_threshold);
 
 }
