@@ -204,6 +204,58 @@ class GridObject():
 
         return dst
 
+    def resample(self,
+                 resolution: float,
+                 resampling: 'Resampling' = Resampling.bilinear):
+        """Resample GridObject to a new resolution.
+
+        Parameters
+        ----------
+        resolution : float
+            Target resolution in the same units as the current cellsize.
+        resampling : rasterio.enums.Resampling, optional
+            Resampling method.
+            The default is bilinear resampling.
+
+        Returns
+        -------
+        GridObject
+            The resampled data.
+
+        Example
+        -------
+        >>> dem = topotoolbox.load_dem('example.tif')
+        >>> dem_90m = dem.resample(resolution=90)
+        >>> im = dem_90m.plot(cmap="terrain")
+        >>> plt.show()
+        """
+        dst = GridObject()
+
+        z, dst.transform = reproject(
+            self.z,
+            src_transform=self.transform,
+            src_crs=self.georef,
+            dst_transform=None,  # Let rasterio derive the transform for us
+            dst_crs=self.georef,  # Same CRS as source
+            dst_nodata=np.nan,
+            dst_resolution=resolution,
+            resampling=resampling,
+        )
+        # reproject gives us a 3D array, we want the first band.
+        dst.z = np.zeros_like(self.z, shape=z.shape[1:3])
+        dst.z[:, :] = z[0, :, :]
+
+        dst.georef = self.georef  # Keep the same CRS
+
+        # Get cellsize from transform
+        if dst.transform is not None:
+            dst.cellsize = abs(dst.transform[0])
+
+        if self.bounds:
+            dst.bounds = self.bounds  # Same bounds, just different resolution
+
+        return dst
+
     def fillsinks(self,
                   bc: 'np.ndarray | GridObject | None' = None,
                   hybrid: bool = True) -> 'GridObject':
