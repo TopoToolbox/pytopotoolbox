@@ -1598,7 +1598,7 @@ class GridObject():
         result.bounds = new_bounds
 
         # Crop DEM
-        result.z = result.z[y_start:y_end, x_start:x_end]
+        result.z = np.copy(result.z[y_start:y_end, x_start:x_end])
         return result
 
     # 'Magic' functions:
