@@ -11,10 +11,11 @@ import rasterio
 import numpy as np
 
 from .grid_object import GridObject
+from .stream_object import StreamObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "gen_random_bool", "get_cache_contents", "clear_cache",
-           "read_from_cache", "load_opentopography"]
+           "read_from_cache", "load_opentopography", "write_shapefile"]
 
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
@@ -64,6 +65,39 @@ def write_tif(dem: GridObject, path: str) -> None:
             transform=dem.transform
     ) as dataset:
         dataset.write(dem.z, 1)
+
+def write_shapefile(streamobject: StreamObject, path: str) -> None:
+    """
+    Write a StreamObject instance to a shapefile. Filetype is inferred from
+    the file extension. This function is based on the geopandas GeoDataFrame
+    'to_file' method and supports the same formats (.shp, .gpkg, .geojson).
+
+    Parameters
+    ----------
+    streamobject : StreamObject
+        The StreamObject instance to be written to a shapefile.
+    path : str
+        The file path where the shapefile will be saved.
+
+    Raises
+    ------
+    TypeError
+        If `streamobject` is not an instance of StreamObject.
+
+    Example
+    -------
+    >>> topotoolbox.write_shapefile(streamobject, 'streamobject.shp')
+
+    >>> topotoolbox.write_shapefile(streamobject, 'streamobject.gpkg')
+
+    >>> topotoolbox.write_shapefile(streamobject, 'streamobject.geojson')
+    """
+
+    if not isinstance(streamobject, StreamObject):
+        err = "The provided streamobject is not an instance of StreamObject."
+        raise TypeError(err) from None
+
+    streamobject.to_shapefile(path)
 
 
 def read_tif(path: str) -> GridObject:
