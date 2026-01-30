@@ -429,10 +429,11 @@ class FlowObject():
 
         return result
 
-    def relative_elevation_to_stream(self, stream,
+    def vertdistance2stream(self, stream,
                                       grid: GridObject) -> GridObject:
         """Calculates relative elevation from rivers defined by a stream object.
         Follows the flow paths, not the shortest euclidian distance.
+        Also called hand (height above nearest drainage)
 
         Returns
         -------
