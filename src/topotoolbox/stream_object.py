@@ -280,6 +280,23 @@ class StreamObject():
         return np.unravel_index(self.stream[self.target],
                                 self.shape, self._order)
 
+    @property
+    def gridmask(self) -> np.ndarray:
+        """mask with the shape of the original grid with stream
+        indices.
+
+        Returns
+        -------
+        ndarray
+            2D array where rivers are 1 and non-river pixels
+            are 0.
+
+        """
+        mask = np.zeros(self.shape, order = self._order, dtype = np.bool)
+        mask[self.source_indices] = True
+        mask[self.target_indices] = True
+        return mask
+
     def distance(self) -> np.ndarray:
         """
         Compute the pixel-to-pixel distance for each edge.
