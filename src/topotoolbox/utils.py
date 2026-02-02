@@ -121,11 +121,9 @@ def get_dtype(obj):
     """
     if isinstance(obj, GridObject):
         return obj.z.dtype
-    elif isinstance(obj, np.ndarray):
+    if isinstance(obj, np.ndarray):
         return obj.dtype
-    else:
-        # Scalar value
-        return np.array(obj).dtype
+    return np.array(obj).dtype
 
 
 def read_tif(path: str) -> GridObject:
