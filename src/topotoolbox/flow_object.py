@@ -429,6 +429,46 @@ class FlowObject():
 
         return result
 
+    def vertdistance2stream(self, stream,
+                                      grid: GridObject) -> GridObject:
+        """Calculates relative elevation from rivers defined by a stream object.
+        Follows the flow paths, not the shortest euclidian distance.
+        Also called hand (height above nearest drainage)
+
+        Returns
+        -------
+        up_z: GridObject
+            A new GridObject containing the relative elevation grid
+        """
+
+        # pylint: disable=import-outside-toplevel
+        # Local import to avoid circular import
+        from .stream_object import StreamObject
+
+        if not isinstance(stream, StreamObject):
+            raise TypeError('stream must be a StreamObject')
+
+        # Getting hte river location as 2D mask
+        mask = stream.gridmask
+
+        # Calculating the relative Z from nodes to their receivers
+
+        ## Elevation for every sources and targets
+        zsources = grid.z[self.source_indices]
+        ztarget = grid.z[self.target_indices]
+
+        ## dz host the local relief
+        dz = zsources - ztarget
+
+        # Masking my rivers (if the source node belongs to the river mask)
+        dz[mask[self.source_indices]] = 0.
+
+        ## Summing the global relative elevation to rivers
+        up_z = np.zeros(self.shape, dtype = np.float32, order=self.order)
+        _stream.traverse_up_f32_max_add(up_z, dz, self.source, self.target)
+
+        return grid.duplicate_with_new_data(up_z)
+
     def dependencemap(self, l) -> GridObject:
         """Delineate upslope area for specific locations in a DEM.
 

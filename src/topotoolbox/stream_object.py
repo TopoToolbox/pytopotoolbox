@@ -280,6 +280,23 @@ class StreamObject():
         return np.unravel_index(self.stream[self.target],
                                 self.shape, self._order)
 
+    @property
+    def gridmask(self) -> np.ndarray:
+        """mask with the shape of the original grid with stream
+        indices.
+
+        Returns
+        -------
+        ndarray
+            2D array where rivers are 1 and non-river pixels
+            are 0.
+
+        """
+        mask = np.zeros(self.shape, order = self._order, dtype = np.bool)
+        mask[self.source_indices] = True
+        mask[self.target_indices] = True
+        return mask
+
     def distance(self) -> np.ndarray:
         """
         Compute the pixel-to-pixel distance for each edge.
@@ -513,6 +530,50 @@ class StreamObject():
         '''
         gdf = self.to_geodataframe()
         gdf.to_file(path)
+
+    def to_grid(self, nal=None):
+        """Convert StreamObject to GridObject
+
+        Parameters
+        ----------
+        nal : GridObject | np.ndarray | float, optional
+            Node attribute list to map onto the grid. If None, creates a
+            boolean grid with True at stream locations. If provided, creates
+            a grid with the node values at stream locations and nan elsewhere.
+
+        Returns
+        -------
+        GridObject
+            A GridObject with the same spatial reference as the StreamObject.
+            If nal is None, contains boolean values (True for streams).
+            Otherwise, contains the nal values at stream locations and nan
+            elsewhere.
+        """
+        # pylint: disable=import-outside-toplevel
+        # Local import to avoid circular import
+        from .utils import get_dtype
+
+        if nal is None:
+            # Create a boolean grid with True at stream locations
+            z = self.gridmask
+        else:
+
+            # Create a grid filled with nan
+            z = np.full(self.shape, np.nan, dtype=get_dtype(nal), order=self._order)
+
+            # Set stream locations to the nal values
+            z[self.node_indices] = nal[self.node_indices]
+
+        # Create and return a GridObject
+        grid = GridObject()
+        grid.z = z
+        grid.cellsize = self.cellsize
+        grid.bounds = self.bounds
+        grid.transform = self.transform
+        grid.georef = self.georef
+        grid.name = 'stream grid'
+
+        return grid
 
     def plot(self, ax=None, scalex=True, scaley=True, **kwargs):
         """Plot the StreamObject

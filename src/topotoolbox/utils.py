@@ -15,7 +15,7 @@ from .stream_object import StreamObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "gen_random_bool", "get_cache_contents", "clear_cache",
-           "read_from_cache", "load_opentopography", "write_shapefile"]
+           "read_from_cache", "load_opentopography", "write_shapefile", "get_dtype"]
 
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
@@ -98,6 +98,32 @@ def write_shapefile(streamobject: StreamObject, path: str) -> None:
         raise TypeError(err) from None
 
     streamobject.to_shapefile(path)
+
+
+def get_dtype(obj):
+    """Get the dtype of a GridObject, numpy array, or scalar.
+
+    Parameters
+    ----------
+    obj : GridObject | np.ndarray | scalar
+        The object to get the dtype from.
+
+    Returns
+    -------
+    np.dtype
+        The numpy dtype of the object.
+
+    Example
+    -------
+    >>> dem = topotoolbox.load_dem('taiwan')
+    >>> dtype = topotoolbox.get_dtype(dem)
+    >>> print(dtype)
+    """
+    if isinstance(obj, GridObject):
+        return obj.z.dtype
+    if isinstance(obj, np.ndarray):
+        return obj.dtype
+    return np.array(obj).dtype
 
 
 def read_tif(path: str) -> GridObject:
