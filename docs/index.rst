@@ -18,7 +18,7 @@ to obtain the latest version.
 
 Once you have the package installed, the :doc:`tutorial <tutorial/tutorial>` provides a basic walkthrough of loading and displaying a digital elevation model with TopoToolbox.
 
-Further examples of TopoToolbox functionality can be found in the :doc:`example notebooks <examples>`, which can also be downloaded from the `GitHub repository <https://github.com/TopoToolbox/pytopotoolbox/tree/main/examples>`_.
+Further examples of TopoToolbox functionality can be found in the :doc:`example notebooks <examples>`, which can also be downloaded from the `GitHub repository <https://github.com/TopoToolbox/pytopotoolbox/tree/main/docs/examples>`_.
 
 API Documentation
 -----------------
