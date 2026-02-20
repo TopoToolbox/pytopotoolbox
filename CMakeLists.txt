@@ -10,8 +10,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(FetchContent)
 FetchContent_Declare(
   topotoolbox
-  GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG 2025-W46
+  SOURCE_DIR /home/bgailleton/Desktop/code/ttb/libtopotoolbox
 )
 FetchContent_MakeAvailable(topotoolbox)
 
@@ -33,4 +32,7 @@ target_link_libraries(_graphflood PRIVATE topotoolbox)
 pybind11_add_module(_morphology src/lib/morphology.cpp)
 target_link_libraries(_morphology PRIVATE topotoolbox)
 
-install(TARGETS _grid _flow _stream _graphflood _morphology LIBRARY DESTINATION topotoolbox)
+pybind11_add_module(_swaths src/lib/swaths.cpp)
+target_link_libraries(_swaths PRIVATE topotoolbox)
+
+install(TARGETS _grid _flow _stream _graphflood _morphology _swaths LIBRARY DESTINATION topotoolbox)
