@@ -116,6 +116,46 @@ void wrap_traverse_up_f32_max_add(py::array_t<float> output,
                           target_ptr, edge_count);
 }
 
+void wrap_traverse_down_f32_max_mul(py::array_t<float> output,
+                                    py::array_t<float> input,
+                                    py::array_t<ptrdiff_t> source,
+                                    py::array_t<ptrdiff_t> target) {
+  traverse_down_f32_max_mul(output.mutable_data(), input.mutable_data(),
+                            source.mutable_data(), target.mutable_data(),
+                            source.size());
+}
+
+void wrap_traverse_down_f32_max_mul_arg(py::array_t<float> output,
+                                        py::array_t<int64_t> idx,
+                                        py::array_t<float> input,
+                                        py::array_t<ptrdiff_t> source,
+                                        py::array_t<ptrdiff_t> target) {
+  traverse_down_f32_max_mul_arg(output.mutable_data(), idx.mutable_data(),
+                                input.mutable_data(),
+                                source.mutable_data(), target.mutable_data(),
+                                source.size());
+}
+
+void wrap_traverse_up_f32_max_mul(py::array_t<float> output,
+                                  py::array_t<float> input,
+                                  py::array_t<ptrdiff_t> source,
+                                  py::array_t<ptrdiff_t> target) {
+  traverse_up_f32_max_mul(output.mutable_data(), input.mutable_data(),
+                          source.mutable_data(), target.mutable_data(),
+                          source.size());
+}
+
+void wrap_traverse_up_f32_max_mul_arg(py::array_t<float> output,
+                                      py::array_t<int64_t> idx,
+                                      py::array_t<float> input,
+                                      py::array_t<ptrdiff_t> source,
+                                      py::array_t<ptrdiff_t> target) {
+  traverse_up_f32_max_mul_arg(output.mutable_data(), idx.mutable_data(),
+                              input.mutable_data(),
+                              source.mutable_data(), target.mutable_data(),
+                              source.size());
+}
+
 void wrap_traverse_down_f32_min_add(py::array_t<float> output,
                                     py::array_t<float> input,
                                     py::array_t<ptrdiff_t> source,
@@ -178,6 +218,26 @@ void wrap_edgelist_degree(py::array_t<uint8_t> indegree,
                   target_ptr, node_count, edge_count);
 }
 
+void wrap_propagatevaluesupstream_f32(py::array_t<float> data,
+                                      py::array_t<ptrdiff_t> source,
+                                      py::array_t<ptrdiff_t> target) {
+
+  propagatevaluesupstream_f32(data.mutable_data(),
+                              source.mutable_data(),
+                              target.mutable_data(),
+                              source.size());
+}
+
+void wrap_propagatevaluesupstream_f64(py::array_t<double> data,
+                                      py::array_t<ptrdiff_t> source,
+                                      py::array_t<ptrdiff_t> target) {
+
+  propagatevaluesupstream_f64(data.mutable_data(),
+                              source.mutable_data(),
+                              target.mutable_data(),
+                              source.size());
+}
+
 void wrap_propagatevaluesupstream_u8(py::array_t<uint8_t> data,
                                      py::array_t<ptrdiff_t> source,
                                      py::array_t<ptrdiff_t> target) {
@@ -186,6 +246,46 @@ void wrap_propagatevaluesupstream_u8(py::array_t<uint8_t> data,
                              source.mutable_data(),
                              target.mutable_data(),
                              source.size());
+}
+
+void wrap_propagatevaluesupstream_u32(py::array_t<uint32_t> data,
+                                      py::array_t<ptrdiff_t> source,
+                                      py::array_t<ptrdiff_t> target) {
+
+  propagatevaluesupstream_u32(data.mutable_data(),
+                              source.mutable_data(),
+                              target.mutable_data(),
+                              source.size());
+}
+
+void wrap_propagatevaluesupstream_u64(py::array_t<uint64_t> data,
+                                      py::array_t<ptrdiff_t> source,
+                                      py::array_t<ptrdiff_t> target) {
+
+  propagatevaluesupstream_u64(data.mutable_data(),
+                              source.mutable_data(),
+                              target.mutable_data(),
+                              source.size());
+}
+
+void wrap_propagatevaluesupstream_i8(py::array_t<int8_t> data,
+                                     py::array_t<ptrdiff_t> source,
+                                     py::array_t<ptrdiff_t> target) {
+
+  propagatevaluesupstream_i8(data.mutable_data(),
+                             source.mutable_data(),
+                             target.mutable_data(),
+                             source.size());
+}
+
+void wrap_propagatevaluesupstream_i32(py::array_t<int32_t> data,
+                                      py::array_t<ptrdiff_t> source,
+                                      py::array_t<ptrdiff_t> target) {
+
+  propagatevaluesupstream_i32(data.mutable_data(),
+                              source.mutable_data(),
+                              target.mutable_data(),
+                              source.size());
 }
 
 void wrap_propagatevaluesupstream_i64(py::array_t<int64_t> data,
@@ -221,11 +321,21 @@ PYBIND11_MODULE(_stream, m) {
   m.def("traverse_down_u32_or_and", &wrap_traverse_down_u32_or_and);
   m.def("traverse_down_f32_max_add", &wrap_traverse_down_f32_max_add);
   m.def("traverse_up_f32_max_add", &wrap_traverse_up_f32_max_add);
+  m.def("traverse_down_f32_max_mul", &wrap_traverse_down_f32_max_mul);
+  m.def("traverse_down_f32_max_mul_arg", &wrap_traverse_down_f32_max_mul_arg);
+  m.def("traverse_up_f32_max_mul", &wrap_traverse_up_f32_max_mul);
+  m.def("traverse_up_f32_max_mul_arg", &wrap_traverse_up_f32_max_mul_arg);
   m.def("traverse_down_f32_min_add", &wrap_traverse_down_f32_min_add);
   m.def("traverse_down_f32_add_mul", &wrap_traverse_down_f32_add_mul);
   m.def("traverse_down_f32_strahler", &wrap_traverse_down_f32_strahler);
   m.def("edgelist_degree", &wrap_edgelist_degree);
+  m.def("propagatevaluesupstream_f32", &wrap_propagatevaluesupstream_f32);
+  m.def("propagatevaluesupstream_f64", &wrap_propagatevaluesupstream_f64);
   m.def("propagatevaluesupstream_u8", &wrap_propagatevaluesupstream_u8);
+  m.def("propagatevaluesupstream_u32", &wrap_propagatevaluesupstream_u32);
+  m.def("propagatevaluesupstream_u64", &wrap_propagatevaluesupstream_u64);
+  m.def("propagatevaluesupstream_i8", &wrap_propagatevaluesupstream_i8);
+  m.def("propagatevaluesupstream_i32", &wrap_propagatevaluesupstream_i32);
   m.def("propagatevaluesupstream_i64", &wrap_propagatevaluesupstream_i64);
   m.def("lowerenv", &wrap_lowerenv);
 }
