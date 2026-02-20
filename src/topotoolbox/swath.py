@@ -4,8 +4,9 @@ It includes classes and functions for computing and plotting transverse
 and longitudinal swath profiles from Digital Elevation Models (DEMs).
 """
 import math
+import warnings
 from dataclasses import dataclass
-from typing import Optional, List, Tuple, Union, Dict
+from typing import Optional, List, Tuple, Union
 import numpy as np
 from .grid_object import GridObject
 # pylint: disable=no-name-in-module
@@ -206,7 +207,8 @@ class LongitudinalSwath:
             'min': self.mins[idx],
             'max': self.maxs[idx],
             'count': self.counts[idx],
-            'distance': self.along_track_distances[idx] if self.along_track_distances is not None else idx,
+            'distance': (self.along_track_distances[idx]
+                         if self.along_track_distances is not None else idx),
         }
         if self.track_x is not None:
             d['x'] = self.track_x[idx]
@@ -246,7 +248,8 @@ class LongitudinalSwath:
         if ax is None:
             fig, ax = plt.subplots()
 
-        x = self.along_track_distances if self.along_track_distances is not None else np.arange(len(self.means))
+        x = (self.along_track_distances if self.along_track_distances is not None
+             else np.arange(len(self.means)))
         label = kwargs.pop('label', 'Mean')
         line = ax.plot(x, self.means, label=label, **kwargs)
         color = line[0].get_color()
@@ -256,7 +259,8 @@ class LongitudinalSwath:
                             alpha=0.1, color=color, label='Min-Max')
         if show_std:
             ax.fill_between(x, self.means - self.stddevs,
-                            self.means + self.stddevs, alpha=0.2, color=color, label='Std Dev')
+                            self.means + self.stddevs, alpha=0.2,
+                            color=color, label='Std Dev')
         if show_quartiles and self.q1 is not None and self.q3 is not None:
             ax.fill_between(x, self.q1, self.q3,
                             alpha=0.3, color=color, label='Q1-Q3')
@@ -275,8 +279,8 @@ def _prepare_track(grid, track_x, track_y, input_mode):
         ti = np.array(track_x, dtype=np.float32)
         tj = np.array(track_y, dtype=np.float32)
     elif input_mode == "indices1D":
-        ti = (track_x % grid.rows).astype(np.float32)
-        tj = (track_x // grid.rows).astype(np.float32)
+        ti = (np.asarray(track_x) % grid.rows).astype(np.float32)
+        tj = (np.asarray(track_x) // grid.rows).astype(np.float32)
     elif input_mode == "coordinates":
         inv_transform = ~grid.transform
         tx = np.asarray(track_x)
@@ -308,7 +312,8 @@ def _grid_from_z(base_grid: GridObject, z: np.ndarray, name: str) -> GridObject:
 def compute_swath_distance_map(
         grid: GridObject, track_x, track_y=None, half_width: Optional[float] = None,
         input_mode="indices2D", compute_signed=True,
-        return_nearest_segment=False, return_centre_line=False, mask=None) -> Union[GridObject, SwathCentreLine]:
+        return_nearest_segment=False, return_centre_line=False,
+        mask=None) -> Union[GridObject, SwathCentreLine]:
     """Compute a distance map from a polyline track.
 
     If `half_width` is provided, the map is clipped (NAN outside). If None, a
@@ -340,16 +345,16 @@ def compute_swath_distance_map(
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     dist_z = np.full(grid.z.shape, np.nan, dtype=np.float32, order='F')
-    near_seg_z = None
+    near_seg_z: Optional[np.ndarray] = None
     if return_nearest_segment or return_centre_line:
         near_seg_z = np.full(grid.z.shape, -1, dtype=np.intp, order='F')
 
     if half_width is not None:
         # Clipped distance map
-        dfb_z = None
-        cli_arr = None
-        clj_arr = None
-        cw_arr = None
+        dfb_z: Optional[np.ndarray] = None
+        cli_arr: Optional[np.ndarray] = None
+        clj_arr: Optional[np.ndarray] = None
+        cw_arr: Optional[np.ndarray] = None
         if return_centre_line:
             dfb_z = np.full(grid.z.shape, np.nan, dtype=np.float32, order='F')
             cli_arr = np.zeros(grid.z.size, dtype=np.float32)
@@ -368,10 +373,15 @@ def compute_swath_distance_map(
         # Build dataclass
         res = SwathCentreLine(distance_map=dist_grid)
         if return_nearest_segment:
+            assert near_seg_z is not None
             res.nearest_segment = _grid_from_z(grid, near_seg_z, "swath_nearest_segment")
         if return_centre_line:
+            assert dfb_z is not None
+            assert cli_arr is not None
+            assert clj_arr is not None
+            assert cw_arr is not None
             res.dist_from_boundary = _grid_from_z(grid, dfb_z, "swath_dist_from_boundary")
-            
+
             oi = cli_arr[:count]
             oj = clj_arr[:count]
             if input_mode == "indices2D":
@@ -381,25 +391,27 @@ def compute_swath_distance_map(
             elif input_mode == "coordinates":
                 xs, ys = grid.transform * (oj, oi)
                 res.centre_line_x, res.centre_line_y = np.array(xs), np.array(ys)
-            
+
             res.centre_width = cw_arr[:count]
         return res
 
-    else:
-        # Full distance map
-        _swaths.swath_compute_full_distance_map(
-            dist_z, near_seg_z, ti, tj, grid.dims, grid.cellsize, grid.z, mask, int(compute_signed)
-        )
-        dist_grid = _grid_from_z(grid, dist_z, "swath_full_distance")
-        if return_nearest_segment:
-            return SwathCentreLine(distance_map=dist_grid,
-                                   nearest_segment=_grid_from_z(grid, near_seg_z, "swath_nearest_segment"))
-        return dist_grid
+    # Full distance map
+    _swaths.swath_compute_full_distance_map(
+        dist_z, near_seg_z, ti, tj, grid.dims, grid.cellsize, grid.z, mask, int(compute_signed)
+    )
+    dist_grid = _grid_from_z(grid, dist_z, "swath_full_distance")
+    if return_nearest_segment:
+        assert near_seg_z is not None
+        return SwathCentreLine(
+            distance_map=dist_grid,
+            nearest_segment=_grid_from_z(grid, near_seg_z, "swath_nearest_segment"))
+    return dist_grid
 
 
 def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarray],
                     half_width: float, bin_resolution: float = 10.0,
-                    normalize: bool = False, percentiles: Optional[List[int]] = None) -> TransverseSwath:
+                    normalize: bool = False,
+                    percentiles: Optional[List[int]] = None) -> TransverseSwath:
     """Compute a transverse swath profile using a pre-computed signed distance map.
 
     Aggregates elevations based on their perpendicular distance to the track.
@@ -426,8 +438,7 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
     """
     dist_arr = distance_map.z if isinstance(distance_map, GridObject) else distance_map
     if np.nanmin(dist_arr) >= 0 and np.nanmax(dist_arr) > 0:
-        import warnings
-        warnings.warn("Distance map appears to be absolute (unsigned). Results will only cover positive side.")
+        warnings.warn("Distance map appears to be absolute. Results will only cover positive side.")
 
     n_bins = _swaths.swath_compute_nbins(half_width, bin_resolution)
     bin_dist = np.zeros(n_bins, dtype=np.float32)
@@ -441,7 +452,7 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
     bin_q3 = np.zeros(n_bins, dtype=np.float32)
 
     perc_list = None
-    bin_percs = None
+    bin_percs: Optional[np.ndarray] = None
     if percentiles is not None:
         perc_list = np.array(percentiles, dtype=np.int32)
         bin_percs = np.zeros((n_bins, len(percentiles)), dtype=np.float32)
@@ -452,13 +463,17 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
         grid.z, dist_arr, grid.dims, half_width, bin_resolution, int(normalize)
     )
 
-    perc_dict = {p: bin_percs[:, i] for i, p in enumerate(percentiles)} if percentiles else None
+    perc_dict = None
+    if percentiles is not None:
+        assert bin_percs is not None
+        perc_dict = {p: bin_percs[:, i] for i, p in enumerate(percentiles)}
 
     return TransverseSwath(bin_dist, bin_means, bin_std, bin_min, bin_max, bin_counts,
                            bin_medians, bin_q1, bin_q3, perc_dict)
 
 
-def longitudinal_swath(grid: GridObject, track_x, track_y, distance_map: Union[GridObject, np.ndarray],
+def longitudinal_swath(grid: GridObject, track_x, track_y,
+                      distance_map: Union[GridObject, np.ndarray],
                       half_width: float, binning_distance: float = 0.0,
                       n_points_regression: int = 5, use_segment_seeds: bool = True,
                       percentiles: Optional[List[int]] = None,
@@ -510,7 +525,7 @@ def longitudinal_swath(grid: GridObject, track_x, track_y, distance_map: Union[G
     pt_q3 = np.zeros(n_out, dtype=np.float32)
 
     perc_list = None
-    pt_percs = None
+    pt_percs: Optional[np.ndarray] = None
     if percentiles is not None:
         perc_list = np.array(percentiles, dtype=np.int32)
         pt_percs = np.zeros((n_out, len(percentiles)), dtype=np.float32)
@@ -535,12 +550,15 @@ def longitudinal_swath(grid: GridObject, track_x, track_y, distance_map: Union[G
     full_along_track = np.concatenate(([0], np.cumsum(full_dist_steps)))
     along_track = full_along_track[::skip][:written]
 
-    perc_dict = {p: pt_percs[:written, i] for i, p in enumerate(percentiles)} if percentiles else None
+    perc_dict = None
+    if percentiles is not None:
+        assert pt_percs is not None
+        perc_dict = {p: pt_percs[:written, i] for i, p in enumerate(percentiles)}
 
     if input_mode == "indices2D":
         track_x_out, track_y_out = res_i, res_j
     elif input_mode == "indices1D":
-        track_x_out = (res_i.astype(np.intp) + res_j.astype(np.intp) * grid.rows)
+        track_x_out = res_i.astype(np.intp) + res_j.astype(np.intp) * grid.rows
         track_y_out = None
     elif input_mode == "coordinates":
         xs, ys = grid.transform * (res_j, res_i)
@@ -548,8 +566,9 @@ def longitudinal_swath(grid: GridObject, track_x, track_y, distance_map: Union[G
     else:
         track_x_out, track_y_out = res_i, res_j
 
-    return LongitudinalSwath(pt_means[:written], pt_std[:written], pt_min[:written], pt_max[:written], pt_counts[:written],
-                             pt_medians[:written], pt_q1[:written], pt_q3[:written], perc_dict, along_track,
+    return LongitudinalSwath(pt_means[:written], pt_std[:written], pt_min[:written],
+                             pt_max[:written], pt_counts[:written], pt_medians[:written],
+                             pt_q1[:written], pt_q3[:written], perc_dict, along_track,
                              track_x_out, track_y_out)
 
 
@@ -603,7 +622,7 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     pt_q3 = np.zeros(n_out, dtype=np.float32)
 
     perc_list = None
-    pt_percs = None
+    pt_percs: Optional[np.ndarray] = None
     if percentiles is not None:
         perc_list = np.array(percentiles, dtype=np.int32)
         pt_percs = np.zeros((n_out, len(percentiles)), dtype=np.float32)
@@ -626,12 +645,15 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     full_along_track = np.concatenate(([0], np.cumsum(full_dist_steps)))
     along_track = full_along_track[::skip][:written]
 
-    perc_dict = {p: pt_percs[:written, i] for i, p in enumerate(percentiles)} if percentiles else None
+    perc_dict = None
+    if percentiles is not None:
+        assert pt_percs is not None
+        perc_dict = {p: pt_percs[:written, i] for i, p in enumerate(percentiles)}
 
     if input_mode == "indices2D":
         track_x_out, track_y_out = res_i, res_j
     elif input_mode == "indices1D":
-        track_x_out = (res_i.astype(np.intp) + res_j.astype(np.intp) * grid.rows)
+        track_x_out = res_i.astype(np.intp) + res_j.astype(np.intp) * grid.rows
         track_y_out = None
     elif input_mode == "coordinates":
         xs, ys = grid.transform * (res_j, res_i)
@@ -639,13 +661,16 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     else:
         track_x_out, track_y_out = res_i, res_j
 
-    return LongitudinalSwath(pt_means[:written], pt_std[:written], pt_min[:written], pt_max[:written], pt_counts[:written],
-                             pt_medians[:written], pt_q1[:written], pt_q3[:written], perc_dict, along_track,
+    return LongitudinalSwath(pt_means[:written], pt_std[:written], pt_min[:written],
+                             pt_max[:written], pt_counts[:written], pt_medians[:written],
+                             pt_q1[:written], pt_q3[:written], perc_dict, along_track,
                              track_x_out, track_y_out)
 
 
-def get_point_pixels(grid: GridObject, track_x, track_y, distance_map: Union[GridObject, np.ndarray],
-                    point_index: int, half_width: float, binning_distance: float = 0.0,
+def get_point_pixels(grid: GridObject, track_x, track_y,
+                    distance_map: Union[GridObject, np.ndarray],
+                    point_index: int, half_width: float,
+                    binning_distance: float = 0.0,
                     n_points_regression: int = 5, use_segment_seeds: bool = True,
                     input_mode: str = "indices2D"):
     """Retrieve pixel indices or coordinates assigned to a single track point.
@@ -679,25 +704,26 @@ def get_point_pixels(grid: GridObject, track_x, track_y, distance_map: Union[Gri
 
     count = _swaths.swath_get_point_pixels(
         pi, pj, ti, tj, point_index, dist_arr, grid.dims,
-        grid.cellsize, half_width, binning_distance, int(n_points_regression), int(use_segment_seeds)
+        grid.cellsize, half_width, binning_distance, int(n_points_regression),
+        int(use_segment_seeds)
     )
-    
+
     oi = pi[:count]
     oj = pj[:count]
-    
+
     if input_mode == "indices2D":
         return oi, oj
-    elif input_mode == "indices1D":
+    if input_mode == "indices1D":
         return (oi + oj * grid.rows).astype(np.intp)
-    elif input_mode == "coordinates":
+    if input_mode == "coordinates":
         xs, ys = grid.transform * (oj, oi)
         return np.array(xs), np.array(ys)
-    else:
-        return oi, oj
+    return oi, oj
 
 
 def get_windowed_point_samples(grid: GridObject, track_x, track_y,
-                               point_index: int, half_width: float, binning_distance: float,
+                               point_index: int, half_width: float,
+                               binning_distance: float,
                                n_points_regression: int = 5,
                                input_mode: str = "indices2D"):
     """Retrieve pixel indices or coordinates inside a specific window.
@@ -728,23 +754,23 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
         pi, pj, ti, tj, point_index, grid.dims,
         grid.cellsize, half_width, binning_distance, int(n_points_regression)
     )
-    
+
     oi = pi[:count]
     oj = pj[:count]
-    
+
     if input_mode == "indices2D":
         return oi, oj
-    elif input_mode == "indices1D":
+    if input_mode == "indices1D":
         return (oi + oj * grid.rows).astype(np.intp)
-    elif input_mode == "coordinates":
+    if input_mode == "coordinates":
         xs, ys = grid.transform * (oj, oi)
         return np.array(xs), np.array(ys)
-    else:
-        return oi, oj
+    return oi, oj
 
 
-def sample_points_between_refs(grid: GridObject, track_x, track_y=None, 
-                               input_mode="indices2D", close_loop=False, use_d4=False):
+def sample_points_between_refs(grid: GridObject, track_x, track_y=None,
+                               input_mode="indices2D", close_loop=False,
+                               use_d4=False):
     """Rasterize a continuous path between ordered reference points.
 
     Uses Bresenham's line algorithm to connect consecutive points.
@@ -766,41 +792,42 @@ def sample_points_between_refs(grid: GridObject, track_x, track_y=None,
         Rasterized path coordinates/indices.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
-    
+
     # Round to nearest pixel before integer conversion
     ti_int = np.round(ti).astype(np.intp)
     tj_int = np.round(tj).astype(np.intp)
-    
+
     # Upper bound: sum of max(|di|,|dj|) for each segment pair, plus n_refs, times 2 for D4.
     di = np.abs(np.diff(ti_int))
     dj = np.abs(np.diff(tj_int))
     max_size = int(np.sum(np.maximum(di, dj)) + len(ti_int))
     if close_loop:
-        max_size += int(max(np.abs(ti_int[-1] - ti_int[0]), np.abs(tj_int[-1] - tj_int[0])) + 1)
-    
+        max_size += int(max(np.abs(ti_int[-1] - ti_int[0]),
+                            np.abs(tj_int[-1] - tj_int[0])) + 1)
+
     if use_d4:
         max_size *= 2
-        
+
     out_i = np.zeros(max_size, dtype=np.intp)
     out_j = np.zeros(max_size, dtype=np.intp)
-    
-    count = _swaths.sample_points_between_refs(out_i, out_j, ti_int, tj_int, int(close_loop), int(use_d4))
-    
+
+    count = _swaths.sample_points_between_refs(out_i, out_j, ti_int, tj_int,
+                                               int(close_loop), int(use_d4))
+
     oi = out_i[:count]
     oj = out_j[:count]
-    
+
     if input_mode == "indices2D":
         return oi, oj
-    elif input_mode == "indices1D":
+    if input_mode == "indices1D":
         return (oi + oj * grid.rows).astype(np.intp)
-    elif input_mode == "coordinates":
+    if input_mode == "coordinates":
         xs, ys = grid.transform * (oj, oi)
         return np.array(xs), np.array(ys)
-    else:
-        return oi, oj
+    return oi, oj
 
 
-def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.0, 
+def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.0,
                   method: int = 0, input_mode: str = "indices2D"):
     """Simplify a polyline using the Iterative End-Point Fit (IEF) engine.
 
@@ -833,21 +860,20 @@ def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     n_points = len(ti)
-    
+
     out_i = np.zeros(n_points, dtype=np.float32)
     out_j = np.zeros(n_points, dtype=np.float32)
-    
+
     count = _swaths.simplify_line(out_i, out_j, ti, tj, tolerance, method)
-    
+
     oi = out_i[:count]
     oj = out_j[:count]
-    
+
     if input_mode == "indices2D":
         return oi, oj
-    elif input_mode == "indices1D":
+    if input_mode == "indices1D":
         return (oi + oj * grid.rows).astype(np.intp)
-    elif input_mode == "coordinates":
+    if input_mode == "coordinates":
         xs, ys = grid.transform * (oj, oi)
         return np.array(xs), np.array(ys)
-    else:
-        return oi, oj
+    return oi, oj

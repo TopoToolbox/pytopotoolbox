@@ -19,7 +19,8 @@ __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "transform_coords"]
 
 
-def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D", output_mode="coordinates", center=True):
+def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D",
+                     output_mode="coordinates", center=True):
     """
     Helper function to convert between coordinates, indices2D, and indices1D.
 
@@ -44,8 +45,8 @@ def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D"
         r, c = np.asarray(data1), np.asarray(data2)
     elif input_mode == "indices1D":
         # Node indices (Fortran order: idx = row + col * nrows)
-        r = (np.asarray(data1) % grid.rows)
-        c = (np.asarray(data1) // grid.rows)
+        r = np.asarray(data1) % grid.rows
+        c = np.asarray(data1) // grid.rows
     elif input_mode == "coordinates":
         inv_transform = ~grid.transform
         c, r = inv_transform * (np.asarray(data1), np.asarray(data2))
@@ -55,17 +56,17 @@ def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D"
     # 2. Convert to requested output
     if output_mode == "indices2D":
         return r, c
-    elif output_mode == "indices1D":
-        return (r.astype(np.intp) + c.astype(np.intp) * grid.rows)
-    elif output_mode == "coordinates":
+    if output_mode == "indices1D":
+        return r.astype(np.intp) + c.astype(np.intp) * grid.rows
+    if output_mode == "coordinates":
         if center:
             # Shift by 0.5 pixel to move from corner to center
             x, y = grid.transform * (c + 0.5, r + 0.5)
         else:
             x, y = grid.transform * (c, r)
         return np.array(x), np.array(y)
-    else:
-        raise ValueError(f"Invalid output_mode: {output_mode}")
+
+    raise ValueError(f"Invalid output_mode: {output_mode}")
 
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
