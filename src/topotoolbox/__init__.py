@@ -8,3 +8,6 @@ from .graphflood_object import GFObject
 from .graphflood import *
 from .utils import *
 from .stream_functions import *
+from .swath import (transverse_swath, longitudinal_swath, compute_swath_distance_map,
+                    get_point_pixels, sample_points_between_refs, simplify_line,
+                    longitudinal_swath_windowed, get_windowed_point_samples)
