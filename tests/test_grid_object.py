@@ -197,20 +197,31 @@ def test_excesstopography(square_dem):
         square_dem.excesstopography(threshold='0.1')
 
 
-def test_excesstopography_order(order_dems):
+@pytest.fixture(name="threshold_slopes", params=[True, False])
+def threshold_slopes(request, order_dems):
+    dem = order_dems[0]
+
+    rng = np.random.default_rng(217412861091418638741329610000239956692)
+    t = rng.random(dem.shape)
+    if request.param:
+        return dem.duplicate_with_new_data(t)
+    else:
+        return t
+
+@pytest.mark.parametrize("method", ['fsm2d', 'fmm2d'])
+def test_excesstopography_order(order_dems, method, threshold_slopes):
     cdem, fdem = order_dems
 
-    for method in ['fsm2d', 'fmm2d']:
-        cext = cdem.excesstopography(threshold=0.2, method=method)
-        assert cext.z.flags.c_contiguous
+    cext = cdem.excesstopography(threshold=threshold_slopes, method=method)
+    assert cext.z.flags.c_contiguous
+    
+    fext = fdem.excesstopography(threshold=threshold_slopes, method=method)
+    assert fext.z.flags.f_contiguous
 
-        fext = fdem.excesstopography(threshold=0.2, method=method)
-        assert fext.z.flags.f_contiguous
+    assert np.allclose(fext, cext)
 
-        assert np.allclose(fext, cext)
-
-        assert topo.validate_alignment(fdem, fext)
-        assert topo.validate_alignment(cdem, cext)
+    assert topo.validate_alignment(fdem, fext)
+    assert topo.validate_alignment(cdem, cext)
 
 
 def test_hillshade_order(order_dems):

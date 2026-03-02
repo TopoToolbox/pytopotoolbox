@@ -434,9 +434,13 @@ class GridObject():
         if isinstance(threshold, (float, int)):
             threshold_slopes = np.full_like(dem, threshold)
         elif isinstance(threshold, GridObject):
-            threshold_slopes = np.asarray(threshold, dtype=np.float32)
+            threshold_slopes = np.asarray(threshold,
+                                          order='F' if self.z.flags.f_contiguous else 'C',
+                                          dtype=np.float32)
         elif isinstance(threshold, np.ndarray):
-            threshold_slopes = np.asarray(threshold, dtype=np.float32)
+            threshold_slopes = np.asarray(threshold,
+                                          order='F' if self.z.flags.f_contiguous else 'C',
+                                          dtype=np.float32)
         else:
             err = "Threshold must be a float, int, GridObject, or np.ndarray."
             raise TypeError(err) from None
