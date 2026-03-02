@@ -197,16 +197,19 @@ def test_excesstopography(square_dem):
         square_dem.excesstopography(threshold='0.1')
 
 
-@pytest.fixture(name="threshold_slopes", params=[True, False])
+@pytest.fixture(name="threshold_slopes", params=["scalar", "array", "gridobject"])
 def threshold_slopes(request, order_dems):
     dem = order_dems[0]
 
     rng = np.random.default_rng(217412861091418638741329610000239956692)
     t = rng.random(dem.shape)
-    if request.param:
-        return dem.duplicate_with_new_data(t)
-    else:
+    if request.param == "scalar":
+        return 0.2
+    elif request.param == "array":
         return t
+    else:
+        return dem.duplicate_with_new_data(t)
+
 
 @pytest.mark.parametrize("method", ['fsm2d', 'fmm2d'])
 def test_excesstopography_order(order_dems, method, threshold_slopes):
@@ -214,7 +217,7 @@ def test_excesstopography_order(order_dems, method, threshold_slopes):
 
     cext = cdem.excesstopography(threshold=threshold_slopes, method=method)
     assert cext.z.flags.c_contiguous
-    
+
     fext = fdem.excesstopography(threshold=threshold_slopes, method=method)
     assert fext.z.flags.f_contiguous
 
