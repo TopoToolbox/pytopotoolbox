@@ -622,6 +622,21 @@ def test_ksn(wide_dem):
     g = s.gradient(wide_dem, impose=True)
     k = s.ksn(wide_dem, A, theta)
 
+@pytest.mark.parametrize("impose", [True, False])
+def test_ksn_order(order_dems, cfd, cs, fs, impose):
+    dem = order_dems["cdem"]
+
+    a = cfd.flow_accumulation()
+
+    ck = cs.ksn(dem, a, impose=impose)
+    cks = np.zeros_like(dem)
+    cks[cs.node_indices] = ck
+
+    fk = fs.ksn(dem, a, impose=impose)
+    fks = np.zeros_like(dem)
+    fks[fs.node_indices] = fk
+
+    assert np.array_equal(cks, fks)
 
 @pytest.mark.parametrize("method", ['strahler', 'shreve'])
 def test_streamorder_order(cfd, ffd, cs, fs, method):
