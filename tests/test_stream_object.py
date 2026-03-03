@@ -618,9 +618,10 @@ def test_ksn(wide_dem):
     k = s.ksn(wide_dem, A, theta)
 
 
-def test_streamorder_order(cfd, ffd, cs, fs):
-    cds = cs.streamorder()
-    fds = fs.streamorder()
+@pytest.mark.parametrize("method", ['strahler', 'shreve'])
+def test_streamorder_order(cfd, ffd, cs, fs, method):
+    cds = cs.streamorder(method=method)
+    fds = fs.streamorder(method=method)
 
     cdg = np.zeros(cfd.shape)
     fdg = np.zeros(ffd.shape)
