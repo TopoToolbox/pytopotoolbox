@@ -349,18 +349,12 @@ def test_aspect_order(order_dems):
 
     assert np.array_equal(caspect_edges, faspect_edges)
 
-def test_prominence(order_dems):
+@pytest.mark.parametrize("hybrid", [True, False])
+def test_prominence_order(order_dems, hybrid):
     cdem, fdem = order_dems
 
-    cp, (cx, cy) = cdem.prominence(10.0, use_hybrid=True)
-    fp, (fx, fy) = fdem.prominence(10.0, use_hybrid=True)
-
-    assert np.array_equal(cp, fp)
-    assert np.array_equal(cx, fx)
-    assert np.array_equal(cy, fy)
-
-    cp, (cx, cy) = cdem.prominence(10.0, use_hybrid=False)
-    fp, (fx, fy) = fdem.prominence(10.0, use_hybrid=False)
+    cp, (cx, cy) = cdem.prominence(10.0, use_hybrid=hybrid)
+    fp, (fx, fy) = fdem.prominence(10.0, use_hybrid=hybrid)
 
     assert np.array_equal(cp, fp)
     assert np.array_equal(cx, fx)
