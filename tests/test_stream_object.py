@@ -264,10 +264,15 @@ def test_stream_subgraphs(tall_stream, wide_stream):
     assert not issubgraph(wide_trunk, tall_stream)
     assert not issubgraph(tall_trunk, wide_stream)
 
+@pytest.mark.parametrize("dist", [True, False])
+@pytest.mark.parametrize("acc", [True, False])
+def test_trunk_order(cs, fs, cfd, dist, acc):
+    acc = cfd.flow_accumulation() if acc else None
+    cdist = cs.downstream_distance() if dist else None
+    fdist = fs.downstream_distance() if dist else None
 
-def test_trunk_order(cs, fs):
-    ctrunk = cs.trunk()
-    ftrunk = fs.trunk()
+    ctrunk = cs.trunk(downstream_distance=cdist, flow_accumulation=acc)
+    ftrunk = fs.trunk(downstream_distance=fdist, flow_accumulation=acc)
 
     assert isequivalent(ctrunk, ftrunk)
 
