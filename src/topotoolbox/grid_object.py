@@ -1365,10 +1365,18 @@ class GridObject():
 
         return result
 
-    def zscore(self):
+    def zscore(self, dtype=None):
         """Returns the z-score for each element of GridObject such that
         all values are centered to have mean 0 and scaled to have
         standard deviation 1.
+
+        Parameters
+        ----------
+        dtype        
+            The data type of the resulting array. zscore uses
+            np.float64 internally for precision and will convert back
+            to the input GridObject's data type by default. If the
+            additional precision is necessary, pass np.float64.
 
         Returns
         -------
@@ -1380,9 +1388,11 @@ class GridObject():
         >>> dem = topotoolbox.load_dem('tibet')
         >>> dem_zscore = dem.zscore()
         >>> dem_zscore.plot()
+
         """
         result = cp.copy(self)
-        result.z = (self.z - np.nanmean(self.z)) / np.nanstd(self.z)
+        z = (self.z - np.nanmean(self.z, dtype=np.float64)) / np.nanstd(self.z, dtype=np.float64)
+        result.z = np.asarray(z, dtype=dtype if dtype else self.z.dtype)
         return result
 
     def crop(self, left: float | int, right: float | int,
