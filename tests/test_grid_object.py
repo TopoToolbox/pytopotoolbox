@@ -116,14 +116,23 @@ def test_fillsinks(square_dem, wide_dem, tall_dem):
 
                 assert sink < 8
 
-
-def test_fillsinks_order(order_dems):
+@pytest.mark.parametrize("hybrid",[True, False])
+@pytest.mark.parametrize("bc",[True, False])
+def test_fillsinks_order(order_dems, hybrid, bc):
     cdem, fdem = order_dems
 
-    cfilled = cdem.fillsinks()
+    if bc:
+        bc = np.ones_like(cdem.z, dtype=np.uint8)
+        bc[1:-1, 1:-1] = 0
+
+        bc = cdem.duplicate_with_new_data(bc)
+    else:
+        bc = None
+
+    cfilled = cdem.fillsinks(bc=bc, hybrid=hybrid)
     assert cfilled.z.flags.c_contiguous
 
-    ffilled = fdem.fillsinks()
+    ffilled = fdem.fillsinks(bc=bc, hybrid=hybrid)
     assert ffilled.z.flags.f_contiguous
 
     assert np.array_equal(ffilled, cfilled)
