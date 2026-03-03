@@ -878,6 +878,18 @@ def test_knickpoints_kpcopy(wide_dem):
 
     assert np.count_nonzero(kp) >= np.count_nonzero(kp0)
 
+def test_knickpoints_order(order_dems, cs, fs):
+    cdem = order_dems["cdem"]
+
+    ckp = cs.knickpointfinder(cdem, tolerance=1.0)
+    cks = np.zeros_like(cdem, dtype=bool)
+    cks[cs.node_indices] = ckp
+
+    fkp = fs.knickpointfinder(cdem, tolerance=1.0)
+    fks = np.zeros_like(cdem, dtype=bool)
+    fks[fs.node_indices] = fkp
+
+    assert np.array_equal(cks, fks)
 
 def test_togeodataframe(wide_stream):
     wide_stream.to_geodataframe()
