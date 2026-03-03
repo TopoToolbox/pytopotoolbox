@@ -652,6 +652,22 @@ def test_crslin_noattachheads(wide_dem, wide_stream):
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
+@pytest.mark.parametrize("attachheads", [True, False])
+@pytest.mark.parametrize("attachtomin", [True, False])
+def test_crslin_order(order_dems, cs, fs, attachtomin, attachheads):
+    cdem = order_dems["cdem"]
+    fdem = order_dems["fdem"]
+
+    cp = cs.crslin(cdem, attachtomin=attachtomin, attachheads=attachheads)
+    cz = np.zeros_like(cdem)
+    cz[cs.node_indices] = cp
+
+    fp = fs.crslin(fdem, attachtomin=attachtomin, attachheads=attachheads)
+    fz = np.zeros_like(fdem)
+    fz[fs.node_indices] = fp
+
+    assert np.array_equal(cz, fz)
+
 
 def test_quantcarve(wide_dem, wide_stream):
     s = wide_stream.klargestconncomps()
@@ -668,6 +684,21 @@ def test_quantcarve(wide_dem, wide_stream):
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
+@pytest.mark.parametrize("fixed", [True, False])
+def test_quantcarve_order(order_dems, cs, fs, fixed):
+    cdem = order_dems["cdem"]
+    fdem = order_dems["fdem"]
+
+    cp = cs.quantcarve(cdem, fixedoutlet=fixed)
+    cz = np.zeros_like(cdem)
+    cz[cs.node_indices] = cp
+
+    fp = fs.quantcarve(fdem, fixedoutlet=fixed)
+    fz = np.zeros_like(fdem)
+    fz[fs.node_indices] = fp
+
+    assert np.array_equal(cz, fz)
+
 def test_crs(wide_dem, wide_stream):
     s = wide_stream.klargestconncomps()
     z = s.ezgetnal(wide_dem, dtype='double')
@@ -682,6 +713,21 @@ def test_crs(wide_dem, wide_stream):
     gradient = (zs[s.source] - zs[s.target]) / s.distance()
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
+
+@pytest.mark.parametrize("fixed", [True, False])
+def test_crs_order(order_dems, cs, fs, fixed):
+    cdem = order_dems["cdem"]
+    fdem = order_dems["fdem"]
+
+    cp = cs.crs(cdem, fixedoutlet=fixed)
+    cz = np.zeros_like(cdem)
+    cz[cs.node_indices] = cp
+
+    fp = fs.crs(fdem, fixedoutlet=fixed)
+    fz = np.zeros_like(fdem)
+    fz[fs.node_indices] = fp
+
+    assert np.array_equal(cz, fz)
 
 def test_lowerenv_convex(wide_dem, wide_stream):
     s = wide_stream.klargestconncomps(1)
