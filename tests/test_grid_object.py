@@ -236,12 +236,13 @@ def test_excesstopography_order(order_dems, method, threshold_slopes):
     assert topo.validate_alignment(cdem, cext)
 
 
-def test_hillshade_order(order_dems):
+@pytest.mark.parametrize("fused", [True, False])
+def test_hillshade_order(order_dems, fused):
     cdem, fdem = order_dems
 
     for azimuth in np.arange(0.0, 360.0, 2.3):
-        hc = cdem.hillshade(azimuth=azimuth)
-        hf = fdem.hillshade(azimuth=azimuth)
+        hc = cdem.hillshade(fused=fused, azimuth=azimuth)
+        hf = fdem.hillshade(fused=fused, azimuth=azimuth)
         assert np.allclose(hc, hf)
 
         assert topo.validate_alignment(cdem, hc)
