@@ -304,8 +304,8 @@ class GridObject():
                    f"match the shape of the DEM. {self.shape}")
             raise ValueError(err)from None
 
-        if isinstance(bc, GridObject):
-            bc = bc.z
+        bc = np.asarray(bc, dtype=np.uint8,
+                        order = 'F' if dem.flags.f_contiguous else 'C')
 
         if hybrid:
             queue = np.zeros_like(dem, dtype=np.int64)
