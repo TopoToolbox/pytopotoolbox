@@ -291,14 +291,15 @@ def test_gradient8_order(order_dems, unit, mp):
     assert fgradient.z.flags.f_contiguous
 
 
-def test_curvature_order(order_dems):
+@pytest.mark.parametrize("ctype", ['profc', 'planc', 'tangc', 'meanc', 'total'])
+@pytest.mark.parametrize("meanfilt", [True, False])
+def test_curvature_order(order_dems, ctype, meanfilt):
     cdem, fdem = order_dems
 
-    for ctype in ['profc', 'planc', 'tangc', 'meanc', 'total']:
-        ccurv = cdem.curvature(ctype=ctype)
-        fcurv = fdem.curvature(ctype=ctype)
+    ccurv = cdem.curvature(meanfilt=meanfilt, ctype=ctype)
+    fcurv = fdem.curvature(meanfilt=meanfilt, ctype=ctype)
 
-        assert np.array_equal(ccurv, fcurv)
+    assert np.array_equal(ccurv, fcurv)
 
 
 def test_dilate_order(order_dems):
