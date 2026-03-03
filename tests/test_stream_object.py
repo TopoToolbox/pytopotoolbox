@@ -214,12 +214,14 @@ def test_run_chitransform(tall_flow, wide_flow, tall_stream, wide_stream):
     wide_stream.chitransform(wide_acc)
 
 
-def test_chitransform_order(cfd, ffd, cs, fs):
-    ca = cfd.flow_accumulation()
-    fa = ffd.flow_accumulation()
+@pytest.mark.parametrize("acctype", [np.float32, np.float64])
+@pytest.mark.parametrize("k", [None, 1e-5])
+def test_chitransform_order(cfd, ffd, cs, fs, k, acctype):
+    ca = np.asarray(cfd.flow_accumulation(), dtype=acctype)
+    fa = np.asarray(ffd.flow_accumulation(), dtype=acctype)
 
-    cchi = cs.chitransform(ca)
-    fchi = fs.chitransform(fa)
+    cchi = cs.chitransform(ca, k = k)
+    fchi = fs.chitransform(fa, k = k)
 
     cchimap = np.zeros(cs.shape)
     fchimap = np.zeros(fs.shape)
