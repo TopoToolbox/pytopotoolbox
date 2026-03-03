@@ -386,6 +386,14 @@ def test_reproject_order(order_dems):
 
     assert np.allclose(f2, c2, equal_nan=True)
 
+def test_resample_order(order_dems):
+    cdem, fdem = order_dems
+
+    c2 = cdem.resample(15.0)
+    f2 = fdem.resample(15.0)
+
+    assert np.allclose(f2, c2)
+
 def test_zscore_order(order_dems):
     cdem, fdem = order_dems
 
