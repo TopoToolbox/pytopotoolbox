@@ -881,3 +881,6 @@ def test_knickpoints_kpcopy(wide_dem):
 
 def test_togeodataframe(wide_stream):
     wide_stream.to_geodataframe()
+
+def test_gridmask_order(cs, fs):
+    assert np.array_equal(cs.gridmask, fs.gridmask)
