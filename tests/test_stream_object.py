@@ -595,6 +595,19 @@ def test_gradient(wide_dem):
 
     assert np.all(g >= 0)
 
+@pytest.mark.parametrize("impose", [True, False])
+def test_gradient_order(order_dems, cs, fs, impose):
+    cdem = order_dems["cdem"]
+
+    cg = cs.gradient(cdem, impose=impose)
+    cgz = np.zeros_like(cdem)
+    cgz[cs.node_indices] = cg
+
+    fg = fs.gradient(cdem, impose=impose)
+    fgz = np.zeros_like(cdem)
+    fgz[fs.node_indices] = fg
+
+    assert np.array_equal(fgz, cgz)
 
 def test_ksn(wide_dem):
     fd = topo.FlowObject(wide_dem)
