@@ -385,3 +385,11 @@ def test_reproject_order(order_dems):
     assert f2.z.flags.f_contiguous
 
     assert np.allclose(f2, c2, equal_nan=True)
+
+def test_zscore_order(order_dems):
+    cdem, fdem = order_dems
+
+    cz = cdem.zscore()
+    fz = fdem.zscore()
+
+    assert np.array_equal(cz, fz)
