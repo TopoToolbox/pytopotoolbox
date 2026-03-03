@@ -891,6 +891,23 @@ def test_knickpoints_order(order_dems, cs, fs):
 
     assert np.array_equal(cks, fks)
 
+def test_knickpoints_provided_order(order_dems, cs, fs):
+    cdem = order_dems["cdem"]
+
+    # This is just a way of sampling some pre-existing knickpoints
+    # consistently across the two memory orders
+    kp0 = np.asarray(cdem.zscore()) > 2.0
+
+    ckp = cs.knickpointfinder(cdem, tolerance=1.0, knickpoints=cs.ezgetnal(kp0))
+    cks = np.zeros_like(cdem, dtype=bool)
+    cks[cs.node_indices] = ckp
+
+    fkp = fs.knickpointfinder(cdem, tolerance=1.0, knickpoints=fs.ezgetnal(kp0))
+    fks = np.zeros_like(cdem, dtype=bool)
+    fks[fs.node_indices] = fkp
+
+    assert np.array_equal(cks, fks)
+
 def test_togeodataframe(wide_stream):
     wide_stream.to_geodataframe()
 
