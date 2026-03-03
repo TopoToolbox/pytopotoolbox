@@ -365,3 +365,22 @@ def test_getoutlets_order(order_dems):
 
     assert np.count_nonzero(cog) > 0
     assert np.array_equal(cog, fog)
+
+def test_vertdistance2stream_order(order_dems):
+    cdem, fdem = order_dems
+
+    cfd = topo.FlowObject(cdem)
+    ffd = topo.FlowObject(fdem)
+
+    cs = topo.StreamObject(cfd)
+    fs = topo.StreamObject(ffd)
+
+    cv = cfd.vertdistance2stream(cs, cdem)
+    fv = ffd.vertdistance2stream(fs, fdem)
+
+    assert np.array_equal(cv, fv)
+
+    cv2 = cfd.vertdistance2stream(cs, fdem)
+    fv2 = ffd.vertdistance2stream(fs, cdem)
+
+    assert np.array_equal(cv2, fv2)
