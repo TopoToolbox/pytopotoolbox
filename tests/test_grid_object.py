@@ -277,20 +277,13 @@ def test_filter_order(order_dems):
 
         assert np.array_equal(cfiltered, ffiltered)
 
-
-def test_gradient8_order(order_dems):
+@pytest.mark.parametrize("unit", ['tangent', 'radian', 'degree', 'sine', 'percent'])
+@pytest.mark.parametrize("mp", [True, False])
+def test_gradient8_order(order_dems, unit, mp):
     cdem, fdem = order_dems
 
-    cgradient = cdem.gradient8(multiprocessing=True)
-    fgradient = fdem.gradient8(multiprocessing=True)
-
-    assert np.array_equal(cgradient, fgradient)
-
-    assert cgradient.z.flags.c_contiguous
-    assert fgradient.z.flags.f_contiguous
-
-    cgradient = cdem.gradient8(multiprocessing=False)
-    fgradient = fdem.gradient8(multiprocessing=False)
+    cgradient = cdem.gradient8(unit=unit, multiprocessing=mp)
+    fgradient = fdem.gradient8(unit=unit, multiprocessing=mp)
 
     assert np.array_equal(cgradient, fgradient)
 
