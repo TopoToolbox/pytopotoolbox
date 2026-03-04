@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from rasterio import Affine, CRS
+from rasterio.coords import BoundingBox
 
 import topotoolbox as topo
 
@@ -35,12 +36,21 @@ def order_dems():
     cdem.cellsize = 13.0
     cdem.transform = Affine.permutation() * Affine.rotation(90) * Affine.scale(cdem.cellsize)
     cdem.georef = CRS.from_epsg(3857)
+    top_left = cdem.transform * (x[0], y[0])
+    bottom_right = cdem.transform * (x[-1], y[-1])
+    cdem.bounds = BoundingBox(top=top_left[1], left = top_left[0],
+                              bottom=bottom_right[1], right = bottom_right[0])
 
     fdem = topo.GridObject()
     fdem.z = np.asfortranarray(cdem.z)
     fdem.cellsize = 13.0
     fdem.transform = Affine.permutation() * Affine.rotation(90) * Affine.scale(fdem.cellsize)
     fdem.georef = CRS.from_epsg(3857)
+
+    top_left = fdem.transform * (x[0], y[0])
+    bottom_right = fdem.transform * (x[-1], y[-1])
+    fdem.bounds = BoundingBox(top=top_left[1], left = top_left[0],
+                              bottom=bottom_right[1], right = bottom_right[0])
 
     return [cdem, fdem]
 
@@ -401,3 +411,21 @@ def test_zscore_order(order_dems):
     fz = fdem.zscore()
 
     assert np.array_equal(cz, fz)
+
+def test_crop_order(order_dems):
+    cdem, fdem = order_dems
+
+    c1 = cdem.crop(0.6, 0.8, 0.3, 0.5, 'percent')
+    f1 = fdem.crop(0.6, 0.8, 0.3, 0.5, 'percent')
+
+    assert np.array_equal(c1, f1)
+
+    c2 = cdem.crop(20.0, 100.0, -20.0, -60.0, 'coordinate')
+    f2 = fdem.crop(20.0, 100.0, -20.0, -60.0, 'coordinate')
+
+    assert np.array_equal(c2, f2)
+
+    c3 = cdem.crop(20, 50, 30, 40, 'pixel')
+    f3 = fdem.crop(20, 50, 30, 40, 'pixel')
+
+    assert np.array_equal(c3, f3)
