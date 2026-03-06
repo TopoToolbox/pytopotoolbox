@@ -420,15 +420,22 @@ class StreamObject():
         outdegree = np.zeros(self.stream.size, dtype=np.uint8)
         _stream.edgelist_degree(indegree, outdegree, self.source, self.target)
         if point_type == 'channelheads':
-            output = (outdegree > 0) & (indegree == 0)
-        elif point_type == 'outlets':
-            output = (outdegree == 0) & (indegree > 0)
-        elif point_type == 'confluences':
-            output = indegree > 1
-        else:
-            raise ValueError(f"{point_type} is not currently supported")
+            return (outdegree > 0) & (indegree == 0)
 
-        return output
+        if point_type == 'outlets':
+            return (outdegree == 0) & (indegree > 0)
+
+        if point_type == 'confluences':
+            return indegree > 1
+
+        if point_type == 'bconfluences':
+            confluences = indegree > 1
+            edgesintoconfluences = confluences[self.target]
+            bconfluences = np.zeros(self.stream.shape, dtype=bool)
+            bconfluences[self.source] = edgesintoconfluences
+            return bconfluences
+
+        raise ValueError(f"{point_type} is not currently supported")
 
     def xy(self, data=None):
         """Compute the x and y coordinates of continuous stream segments

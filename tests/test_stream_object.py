@@ -341,10 +341,12 @@ def test_streampoi_order(cs, fs):
     ch = cs.streampoi('channelheads')
     co = cs.streampoi('outlets')
     cc = cs.streampoi('confluences')
+    cb = cs.streampoi('bconfluences')
 
     fh = fs.streampoi('channelheads')
     fo = fs.streampoi('outlets')
     fc = fs.streampoi('confluences')
+    fb = fs.streampoi('bconfluences')
 
     cp = np.zeros(cs.shape, dtype=np.uint32)
     fp = np.zeros(fs.shape, dtype=np.uint32)
@@ -352,13 +354,21 @@ def test_streampoi_order(cs, fs):
     cp[cs.node_indices_where(ch)] |= 1
     cp[cs.node_indices_where(co)] |= 2
     cp[cs.node_indices_where(cc)] |= 4
+    cp[cs.node_indices_where(cb)] |= 8
 
     fp[fs.node_indices_where(fh)] |= 1
     fp[fs.node_indices_where(fo)] |= 2
     fp[fs.node_indices_where(fc)] |= 4
+    fp[fs.node_indices_where(fb)] |= 8
 
     assert np.array_equal(cp, fp)
 
+def test_confluences(cs):
+    c = cs.streampoi('confluences')
+    b = cs.streampoi('bconfluences')
+
+    # Every bconfluence has a confluence as a downstream neighbor
+    assert np.array_equal(b[cs.source], c[cs.target])
 
 def test_subgraph(tall_stream, wide_stream):
     ############
