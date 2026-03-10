@@ -917,17 +917,18 @@ class GridObject():
         Returns
         -------
         Tuple[np.ndarray, Tuple]
-            A Tuple containing a ndarray storing the computed prominence and
-            a tuple of ndarray. Each array in the inner tuple has the same
-            shape as the indices array (as returned by np.unravel_index).
+            A Tuple containing a ndarray storing the computed
+            prominence and the geographic coordinates of the peaks,
+            stored as a tuple of ndarray.
 
         Examples
         --------
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> prom, idx = dem.prominence(tolerance=90)
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> prom, (x, y) = dem.prominence(tolerance=90)
         >>> plt.subplot()
-        >>> dem.plot(cmap='terrain')
-        >>> plt.plot(idx[0], idx[1], 'ro')
+        >>> dem.plot_hs(cmap=ListedColormap([0.9, 0.9, 0.9]), exaggerate=3)
+        >>> plt.scatter(x, y, prom, alpha=0.6, edgecolor='black')
+
         """
         dem = np.nan_to_num(self.z)
         p = np.full_like(dem, np.min(dem))
@@ -958,7 +959,7 @@ class GridObject():
         indices_array = np.array(indices)
         indices_array = indices_array[:, [1, 0]]  # swap columns 0 and 1
         # transpose to get (x, y) instead of (y, x)
-        indices_array = indices_array.T
+        indices_array = self.transform * indices_array.T
         return prominence_array, indices_array
 
     def hillshade(self,
@@ -1347,7 +1348,7 @@ class GridObject():
 
         Parameters
         ----------
-        dtype        
+        dtype
             The data type of the resulting array. zscore uses
             np.float64 internally for precision and will convert back
             to the input GridObject's data type by default. If the
