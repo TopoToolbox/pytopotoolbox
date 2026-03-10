@@ -293,6 +293,49 @@ class StreamObject():
         mask[self.target_indices] = True
         return mask
 
+    @property
+    def coordinates(self) -> tuple[np.ndarray, np.ndarray]:
+        """Return x and y coordinates of the nodes in the stream network.
+
+        Returns
+        -------
+        tuple of ndarray
+            A pair of node attribute lists containing x and y coordinates of each node.
+        """
+        # pylint: disable=unbalanced-tuple-unpacking
+        j, i = self.node_indices
+        return self.transform * (i, j)
+
+    @property
+    def x(self) -> np.ndarray:
+        """Return x coordinates of the nodes in the stream network
+
+        If you are trying to get both x and y coordinates, it is
+        slightly more efficient to use `coordinates`.
+
+        Returns
+        -------
+        ndarray
+            A node attribute list containing the x coordinates of each node
+        """
+        return self.coordinates[0]
+
+    @property
+    def y(self) -> np.ndarray:
+        """Return y coordinates of the nodes in the stream network
+
+        If you are trying to get both x and y coordinates, it is
+        slightly more efficient to use `coordinates`.
+
+        Returns
+        -------
+        ndarray
+            A node attribute list containing the y coordinates of each node
+
+        """
+        return self.coordinates[1]
+
+
     def distance(self) -> np.ndarray:
         """
         Compute the pixel-to-pixel distance for each edge.
