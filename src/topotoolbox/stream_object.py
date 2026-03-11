@@ -37,50 +37,51 @@ class StreamObject():
                  ) -> None:
         """Initializes the StreamObject by processing flow accumulation.
 
-    Parameters
-    ----------
-    flow : FlowObject
-        The input flow object containing source, target, direction, and other
-        properties related to flow data.
-    units : str, optional
-        Units of measurement for the flow data. Can be 'pixels', 'mapunits',
-        'm2', or 'km2'. Default is 'pixels'.
-    threshold : int | float | GridObject | np.ndarray, optional
-        The upslope area threshold for flow accumulation. This can be an
-        integer, float, GridObject, or a NumPy array. If more water than in
-        the threshold has accumulated in a cell, it is part of the stream.
-        Default is 0, which will result in the threshold being generated
-        based on this formula: threshold = (avg^2)*0.01
-        where shape = (n,m).
-    stream_pixels : GridObject | np.ndarray, optional
-        A GridObject or np.ndarray made up of zeros and ones to denote where
-        the stream is located. Using this will overwrite any use of the
-        threshold argument.
-    channelheads: (rows, cols), optional
-        A tuple of two array-like objects containing the row and
-        column indices of the channel heads. All streams downstream of
-        the indicated channel heads will be returned in the
-        StreamObject.
+        Parameters
+        ----------
+        flow : FlowObject
+          The input flow object containing source, target, direction, and other
+          properties related to flow data.
+        units : str, optional
+          Units of measurement for the flow data. Can be 'pixels', 'mapunits',
+          'm2', or 'km2'. Default is 'pixels'.
+        threshold : int | float | GridObject | np.ndarray, optional
+          The upslope area threshold for flow accumulation. This can be an
+          integer, float, GridObject, or a NumPy array. If more water than in
+          the threshold has accumulated in a cell, it is part of the stream.
+          Default is 0, which will result in the threshold being generated
+          based on this formula: threshold = (avg^2)*0.01
+          where shape = (n,m).
+        stream_pixels : GridObject | np.ndarray, optional
+          A GridObject or np.ndarray made up of zeros and ones to denote where
+          the stream is located. Using this will overwrite any use of the
+          threshold argument.
+        channelheads: (rows, cols), optional
+          A tuple of two array-like objects containing the row and
+          column indices of the channel heads. All streams downstream of
+          the indicated channel heads will be returned in the
+          StreamObject.
 
-    Raises
-    ------
-    ValueError
-        If the `units` parameter is not 'pixels', 'mapunits', 'm2', or 'km2'.
-    ValueError
-        If the shape of the threshold does not match the flow object shape.
+        Raises
+        ------
+        ValueError
+          If the `units` parameter is not 'pixels', 'mapunits', 'm2', or 'km2'.
+        ValueError
+          If the shape of the threshold does not match the flow object shape.
 
-    Example
-    -------
-    >>> import topotoolbox
-    >>> import matplotlib.pyplot as plt
-    >>> dem = topotoolbox.load_dem('perfectworld')
-    >>> fd = topotoolbox.FlowObject(dem)
-    >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-    >>> fig, ax = plt.subplots()
-    >>> _= dem.plot(cmap="terrain")
-    >>> _= s.plot(color='r')
-    >>> plt.show()
+        Example
+        -------
+        .. plot ::
 
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+           >>> fig, ax = plt.subplots()
+           >>> _= dem.plot(cmap="terrain")
+           >>> _= s.plot(color='r')
+           >>> plt.show()
         """
         if not isinstance(flow, FlowObject):
             err = f"{flow} is not a topotoolbox.FlowObject."
@@ -663,15 +664,17 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> fig, ax = plt.subplots()
-        >>> _= dem.plot(cmap="terrain")
-        >>> _= s.plot(color='r')
-        >>> plt.show()
+        .. plot ::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+           >>> fig, ax = plt.subplots()
+           >>> _= dem.plot(cmap="terrain")
+           >>> _= s.plot(color='r')
+           >>> plt.show()
         """
 
         if ax is None:
@@ -863,19 +866,21 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> s2 = s.klargestconncomps(1)
-        >>> st = s2.trunk()
-        >>> fig,ax = plt.subplots()
-        >>> _= dem.plot(ax=ax,cmap="terrain")
-        >>> _= s.plot(ax=ax, color='r')
-        >>> _= s2.plot(ax=ax,color='k')
-        >>> _= st.plot(ax=ax, color='b')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+           >>> s2 = s.klargestconncomps(1)
+           >>> st = s2.trunk()
+           >>> fig,ax = plt.subplots()
+           >>> _= dem.plot(ax=ax,cmap="terrain")
+           >>> _= s.plot(ax=ax, color='r')
+           >>> _= s2.plot(ax=ax,color='k')
+           >>> _= st.plot(ax=ax, color='b')
+           >>> plt.show()
         """
 
         stream_network_size = len(self.stream)
@@ -947,16 +952,18 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> s2 = s.klargestconncomps(1)
-        >>> fig, ax = plt.subplots()
-        >>> _= dem.plot(ax=ax,cmap="terrain")
-        >>> _= s2.plot(ax=ax,color='k')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+           >>> s2 = s.klargestconncomps(1)
+           >>> fig, ax = plt.subplots()
+           >>> _= dem.plot(ax=ax,cmap="terrain")
+           >>> _= s2.plot(ax=ax,color='k')
+           >>> plt.show()
         """
         nv = self.stream.size
         ne = self.source.size
@@ -1012,20 +1019,22 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> shape = dem.shape
-        >>> arr = (np.arange(np.prod(shape))<np.prod(shape)//4).reshape(shape)
-        >>> s2 = s.subgraph(arr)
-        >>> fig,ax = plt.subplots()
-        >>> _= dem.plot(ax=ax,cmap="terrain")
-        >>> _= s2.plot(ax=ax,color='k')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import numpy as np
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+           >>> shape = dem.shape
+           >>> arr = (np.arange(np.prod(shape))<np.prod(shape)//4).reshape(shape)
+           >>> s2 = s.subgraph(arr)
+           >>> fig,ax = plt.subplots()
+           >>> _= dem.plot(ax=ax,cmap="terrain")
+           >>> _= s2.plot(ax=ax,color='k')
+           >>> plt.show()
         """
 
         nal = self.ezgetnal(nal)
@@ -1063,8 +1072,6 @@ class StreamObject():
         Example
         -------
         >>> import topotoolbox
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('bigtujunga')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000)
@@ -1095,18 +1102,20 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> confluences = s.streampoi('confluences')
-        >>> s2 = s.upstreamto(confluences)
-        >>> fig,ax = plt.subplots()
-        >>> _= dem.plot(ax=ax,cmap="terrain")
-        >>> _= s2.plot(ax=ax,color='k')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import numpy as np
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+           >>> confluences = s.streampoi('confluences')
+           >>> s2 = s.upstreamto(confluences)
+           >>> fig,ax = plt.subplots()
+           >>> _= dem.plot(ax=ax,cmap="terrain")
+           >>> _= s2.plot(ax=ax,color='k')
+           >>> plt.show()
         """
         nal = self.ezgetnal(nodes, dtype=np.uint32)
 
@@ -1131,18 +1140,20 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> confluences = s.streampoi('confluences')
-        >>> s2 = s.downstreamto(confluences)
-        >>> fig,ax = plt.subplots()
-        >>> _= dem.plot(ax=ax,cmap="terrain")
-        >>> _= s2.plot(ax=ax,color='k')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import numpy as np
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
+           >>> confluences = s.streampoi('confluences')
+           >>> s2 = s.downstreamto(confluences)
+           >>> fig,ax = plt.subplots()
+           >>> _= dem.plot(ax=ax,cmap="terrain")
+           >>> _= s2.plot(ax=ax,color='k')
+           >>> plt.show()
         """
         nal = self.ezgetnal(nodes, dtype=np.uint32)
 
@@ -1253,7 +1264,7 @@ class StreamObject():
         return s_order
 
     def crslin(self, dem, k = 1, mingradient=0.0, attachheads=False, attachtomin=False):
-        """ Elevation values along stream networks are frequently affected by
+        """Elevation values along stream networks are frequently affected by
         large scatter, often as a result of data artifacts or errors. This
         function returns a node attribute list of elevations calculated by
         regularized smoothing.
@@ -1262,20 +1273,25 @@ class StreamObject():
         and Scherler 2017 paper.
 
         Parameters:
-        ----------
+        -----------
         s: StreamObject
+
         dem: GridObject | np.ndarray
             DEM
+
         k: float
             positive scalar that dictates the degree of stiffness. Default is 1
+
         mingradient: double
             Minimum downward gradient.
             Choose carefully, because length profile may dip to steeply.
             Set this parameter to nan if you do not wish to have a monotonous
             dowstream elevation decrease.
+
         attachtomin: bool
             Smoothed elevations will not exceed local minima along the
             downstream path. (only applicable if 'mingradient' is not nan)
+
         attachheads: bool
             If true, elevations of channelheads are fixed. (only applicable
             if 'mingradient' is not nan). Note that for large K, setting
@@ -1283,7 +1299,7 @@ class StreamObject():
             underestimation of elevation values directly downstream to channelheads.
 
         Returns
-        ----------
+        -------
         zs:
             node attribute list with smoothed elevation values
         """
@@ -1509,8 +1525,7 @@ class StreamObject():
         return zs
 
     def crs(self, dem, tau = 0.5, k = 1, mingradient = 0.0, fixedoutlet = False) -> np.ndarray:
-        """
-        Elevation values along stream networks are frequently affected by
+        """Elevation values along stream networks are frequently affected by
         large scatter, often as a result of data artifacts or errors. This
         function returns a node attribute list of smoothed elevation values
         calculated by nonparametric quantile regression with monotonicity
@@ -1520,19 +1535,24 @@ class StreamObject():
         and Scherler 2017 paper.
 
         Parameters:
-        ----------
+        -----------
         s: StreamObject
+
         dem: GridObject | np.ndarray
             DEM
+
         tau: float
             Quantile. Default is 0.5
+
         k: float
             positive scalar that dictates the degree of stiffness. Default is 1
+
         mingradient: double
             Minimum downward gradient.
             Choose carefully, because length profile may dip to steeply.
             Set this parameter to nan if you do not wish to have a monotonous
             dowstream elevation decrease.
+
         fixedoutlet: bool
             If true, elevations of outlets are fixed.
 
@@ -1688,21 +1708,23 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('bigtujunga')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd)
-        >>> s = s.klargestconncomps(1)
-        >>> z = topotoolbox.imposemin(s, dem)
-        >>> kn = np.zeros(len(z), dtype=bool)
-        >>> ze = s.lowerenv(z, kn)
-        >>> fig,ax = plt.subplots()
-        >>> _= s.plotdz(dem, ax=ax, color='gray')
-        >>> _= s.plotdz(ze, ax=ax, color='black')
-        >>> ax.autoscale_view()
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import numpy as np
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('bigtujunga')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd)
+           >>> s = s.klargestconncomps(1)
+           >>> z = topotoolbox.imposemin(s, dem)
+           >>> kn = np.zeros(len(z), dtype=bool)
+           >>> ze = s.lowerenv(z, kn)
+           >>> fig,ax = plt.subplots()
+           >>> _= s.plotdz(dem, ax=ax, color='gray')
+           >>> _= s.plotdz(ze, ax=ax, color='black')
+           >>> ax.autoscale_view()
+           >>> plt.show()
         """
         z = self.ezgetnal(dem, dtype=np.float32)
         d = self.upstream_distance()
@@ -1787,20 +1809,22 @@ class StreamObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('bigtujunga')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> s = topotoolbox.StreamObject(fd)
-        >>> s = s.klargestconncomps(1)
-        >>> z = topotoolbox.imposemin(s, dem)
-        >>> kp = s.knickpointfinder(z, tolerance=50.0)
-        >>> d = s.upstream_distance()
-        >>> fig,ax = plt.subplots()
-        >>> _= s.plotdz(dem, ax=ax, color='k')
-        >>> _= ax.scatter(d[kp], z[kp])
-        >>> _= ax.autoscale_view()
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('bigtujunga')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> s = topotoolbox.StreamObject(fd)
+           >>> s = s.klargestconncomps(1)
+           >>> z = topotoolbox.imposemin(s, dem)
+           >>> kp = s.knickpointfinder(z, tolerance=50.0)
+           >>> d = s.upstream_distance()
+           >>> fig,ax = plt.subplots()
+           >>> _= s.plotdz(dem, ax=ax, color='k')
+           >>> _= ax.scatter(d[kp], z[kp])
+           >>> _= ax.autoscale_view()
+           >>> plt.show()
         """
         z = self.ezgetnal(dem, dtype=np.float32)
         z = imposemin(self, z)

@@ -202,11 +202,13 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
 
     Example
     -------
-    >>> import topotoolbox
-    >>> import matplotlib.pyplot as plt
-    >>> dem = topotoolbox.gen_random(seed=8192)
-    >>> _ = dem.plot(cmap='terrain')
-    >>> plt.show()
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.gen_random(seed=8192)
+       >>> _ = dem.plot(cmap='terrain')
+       >>> plt.show()
     """
     try:
         import opensimplex as simplex  # pylint: disable=C0415
@@ -255,11 +257,13 @@ def gen_random_bool(
 
     Example
     -------
-    >>> import topotoolbox
-    >>> import matplotlib.pyplot as plt
-    >>> dem = topotoolbox.gen_random_bool()
-    >>> _= dem.plot(cmap='grey')
-    >>> plt.show()
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.gen_random_bool()
+       >>> _= dem.plot(cmap='grey')
+       >>> plt.show()
     """
     bool_array = np.empty((rows, columns), dtype=np.float32)
 
@@ -315,11 +319,13 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
 
     Example
     -------
-    >>> import topotoolbox
-    >>> import matplotlib.pyplot as plt
-    >>> dem = topotoolbox.load_dem('taiwan')
-    >>> _= dem.plot(cmap='terrain')
-    >>> plt.show()
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.load_dem('taiwan')
+       >>> _= dem.plot(cmap='terrain')
+       >>> plt.show()
     """
     if dem not in get_dem_names():
         err = ("Selected DEM has to be selected from the provided examples." +
@@ -452,12 +458,14 @@ def read_from_cache(filename: str) -> GridObject:
 
     Example
     -------
-    >>> import topotoolbox
-    >>> import matplotlib.pyplot as plt
-    >>> dem = topotoolbox.load_dem('bigtujunga')
-    >>> dem = topotoolbox.read_from_cache('bigtujunga.tif')
-    >>> _= dem.plot()
-    >>> plt.show()
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.load_dem('bigtujunga')
+       >>> dem = topotoolbox.read_from_cache('bigtujunga.tif')
+       >>> _= dem.plot()
+       >>> plt.show()
     """
     cache_path = os.path.join(get_save_location(), f"{filename}")
     grid_object = read_tif(cache_path)
@@ -538,14 +546,16 @@ def load_opentopography(south: float, north: float, west: float, east: float,
 
     Example
     -------
-    >>> import topotoolbox
-    >>> import matplotlib.pyplot as plt
-    >>> from rasterio import CRS
-    >>> dem = topotoolbox.load_opentopography(south=50, north=50.1, west=14.35,
-    ...     east=14.6, dem_type="SRTMGL3")
-    >>> dem = dem.reproject(CRS.from_epsg(32633), resolution=90)
-    >>> _= dem.plot(cmap="terrain")
-    >>> plt.show()
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> from rasterio import CRS
+       >>> dem = topotoolbox.load_opentopography(south=50, north=50.1, west=14.35,
+       ...     east=14.6, dem_type="SRTMGL3")
+       >>> dem = dem.reproject(CRS.from_epsg(32633), resolution=90)
+       >>> _= dem.plot(cmap="terrain")
+       >>> plt.show()
     """
 
     # Check if an API key is provided
