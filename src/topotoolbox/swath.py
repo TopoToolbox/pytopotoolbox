@@ -1,7 +1,33 @@
-"""
-This module provides the Python interface for swath profile analysis.
-It includes classes and functions for computing and plotting transverse
-and longitudinal swath profiles from Digital Elevation Models (DEMs).
+"""Python interface for swath profile analysis.
+
+This module provides tools for computing and plotting transverse and
+longitudinal swath profiles from Digital Elevation Models (DEMs).
+
+Public functions
+----------------
+prepare_track
+    Ensure a polyline track is D8-contiguous by gap-filling with Bresenham.
+compute_swath_distance_map
+    Perpendicular-distance map from a polyline; optionally compute the
+    medial axis (Voronoi centreline) of the swath.
+transverse_swath
+    Aggregate DEM statistics into cross-track distance bins.
+longitudinal_swath
+    Aggregate DEM statistics along the track using a frontier Dijkstra
+    nearest-point assignment and a sliding along-track window.
+longitudinal_swath_windowed
+    Same aggregation using an oriented rectangle window around each track
+    point (no pre-computed distance map required).
+get_point_pixels
+    Retrieve the pixel coordinates assigned to a single track point by
+    the frontier Dijkstra.
+get_windowed_point_samples
+    Retrieve the pixel coordinates inside the oriented rectangle window
+    for a single track point.
+rasterize_path
+    Rasterize a set of ordered reference points into a dense pixel path.
+simplify_line
+    Simplify a dense polyline using one of three vertex-reduction methods.
 """
 import math
 import warnings
@@ -15,22 +41,35 @@ from . import _swaths  # type: ignore
 
 @dataclass
 class SwathCentreLine:
-    """Dataclass holding all outputs from a distance map with centre-line detection.
+    """Container for the outputs of ``compute_swath_distance_map``.
 
-    Attributes
-    ----------
+    Always populated
+    ----------------
     distance_map : GridObject
-        Signed or absolute distance map from the track.
+        Perpendicular distance from each pixel to the nearest track segment,
+        in metres.  When ``compute_signed=True`` (default), the sign follows
+        the 2-D cross-product convention: **positive = left of the directed
+        track**, negative = right.  Pixels outside ``half_width`` are NaN.
     nearest_point : GridObject, optional
-        Map of nearest track point index for each pixel.
+        Integer index (0-based) of the nearest track point for each pixel.
+        Always populated when returned as a ``SwathCentreLine``; required as
+        input to ``longitudinal_swath`` and ``get_point_pixels``.
+
+    Populated only when ``return_centre_line=True``
+    ------------------------------------------------
     dist_from_boundary : GridObject, optional
-        Inward distance map from the swath boundaries.
+        Distance (metres) from each swath pixel inward to the nearest swath
+        boundary, computed by a D8 Dijkstra from the outer-edge pixels.
     centre_line_x : np.ndarray, optional
-        X-coordinates (or fast-dim indices) of the detected medial axis.
+        Row indices (``indices2D``), flat indices (``indices1D``), or X
+        coordinates (``coordinates``) of the detected medial-axis pixels,
+        ordered along the track.
     centre_line_y : np.ndarray, optional
-        Y-coordinates (or slow-dim indices) of the detected medial axis.
+        Column indices or Y coordinates of medial-axis pixels (only set
+        for ``indices2D`` and ``coordinates`` modes).
     centre_width : np.ndarray, optional
-        Calculated local swath width at each centre-line point.
+        Estimated local swath half-width (metres) at each medial-axis pixel,
+        derived from the Voronoi ridge distances.
     """
     distance_map: GridObject
     nearest_point: Optional[GridObject] = None
@@ -41,28 +80,35 @@ class SwathCentreLine:
 
 
 class TransverseSwath:
-    """Class representing a transverse swath profile (aggregated cross-section).
+    """Aggregated cross-track statistics from ``transverse_swath``.
+
+    Each attribute is a 1-D array with one entry per distance bin, covering
+    the range ``[-half_width, +half_width]`` in steps of ``bin_resolution``.
+    Bins with no valid pixels contain NaN (or 0 for ``counts``).
 
     Parameters
     ----------
     distances : np.ndarray
-        Perpendicular distances of bin centers from the track.
+        Centre distance (metres) of each bin from the track.
+        Negative values are to the right; positive values to the left.
     means : np.ndarray
-        Mean elevation for each distance bin.
+        Mean elevation (metres) per bin.
     stddevs : np.ndarray
-        Standard deviation of elevation for each bin.
+        Standard deviation of elevation per bin.
     mins : np.ndarray
-        Minimum elevation for each bin.
+        Minimum elevation per bin.
     maxs : np.ndarray
-        Maximum elevation for each bin.
-    counts : np.ndarray
-        Number of pixels sampled in each bin.
+        Maximum elevation per bin.
+    counts : np.ndarray of int
+        Number of valid pixels in each bin.
     medians : np.ndarray, optional
-        Median elevation for each bin.
+        Median elevation per bin.  Populated when ``percentiles`` is given.
     q1, q3 : np.ndarray, optional
-        25th and 75th percentiles for each bin.
+        25th and 75th percentile elevations per bin.
     percentiles : dict, optional
-        Dictionary mapping percentile values to arrays of results.
+        Mapping ``{p: array}`` for each requested percentile ``p``.
+    custom : np.ndarray, optional
+        Per-bin result of a user-supplied ``custom_stat_fn``.
     """
     def __init__(self, distances, means, stddevs, mins, maxs, counts,
                  medians=None, q1=None, q3=None, percentiles=None, custom=None):
@@ -82,7 +128,20 @@ class TransverseSwath:
         return len(self.distances)
 
     def __getitem__(self, idx):
-        """Returns a dictionary of statistics for a specific bin index."""
+        """Return statistics for one bin as a dictionary.
+
+        Parameters
+        ----------
+        idx : int
+            Bin index.
+
+        Returns
+        -------
+        dict
+            Keys: ``distance``, ``mean``, ``std``, ``min``, ``max``,
+            ``count``, and optionally ``median``, ``q1``, ``q3``,
+            ``percentiles``.
+        """
         d = {
             'distance': self.distances[idx],
             'mean': self.means[idx],
@@ -105,27 +164,32 @@ class TransverseSwath:
              show_quartiles=False, show_median=False, **kwargs):
         """Plot the transverse swath profile.
 
+        The mean elevation is always drawn as a line.  Optional shaded bands
+        and additional lines can be toggled with the keyword arguments below.
+
         Parameters
         ----------
         fig : matplotlib.figure.Figure, optional
-            Figure to plot into.
+            Existing figure to plot into.  Created if not supplied.
         ax : matplotlib.axes.Axes, optional
-            Axes to plot into.
+            Existing axes to plot into.  Created if not supplied.
         show_minmax : bool, default True
-            Fill between min and max elevations.
+            Shade the region between ``mins`` and ``maxs``.
         show_std : bool, default False
-            Fill between mean ± standard deviation.
+            Shade the region ``mean ± stddev``.
         show_quartiles : bool, default False
-            Fill between Q1 and Q3.
+            Shade the interquartile range (Q1–Q3).  Requires that
+            ``percentiles`` was passed when calling ``transverse_swath``.
         show_median : bool, default False
-            Plot the median line.
+            Draw the median as a dashed line.  Requires ``percentiles``.
         **kwargs
-            Additional arguments passed to ax.plot.
+            Forwarded to ``ax.plot`` for the mean line (e.g. ``color``,
+            ``linewidth``, ``label``).
 
         Returns
         -------
-        fig, ax
-            The figure and axes objects.
+        fig : matplotlib.figure.Figure
+        ax : matplotlib.axes.Axes
         """
         # pylint: disable=import-outside-toplevel
         import matplotlib.pyplot as plt
@@ -156,30 +220,37 @@ class TransverseSwath:
 
 
 class LongitudinalSwath:
-    """Class representing a longitudinal swath profile (along-track variation).
+    """Along-track statistics from ``longitudinal_swath`` or
+    ``longitudinal_swath_windowed``.
+
+    Each attribute is a 1-D array with one entry per output track point
+    (after applying ``skip``).  Points with no valid pixels have NaN
+    statistics and a count of 0.
 
     Parameters
     ----------
     means : np.ndarray
-        Mean elevation for each sampled track point.
+        Mean elevation (metres) for each output track point.
     stddevs : np.ndarray
         Standard deviation of elevation.
     mins : np.ndarray
         Minimum elevation.
     maxs : np.ndarray
         Maximum elevation.
-    counts : np.ndarray
-        Number of pixels sampled for each point.
+    counts : np.ndarray of int
+        Number of valid pixels aggregated for each point.
     medians : np.ndarray, optional
-        Median elevation.
+        Median elevation.  Populated when ``percentiles`` is given.
     q1, q3 : np.ndarray, optional
-        25th and 75th percentiles.
+        25th and 75th percentile elevations.
     percentiles : dict, optional
-        Dictionary mapping percentile values to result arrays.
+        Mapping ``{p: array}`` for each requested percentile ``p``.
     along_track_distances : np.ndarray, optional
-        Cumulative distance of each point along the track.
+        Cumulative distance (metres) from the first track point to each
+        output point.
     track_x, track_y : np.ndarray, optional
-        Actual spatial coordinates of the sampled track points.
+        Spatial coordinates of the output track points, in the same format
+        as the ``input_mode`` used to build the profile.
     """
     def __init__(self, means, stddevs, mins, maxs, counts,
                  medians=None, q1=None, q3=None, percentiles=None,
@@ -201,7 +272,20 @@ class LongitudinalSwath:
         return len(self.means)
 
     def __getitem__(self, idx):
-        """Returns a dictionary of statistics for a specific track point index."""
+        """Return statistics for one track point as a dictionary.
+
+        Parameters
+        ----------
+        idx : int
+            Output track-point index (after ``skip``).
+
+        Returns
+        -------
+        dict
+            Keys: ``mean``, ``std``, ``min``, ``max``, ``count``,
+            ``distance``, and optionally ``x``, ``y``, ``median``,
+            ``q1``, ``q3``, ``percentiles``.
+        """
         d = {
             'mean': self.means[idx],
             'std': self.stddevs[idx],
@@ -229,20 +313,30 @@ class LongitudinalSwath:
              show_quartiles=False, show_median=False, **kwargs):
         """Plot the longitudinal swath profile.
 
+        The X axis is cumulative along-track distance when
+        ``along_track_distances`` is set, otherwise the output point index.
+
         Parameters
         ----------
         fig : matplotlib.figure.Figure, optional
+            Existing figure to plot into.  Created if not supplied.
         ax : matplotlib.axes.Axes, optional
+            Existing axes to plot into.  Created if not supplied.
         show_minmax : bool, default True
+            Shade the region between ``mins`` and ``maxs``.
         show_std : bool, default False
+            Shade the region ``mean ± stddev``.
         show_quartiles : bool, default False
+            Shade the interquartile range (Q1–Q3).  Requires ``percentiles``.
         show_median : bool, default False
+            Draw the median as a dashed line.  Requires ``percentiles``.
         **kwargs
-            Passed to ax.plot.
+            Forwarded to ``ax.plot`` for the mean line.
 
         Returns
         -------
-        fig, ax
+        fig : matplotlib.figure.Figure
+        ax : matplotlib.axes.Axes
         """
         # pylint: disable=import-outside-toplevel
         import matplotlib.pyplot as plt
@@ -275,7 +369,12 @@ class LongitudinalSwath:
 
 
 def _prepare_track(grid, track_x, track_y, input_mode):
-    """Internal helper to convert track inputs to (row, col) indices."""
+    """Convert track inputs to float32 (row, col) pixel index arrays.
+
+    Supports three input conventions controlled by ``input_mode``:
+    ``"indices2D"`` (row/col arrays), ``"indices1D"`` (flat linear indices),
+    and ``"coordinates"`` (georeferenced X/Y via the grid transform).
+    """
     if input_mode == "indices2D":
         ti = np.array(track_x, dtype=np.float32)
         tj = np.array(track_y, dtype=np.float32)
@@ -311,21 +410,34 @@ def _grid_from_z(base_grid: GridObject, z: np.ndarray, name: str) -> GridObject:
 
 
 def prepare_track(grid: GridObject, track_x, track_y=None, input_mode="indices2D"):
-    """Ensure a track is D8-contiguous by filling gaps with Bresenham interpolation.
+    """Ensure a track is D8-contiguous by gap-filling with Bresenham interpolation.
 
-    Rounds track points to integer pixel positions, checks that each consecutive
-    pair is D8-adjacent (max(|di|,|dj|) <= 1), and fills any gaps using the
-    Bresenham D8 algorithm. Output is in the same format as the input.
+    Rounds each reference point to the nearest integer pixel, then checks
+    consecutive pairs for D8 adjacency (``max(|Δrow|, |Δcol|) ≤ 1``).  If any
+    gap is larger, the entire track is re-rasterized via the Bresenham D8
+    algorithm so that every consecutive pair of output pixels is D8-adjacent.
+    This is a prerequisite for the frontier Dijkstra used internally by
+    ``compute_swath_distance_map``.
 
     Parameters
     ----------
     grid : GridObject
-    track_x, track_y : array-like
-    input_mode : str, default "indices2D"
+        Reference grid (used only for its transform and shape).
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates, depending on
+        ``input_mode``.
+    track_y : array-like, optional
+        Column indices or Y coordinates.  Not used for ``"indices1D"``.
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention: ``"indices2D"``, ``"indices1D"``, or
+        ``"coordinates"``.
 
     Returns
     -------
-    Same format as input_mode.
+    track_x : np.ndarray
+        Gap-filled track in the same format as the input.
+    track_y : np.ndarray or None
+        Second coordinate array (``None`` for ``"indices1D"``).
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     ti_int = np.round(ti).astype(np.intp)
@@ -359,35 +471,58 @@ def compute_swath_distance_map(
         input_mode="indices2D", compute_signed=True,
         return_nearest_point=False, return_centre_line=False,
         mask=None) -> Union[GridObject, SwathCentreLine]:
-    """Compute a distance map from a polyline track.
+    """Compute a perpendicular-distance map from a polyline track.
 
-    If `half_width` is provided, the map is clipped (NAN outside). If None, a
-    full unclipped distance map is computed for all active pixels.
+    For each grid pixel the function returns the shortest perpendicular
+    distance to the nearest track segment, computed by a frontier Dijkstra
+    that propagates outward from the rasterized track.
 
     Parameters
     ----------
     grid : GridObject
-        Reference DEM.
-    track_x, track_y : array-like
-        Track coordinates or indices.
+        Reference DEM; its shape, cellsize, and transform are used.
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates (see ``input_mode``).
+    track_y : array-like, optional
+        Column indices or Y coordinates.
     half_width : float, optional
-        Distance limit. If provided, pixels further than this get NAN.
-    input_mode : str, default "indices2D"
-        Format of track input: "indices2D", "indices1D", or "coordinates".
+        Swath half-width in metres.  Pixels farther than this are set to NaN.
+        If ``None``, the full unclipped distance map is returned (pixels
+        unreachable by the Dijkstra are NaN).
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention: ``"indices2D"``, ``"indices1D"``, or
+        ``"coordinates"``.
     compute_signed : bool, default True
-        If True, returns signed distance (negative=left, positive=right).
+        If ``True``, the distance is signed: **positive = left of the directed
+        track**, negative = right (2-D cross-product convention).
+        If ``False``, the absolute distance is returned.
     return_nearest_point : bool, default False
-        Include map of nearest track point index in the result.
+        If ``True``, the result is a ``SwathCentreLine`` whose
+        ``nearest_point`` attribute holds the per-pixel nearest track-point
+        index.  Required input to ``longitudinal_swath``.
     return_centre_line : bool, default False
-        Calculate medial axis and inward distance (requires `half_width`).
-    mask : np.ndarray, optional
-        Binary mask for active pixels (only used for full distance maps).
+        If ``True``, also compute the Voronoi medial axis of the swath (the
+        centreline equidistant from both swath boundaries).  Implies
+        ``return_nearest_point``; requires ``half_width`` to be set.
+    mask : np.ndarray of int8, optional
+        Binary pixel mask (1 = active, 0 = excluded).  NaN pixels in
+        ``grid.z`` are always excluded regardless of this mask.
 
     Returns
     -------
-    GridObject or SwathCentreLine
-        Distance map grid, or dataclass with additional geometric outputs.
-        SwathCentreLine.nearest_point is always populated (needed for longitudinal).
+    GridObject
+        Distance map only (when ``return_nearest_point=False`` and
+        ``return_centre_line=False``).
+    SwathCentreLine
+        Distance map plus optional geometric outputs (otherwise).
+        ``nearest_point`` is always set when a ``SwathCentreLine`` is returned.
+
+    Notes
+    -----
+    The Voronoi centreline (``return_centre_line=True``) is found by running
+    two boundary Dijkstra waves from the positive and negative outer edges of
+    the swath and marking pixels where the two wave-fronts meet.  The result
+    is then thinned to D8-connectivity.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     hw_px = half_width / grid.cellsize if half_width is not None else float('inf')
@@ -397,7 +532,8 @@ def compute_swath_distance_map(
     best_abs = np.empty(grid.z.shape, dtype=np.float32, order='F')
     signed_dist_px = np.empty(grid.z.shape, dtype=np.float32, order='F') if need_signed else None
 
-    # Build combined mask: caller mask AND NaN exclusion from DEM
+    # Combine the caller mask with a NaN mask derived from the DEM so that
+    # no-data pixels are never claimed by the frontier Dijkstra.
     nan_mask = (~np.isnan(grid.z)).astype(np.int8)
     if mask is not None:
         combined_mask = (nan_mask & mask.astype(np.int8)).astype(np.int8)
@@ -409,13 +545,17 @@ def compute_swath_distance_map(
         combined_mask
     )
 
-    # clipped: outside = beyond radius (FLT_MAX pixels satisfy this too)
-    # full:    outside = unvisited (FLT_MAX), hw_px=inf never filters anything
+    # Determine which pixels are "outside" the swath:
+    #   clipped (half_width given): pixels beyond the radius, including those
+    #     that hit FLT_MAX because the Dijkstra cost exceeded hw_px.
+    #   full (half_width=None): only truly unvisited pixels (FLT_MAX); hw_px=inf
+    #     means the Dijkstra never discards a pixel based on distance alone.
     if half_width is not None:
         outside = best_abs > hw_px
     else:
         outside = best_abs >= np.finfo(np.float32).max
 
+    # Convert pixel-unit distances to metres and mask outside pixels as NaN.
     dist_src = signed_dist_px if (compute_signed and signed_dist_px is not None) else best_abs
     dist_z = np.where(outside, np.nan, dist_src * grid.cellsize).astype(np.float32)
     dist_grid = _grid_from_z(grid, dist_z, "swath_distance")
@@ -427,19 +567,27 @@ def compute_swath_distance_map(
             return dist_grid
         return SwathCentreLine(distance_map=dist_grid, nearest_point=near_pt_grid)
 
-    # Centre-line path
+    # --- Voronoi centreline ---
+    # 1. Find the outer boundary of the swath mask via 4-connectivity padding.
+    #    Boundary pixels are inside-mask pixels that have at least one
+    #    outside-mask (or out-of-bounds) 4-neighbour.
     inside = ~outside
     pad = np.pad(inside, 1, constant_values=False)
     boundary = inside & (~pad[:-2, 1:-1] | ~pad[2:, 1:-1] | ~pad[1:-1, :-2] | ~pad[1:-1, 2:])
+    # 2. Split the outer boundary by the sign of signed_dist, giving seeds for
+    #    the two competing Dijkstra waves (positive half = left edge,
+    #    negative half = right edge).
     pos_seeds = np.flatnonzero((boundary & (signed_dist_px >= 0)).ravel(order='F')).astype(np.intp)
     neg_seeds = np.flatnonzero((boundary & (signed_dist_px <= 0)).ravel(order='F')).astype(np.intp)
 
+    # 3. Run boundary Dijkstra from each outer edge inward.
     swath_mask = inside.astype(np.int8)
     dist_pos = np.empty(grid.z.shape, dtype=np.float32, order='F')
     dist_neg = np.empty(grid.z.shape, dtype=np.float32, order='F')
     _swaths.swath_boundary_dijkstra(dist_pos, swath_mask, pos_seeds, grid.dims)
     _swaths.swath_boundary_dijkstra(dist_neg, swath_mask, neg_seeds, grid.dims)
 
+    # 4. Inward distance from the boundary = min of both wave-front distances.
     mn = np.minimum(dist_pos, dist_neg)
     dfb_z = np.where(mn >= np.finfo(np.float32).max, np.nan, mn * grid.cellsize).astype(np.float32)
 
@@ -471,33 +619,41 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
                     normalize: bool = False,
                     percentiles: Optional[List[int]] = None,
                     custom_stat_fn=None) -> TransverseSwath:
-    """Compute a transverse swath profile using a pre-computed signed distance map.
+    """Compute a transverse (cross-track) swath profile.
 
-    Aggregates elevations based on their perpendicular distance to the track.
+    Pixels are assigned to distance bins based on their signed perpendicular
+    distance to the track.  Each bin aggregates the elevations of all pixels
+    whose distance falls within ``[bin_centre - bin_resolution/2,
+    bin_centre + bin_resolution/2)``.
 
     Parameters
     ----------
     grid : GridObject
         Elevation DEM.
     distance_map : GridObject or np.ndarray
-        SIGNED distance map (meters) from `compute_swath_distance_map`.
+        Signed distance map in **metres** from ``compute_swath_distance_map``
+        (``compute_signed=True``).  Positive values are to the left of the
+        directed track, negative to the right.
     half_width : float
-        Swath half-width (meters).
+        Swath half-width in metres.  Pixels outside ``[-half_width,
+        +half_width]`` are excluded.
     bin_resolution : float, default 10.0
-        Spacing between bin centers (meters).
+        Width of each distance bin in metres.
     normalize : bool, default False
-        If True, elevations are relative to the mean elevation at the track centre.
+        If ``True``, subtract the mean elevation of pixels within one bin of
+        the track centre before aggregating, so the profile is relative.
     percentiles : list of int, optional
-        List of custom percentiles (0-100) to compute for each bin.
+        Percentiles in the range 0–100 to compute for each bin.  When given,
+        ``TransverseSwath.medians``, ``q1``, and ``q3`` are also populated.
     custom_stat_fn : callable, optional
-        Function called with the array of elevation values in each bin.
-        Signature: fn(values: np.ndarray) -> scalar. Result stored in
-        TransverseSwath.custom (NaN for empty bins).
+        ``fn(values: np.ndarray) -> scalar`` called on the raw elevation
+        values in each non-empty bin.  Result stored in
+        ``TransverseSwath.custom``; NaN for empty bins.
 
     Returns
     -------
     TransverseSwath
-        Aggregated statistics profile.
+        Per-bin statistics over the cross-track direction.
     """
     dist_arr = (distance_map.z if isinstance(distance_map, GridObject) else distance_map).ravel()
     dem = grid.z.ravel()
@@ -590,36 +746,45 @@ def longitudinal_swath(grid: GridObject, track_x, track_y,
                       nearest_point,
                       percentiles: Optional[List[int]] = None,
                       input_mode: str = "indices2D", skip: int = 1) -> LongitudinalSwath:
-    """Compute a longitudinal swath profile along a polyline track.
+    """Compute a longitudinal (along-track) swath profile.
 
-    Aggregates elevations from pixels assigned to each track point via the
-    nearest-point map, using a sliding window of ±binning_distance along track.
+    Each output track point aggregates all swath pixels whose nearest track
+    point (from the frontier Dijkstra) falls within a sliding window of
+    ``±binning_distance`` metres of that point along the track.  When
+    ``binning_distance=0``, each output point only includes pixels assigned
+    directly to it (no overlap with neighbours).
 
     Parameters
     ----------
     grid : GridObject
         Elevation DEM.
-    track_x, track_y : array-like
-        Track coordinates or indices.
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates (see ``input_mode``).
+    track_y : array-like
+        Column indices or Y coordinates.
     distance_map : GridObject or np.ndarray
-        SIGNED distance map (meters) from `compute_swath_distance_map`.
+        Signed distance map in **metres** from ``compute_swath_distance_map``
+        (``compute_signed=True``).  Used to exclude pixels beyond
+        ``half_width``.
     half_width : float
-        Swath half-width (meters).
+        Cross-track half-width in metres.
     binning_distance : float
-        Along-track search radius (meters).
+        Along-track window half-length in metres.  Set to 0 for
+        no overlap between neighbouring track points.
     nearest_point : GridObject or np.ndarray
-        Per-pixel nearest track-point index from `compute_swath_distance_map`.
+        Per-pixel nearest track-point index from ``compute_swath_distance_map``
+        (the ``SwathCentreLine.nearest_point`` attribute).
     percentiles : list of int, optional
-        Custom percentiles to compute.
-    input_mode : str, default "indices2D"
-        Format of track input.
+        Percentiles in the range 0–100 to compute per track point.
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention for ``track_x``/``track_y``.
     skip : int, default 1
-        Compute results only for every n-th point to save time.
+        Output every ``skip``-th track point; useful for long tracks.
 
     Returns
     -------
     LongitudinalSwath
-        Profile statistics along the track.
+        Per-track-point statistics along the swath.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     n_points = len(ti)
@@ -689,11 +854,58 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
                                       percentiles: Optional[List[int]] = None,
                                       input_mode: str = "indices2D",
                                       skip: int = 1) -> LongitudinalSwath:
-    """Compute a longitudinal swath profile using an oriented rectangle window.
+    """Compute a longitudinal swath profile using an oriented bounding-box window.
 
-    For each track point computes a local PCA tangent, defines a rectangle of
-    ±binning_distance along-track and ±half_width orthogonal, and accumulates
-    stats over all pixels inside. Does not require a pre-computed distance map.
+    Unlike ``longitudinal_swath``, this function does **not** require a
+    pre-computed distance map or nearest-point array.  For each track point
+    it:
+
+    1. Estimates a local tangent direction by PCA on the ``n_points_regression``
+       nearest track points.
+    2. Projects all pixels in a bounding box onto the tangent (along-track)
+       and orthogonal (cross-track) axes.
+    3. Accumulates statistics for pixels inside the oriented rectangle
+       ``[-binning_distance, +binning_distance] × [-half_width, +half_width]``
+       (in pixel units).
+
+    This approach handles curved tracks correctly but is slower than
+    ``longitudinal_swath`` for long tracks because the bounding-box search
+    is repeated independently for each output point.
+
+    Parameters
+    ----------
+    grid : GridObject
+        Elevation DEM.
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates (see ``input_mode``).
+    track_y : array-like
+        Column indices or Y coordinates.
+    half_width : float
+        Cross-track half-width in metres.
+    binning_distance : float
+        Along-track window half-length in metres.
+    n_points_regression : int, default 5
+        Number of track points used for the local PCA tangent estimate.
+        A larger value smooths the tangent direction at the cost of accuracy
+        near sharp bends.
+    percentiles : list of int, optional
+        Percentiles in the range 0–100 to compute per track point.
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention for ``track_x``/``track_y``.
+    skip : int, default 1
+        Output every ``skip``-th track point.
+
+    Returns
+    -------
+    LongitudinalSwath
+        Per-track-point statistics along the swath.
+
+    Notes
+    -----
+    The PCA tangent is the principal eigenvector of the 2×2 covariance matrix
+    of the local track segment coordinates.  When the local segment is
+    degenerate (all points collinear or length zero) the function falls back
+    to a simple finite-difference direction.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     dem = np.asarray(grid.z, dtype=np.float32)
@@ -702,7 +914,9 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     hw_px = half_width / cellsize
     bd_px = binning_distance / cellsize
 
-    # Precompute PCA tangents for all track points
+    # Precompute local PCA tangents for all track points.
+    # For each point, build the 2×2 covariance matrix of the surrounding
+    # n_points_regression track coordinates and take its dominant eigenvector.
     n_pts = len(ti)
     half_n = max(1, n_points_regression // 2)
     tang_i = np.empty(n_pts, dtype=np.float32)
@@ -716,9 +930,11 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
         seg_j = tj[lo:hi + 1]
         mi, mj = seg_i.mean(), seg_j.mean()
         di, dj = seg_i - mi, seg_j - mj
+        # 2×2 covariance matrix elements.
         cii = float(np.dot(di, di))
         cij = float(np.dot(di, dj))
         cjj = float(np.dot(dj, dj))
+        # Analytic dominant eigenvector of [[cii,cij],[cij,cjj]].
         diff = cii - cjj
         D = np.sqrt(diff * diff + 4.0 * cij * cij)
         if cii >= cjj:
@@ -730,7 +946,7 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
             tang_i[pt] = vi / vlen
             tang_j[pt] = vj / vlen
         else:
-            # fallback: finite difference
+            # Degenerate case (e.g. single point): fall back to finite difference.
             d_i = ti[hi] - ti[lo]
             d_j = tj[hi] - tj[lo]
             length = np.sqrt(d_i * d_i + d_j * d_j)
@@ -779,8 +995,8 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
             (np.abs(d_i * o_i + d_j * o_j) <= hw_px)
         )
 
-        # dem shape is (nrows, ncols); meshgrid uses indexing='ij' so mask shape
-        # matches dem[pi_lo:pi_hi+1, pj_lo:pj_hi+1] directly.
+        # meshgrid with indexing='ij' gives arrays shaped (n_rows, n_cols),
+        # matching the DEM sub-array directly.
         vals = dem[pi_lo:pi_hi + 1, pj_lo:pj_hi + 1][mask]
         valid = ~np.isnan(vals)
         vals = vals[valid]
@@ -841,28 +1057,40 @@ def get_point_pixels(grid: GridObject, track_x, track_y,
                     binning_distance: float,
                     nearest_point,
                     input_mode: str = "indices2D"):
-    """Retrieve pixel indices or coordinates assigned to a single track point.
+    """Return the pixels assigned to a single track point by the frontier Dijkstra.
 
-    Mirrors the pixel selection logic used in `longitudinal_swath`.
+    Mirrors the pixel-selection logic of ``longitudinal_swath``: a pixel is
+    returned if its nearest track point falls within ``±binning_distance``
+    (metres) of ``point_index`` along the track, and its perpendicular distance
+    is within ``half_width``.
 
     Parameters
     ----------
     grid : GridObject
-    track_x, track_y : array-like
+        Reference grid; provides cellsize and shape.
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates (see ``input_mode``).
+    track_y : array-like
+        Column indices or Y coordinates.
     distance_map : GridObject or np.ndarray
-        SIGNED distance map.
+        Signed distance map in metres from ``compute_swath_distance_map``.
     point_index : int
-        Index of the track point.
+        0-based index of the track point to query.
     half_width : float
+        Cross-track half-width in metres.
     binning_distance : float
+        Along-track window half-length in metres (use 0 for the single-point
+        assignment, i.e. pixels with ``nearest_point == point_index`` only).
     nearest_point : GridObject or np.ndarray
-        Per-pixel nearest track-point index.
-    input_mode : str
+        Per-pixel nearest track-point index from ``compute_swath_distance_map``.
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention for output.
 
     Returns
     -------
     tuple of np.ndarray
-        Pixel coordinates/indices in the format matching `input_mode`.
+        ``(rows, cols)`` for ``"indices2D"``, flat indices for
+        ``"indices1D"``, or ``(xs, ys)`` for ``"coordinates"``.
     """
     dist_arr = distance_map.z if isinstance(distance_map, GridObject) else distance_map
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
@@ -898,24 +1126,38 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
                                binning_distance: float,
                                n_points_regression: int = 5,
                                input_mode: str = "indices2D"):
-    """Retrieve pixel indices or coordinates inside a specific window.
+    """Return the pixels inside the oriented rectangle window for one track point.
 
-    Mirrors the oriented-rectangle selection used in `longitudinal_swath_windowed`.
+    Mirrors the pixel-selection logic of ``longitudinal_swath_windowed``:
+    estimates a local PCA tangent at ``point_index`` and returns all pixels
+    within the axis-aligned bounding box that also satisfy
+    ``|along_track| ≤ binning_distance`` and ``|cross_track| ≤ half_width``
+    (in pixel units derived from the cellsize).
 
     Parameters
     ----------
     grid : GridObject
-    track_x, track_y : array-like
+        Reference grid; provides cellsize, shape, and transform.
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates (see ``input_mode``).
+    track_y : array-like
+        Column indices or Y coordinates.
     point_index : int
+        0-based index of the track point to query.
     half_width : float
+        Cross-track half-width in metres.
     binning_distance : float
-    n_points_regression : int
-    input_mode : str
+        Along-track window half-length in metres.
+    n_points_regression : int, default 5
+        Number of surrounding track points used for the local PCA tangent.
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention for output.
 
     Returns
     -------
     tuple of np.ndarray
-        Pixel coordinates/indices in the format matching `input_mode`.
+        ``(rows, cols)`` for ``"indices2D"``, flat indices for
+        ``"indices1D"``, or ``(xs, ys)`` for ``"coordinates"``.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     n_pts = len(ti)
@@ -977,25 +1219,35 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
 def rasterize_path(grid: GridObject, track_x, track_y=None,
                                input_mode="indices2D", close_loop=False,
                                use_d4=False):
-    """Rasterize a continuous path between ordered reference points.
+    """Rasterize a path through ordered reference points using Bresenham's algorithm.
 
-    Uses Bresenham's line algorithm to connect consecutive points.
+    Each consecutive pair of reference points is connected by a Bresenham line
+    so that every output pixel is adjacent to the next in either D8 (default)
+    or D4 connectivity.  Duplicate pixels at segment junctions are removed.
 
     Parameters
     ----------
     grid : GridObject
-    track_x, track_y : array-like
-        Reference track points.
-    input_mode : str, default "indices2D"
+        Reference grid (used for its transform and shape).
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates of the reference
+        points (see ``input_mode``).
+    track_y : array-like, optional
+        Column indices or Y coordinates.
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention: ``"indices2D"``, ``"indices1D"``, or
+        ``"coordinates"``.
     close_loop : bool, default False
-        Connect the last point back to the first.
+        If ``True``, add a closing segment from the last point back to the
+        first.
     use_d4 : bool, default False
-        If True, uses D4 connectivity; otherwise D8.
+        If ``True``, use D4 (4-connected) rasterization, which inserts extra
+        cardinal steps at diagonal moves and roughly doubles the output size.
 
     Returns
     -------
     tuple of np.ndarray
-        Rasterized path coordinates/indices.
+        Rasterized path in the same format as the input.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
 
@@ -1035,30 +1287,40 @@ def rasterize_path(grid: GridObject, track_x, track_y=None,
 
 def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.0,
                   method: int = 0, input_mode: str = "indices2D"):
-    """Simplify a polyline using the Iterative End-Point Fit (IEF) engine.
+    """Simplify a polyline by reducing the number of vertices.
 
-    Reduces vertices while preserving shape using various stopping criteria.
+    Three methods are available, all preserving the first and last point.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     grid : GridObject
-        Reference grid.
-    track_x, track_y : array-like
-        Track coordinates or indices.
-    tolerance : float
-        Meaning depends on method:
-        - method 0 (FIXED_N): exact number of output points (clamped to [2, n_points]).
-        - method 1 (KNEEDLE): ignored (automatic knee detection).
-        - method 2 (VW_AREA): triangle area threshold (coordinate units squared).
-    method : int
-        Simplification method (0-2).
-    input_mode : str, default "indices2D"
-        "indices2D", "indices1D" or "coordinates".
+        Reference grid (used for its transform and shape).
+    track_x : array-like
+        Row indices, flat 1-D indices, or X coordinates (see ``input_mode``).
+    track_y : array-like, optional
+        Column indices or Y coordinates.
+    tolerance : float, default 1.0
+        Interpretation depends on ``method``:
+
+        * ``0`` (FIXED_N): target number of output points, clamped to
+          ``[2, n_points]``.
+        * ``1`` (KNEEDLE): ignored; the knee of the IEF error curve is
+          detected automatically.
+        * ``2`` (VW_AREA): minimum triangle area (pixel units²) to retain a
+          vertex; larger values produce coarser simplification.
+    method : int, default 0
+        Simplification algorithm:
+        ``0`` = FIXED_N (Iterative End-Point Fit, fixed target count),
+        ``1`` = KNEEDLE (IEF with automatic knee detection),
+        ``2`` = VW_AREA (Visvalingam–Whyatt area threshold).
+    input_mode : str, default ``"indices2D"``
+        Coordinate convention: ``"indices2D"``, ``"indices1D"``, or
+        ``"coordinates"``.
 
     Returns
     -------
     tuple of np.ndarray
-        Simplified track coordinates/indices.
+        Simplified track in the same format as the input.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     n_points = len(ti)
