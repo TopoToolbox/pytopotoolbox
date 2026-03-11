@@ -172,13 +172,15 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> from rasterio import CRS
-        >>> dem = topotoolbox.load_dem('kunashiri')
-        >>> dem = dem.reproject(CRS.from_epsg(32655), resolution = 30)
-        >>> _= dem.plot(cmap="terrain")
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> from rasterio import CRS
+           >>> dem = topotoolbox.load_dem('kunashiri')
+           >>> dem = dem.reproject(CRS.from_epsg(32655), resolution = 30)
+           >>> _= dem.plot(cmap="terrain")
+           >>> plt.show()
         """
         dst = GridObject()
 
@@ -228,10 +230,13 @@ class GridObject():
 
         Example
         -------
-        >>> dem = topotoolbox.load_dem('bigtujunga')
-        >>> dem_90m = dem.resample(resolution=90)
-        >>> im = dem_90m.plot(cmap="terrain")
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> dem = topotoolbox.load_dem('bigtujunga')
+           >>> dem_90m = dem.resample(resolution=90)
+           >>> im = dem_90m.plot(cmap="terrain")
+           >>> plt.show()
         """
         return self.reproject(self.georef, resolution, resampling)
 
@@ -260,12 +265,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> filled_dem = dem.fillsinks()
-        >>> _= filled_dem.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> filled_dem = dem.fillsinks()
+           >>> _= filled_dem.plot(cmap='terrain')
+           >>> plt.show()
         """
         dem = self.z.astype(np.float32)
         output = np.zeros_like(dem)
@@ -333,12 +340,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('bigtujunga')
-        >>> flats, sills = dem.identifyflats()
-        >>> _= flats.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('bigtujunga')
+           >>> flats, sills = dem.identifyflats()
+           >>> _= flats.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         # Since having lists as default arguments can lead to problems, output
@@ -404,12 +413,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
-        >>> _= excess.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> excess = dem.excesstopography(threshold=0.3, method='fsm2d')
+           >>> _= excess.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         if method not in ['fsm2d', 'fmm2d']:
@@ -484,12 +495,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> sharr = dem.filter(method='scharr', kernelsize=3)
-        >>> _= sharr.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> scharr = dem.filter(method='scharr', kernelsize=3)
+           >>> _= scharr.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         valid_methods = ['mean', 'average', 'median',
@@ -541,35 +554,36 @@ class GridObject():
         return result
 
     def gradient8(self, unit: str = 'tangent', multiprocessing: bool = True):
-        """
-    Compute the gradient of a digital elevation model (DEM) using an
-    8-direction algorithm.
+        """Compute the gradient of a digital elevation model (DEM) using an
+        8-direction algorithm.
 
-    Parameters
-    ----------
-    unit : str, optional
-        The unit of the gradient to be calculated. Options are:
-        - 'tangent' : Calculate the gradient as a tangent (default).
-        - 'radian'  : Calculate the gradient in radians.
-        - 'degree'  : Calculate the gradient in degrees.
-        - 'sine'    : Calculate the gradient as the sine of the angle.
-        - 'percent' : Calculate the gradient as a percentage.
-    multiprocessing : bool, optional
-        If True, use multiprocessing for computation. Default is True.
+        Parameters
+        ----------
+        unit : str, optional
+          The unit of the gradient to be calculated. Options are:
+          - 'tangent' : Calculate the gradient as a tangent (default).
+          - 'radian'  : Calculate the gradient in radians.
+          - 'degree'  : Calculate the gradient in degrees.
+          - 'sine'    : Calculate the gradient as the sine of the angle.
+          - 'percent' : Calculate the gradient as a percentage.
+        multiprocessing : bool, optional
+          If True, use multiprocessing for computation. Default is True.
 
-    Returns
-    -------
-    GridObject
-        A new GridObject with the calculated gradient.
+        Returns
+        -------
+        GridObject
+          A new GridObject with the calculated gradient.
 
-    Example
-    -------
-    >>> import topotoolbox
-    >>> import matplotlib.pyplot as plt
-    >>> dem = topotoolbox.load_dem('perfectworld')
-    >>> grad = dem.gradient8()
-    >>> _= grad.plot(cmap='terrain')
-    >>> plt.show()
+        Example
+        -------
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> grad = dem.gradient8()
+           >>> _= grad.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         if multiprocessing:
@@ -626,12 +640,14 @@ class GridObject():
 
         Examples
         --------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('tibet')
-        >>> curv = dem.curvature()
-        >>> _= curv.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('tibet')
+           >>> curv = dem.curvature()
+           >>> _= curv.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         if meanfilt:
@@ -723,12 +739,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> dilate = dem.dilate(size=10)
-        >>> _= dilate.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> dilate = dem.dilate(size=10)
+           >>> _= dilate.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         if size is None and structure is None and footprint is None:
@@ -787,12 +805,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> eroded = dem.erode(size = (3,3))
-        >>> _= eroded.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> eroded = dem.erode(size = (3,3))
+           >>> _= eroded.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         if size is None and structure is None and footprint is None:
@@ -848,12 +868,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> slope = dem.evansslope()
-        >>> _= slope.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> slope = dem.evansslope()
+           >>> _= slope.plot(cmap='terrain')
+           >>> plt.show()
         """
         dem = self.z.copy()
         # NaN replacement not optional since convolve can't handle NaNs
@@ -906,12 +928,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> aspect = dem.aspect()
-        >>> _= aspect.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> aspect = dem.aspect()
+           >>> _= aspect.plot(cmap='terrain')
+           >>> plt.show()
         """
 
         grad_y, grad_x = np.gradient(self.z, edge_order=2)
@@ -957,15 +981,17 @@ class GridObject():
 
         Examples
         --------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> from matplotlib.colors import ListedColormap
-        >>> dem = topotoolbox.load_dem('bigtujunga')
-        >>> prom, (x, y) = dem.prominence(tolerance=90)
-        >>> _ = plt.subplot()
-        >>> _ = dem.plot_hs(cmap=ListedColormap([0.9, 0.9, 0.9]), exaggerate=3)
-        >>> _ = plt.scatter(x, y, prom, alpha=0.6, edgecolor='black')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> from matplotlib.colors import ListedColormap
+           >>> dem = topotoolbox.load_dem('bigtujunga')
+           >>> prom, (x, y) = dem.prominence(tolerance=90)
+           >>> _ = plt.subplot()
+           >>> _ = dem.plot_hs(cmap=ListedColormap([0.9, 0.9, 0.9]), exaggerate=3)
+           >>> _ = plt.scatter(x, y, prom, alpha=0.6, edgecolor='black')
+           >>> plt.show()
         """
         dem = np.nan_to_num(self.z)
         p = np.full_like(dem, np.min(dem))
@@ -1031,13 +1057,15 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> hillshade = dem.hillshade()
-        >>> _= hillshade.plot(cmap='gray')
-        >>> _= dem.plot(cmap='terrain', alpha=0.2)
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> hillshade = dem.hillshade()
+           >>> _= hillshade.plot(cmap='gray')
+           >>> _= dem.plot(cmap='terrain', alpha=0.2)
+           >>> plt.show()
         """
 
         z = np.asarray(self, dtype=np.float32)
@@ -1145,11 +1173,13 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> _= dem.plot(cmap='terrain')
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> _= dem.plot(cmap='terrain')
+           >>> plt.show()
         """
         if ax is None:
             ax = plt.gca()
@@ -1234,11 +1264,13 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> _= dem.plot_hs(exaggerate=dem.cellsize)
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('perfectworld')
+           >>> _= dem.plot_hs(exaggerate=dem.cellsize)
+           >>> plt.show()
         """
         if ax is None:
             ax = plt.gca()
@@ -1300,15 +1332,17 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('bigtujunga')
-        >>> fig = plt.figure()
-        >>> ax = fig.add_subplot(111, projection='3d')
-        >>> _= dem.plot_surface(ax=ax)
-        >>> ax.set_aspect('equal')
-        >>> _= ax.set_zticks([0,np.nanmax(dem)])
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('bigtujunga')
+           >>> fig = plt.figure()
+           >>> ax = fig.add_subplot(111, projection='3d')
+           >>> _= dem.plot_surface(ax=ax)
+           >>> ax.set_aspect('equal')
+           >>> _= ax.set_zticks([0,np.nanmax(dem)])
+           >>> plt.show()
         """
         if ax is None:
             ax = plt.gca()
@@ -1342,13 +1376,15 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('bigtujunga')
-        >>> fd = topotoolbox.FlowObject(dem)
-        >>> D = fd.drainagebasins()
-        >>> _= D.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('bigtujunga')
+           >>> fd = topotoolbox.FlowObject(dem)
+           >>> D = fd.drainagebasins()
+           >>> _= D.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
+           >>> plt.show()
         """
         result = cp.copy(self)
 
@@ -1413,12 +1449,14 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('tibet')
-        >>> dem_zscore = dem.zscore()
-        >>> _= dem_zscore.plot()
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('tibet')
+           >>> dem_zscore = dem.zscore()
+           >>> _= dem_zscore.plot()
+           >>> plt.show()
         """
         result = cp.copy(self)
         z = (self.z - np.nanmean(self.z, dtype=np.float64)) / np.nanstd(self.z, dtype=np.float64)
@@ -1468,17 +1506,19 @@ class GridObject():
 
         Example
         -------
-        >>> import topotoolbox
-        >>> import matplotlib.pyplot as plt
-        >>> dem = topotoolbox.load_dem('tibet')
-        >>> new_dem = dem.crop(0.6, 0.8, 0.3, 0.5, 'percent')
-        >>> _= dem.plot()
-        >>> b = new_dem.bounds
-        >>> _= plt.plot(
-        ...             [b.left, b.right, b.right, b.left, b.left],
-        ...             [b.top, b.top, b.bottom, b.bottom, b.top],'r-', lw=2
-        ... )
-        >>> plt.show()
+        .. plot::
+
+           >>> import topotoolbox
+           >>> import matplotlib.pyplot as plt
+           >>> dem = topotoolbox.load_dem('tibet')
+           >>> new_dem = dem.crop(0.6, 0.8, 0.3, 0.5, 'percent')
+           >>> _= dem.plot()
+           >>> b = new_dem.bounds
+           >>> _= plt.plot(
+           ...             [b.left, b.right, b.right, b.left, b.left],
+           ...             [b.top, b.top, b.bottom, b.bottom, b.top],'r-', lw=2
+           ... )
+           >>> plt.show()
         """
         height, width = self.shape[0], self.shape[1]
         left_bound, right_bound = self.extent[0], self.extent[1]
