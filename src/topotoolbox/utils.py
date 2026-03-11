@@ -143,7 +143,7 @@ def read_tif(path: str) -> GridObject:
     Example
     -------
     >>> import topotoolbox
-    >>> dem = topotoolbox.read_tif('dem.tif')
+    >>> dem = topotoolbox.read_tif('dem.tif') # doctest: +SKIP
     """
 
     grid = GridObject()

@@ -228,7 +228,7 @@ class GridObject():
 
         Example
         -------
-        >>> dem = topotoolbox.load_dem('example.tif')
+        >>> dem = topotoolbox.load_dem('bigtujunga')
         >>> dem_90m = dem.resample(resolution=90)
         >>> im = dem_90m.plot(cmap="terrain")
         >>> plt.show()
@@ -959,6 +959,7 @@ class GridObject():
         --------
         >>> import topotoolbox
         >>> import matplotlib.pyplot as plt
+        >>> from matplotlib.colors import ListedColormap
         >>> dem = topotoolbox.load_dem('bigtujunga')
         >>> prom, (x, y) = dem.prominence(tolerance=90)
         >>> plt.subplot()
