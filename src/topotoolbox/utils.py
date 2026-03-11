@@ -541,8 +541,9 @@ def load_opentopography(south: float, north: float, west: float, east: float,
     >>> import topotoolbox
     >>> import matplotlib.pyplot as plt
     >>> from rasterio import CRS
-    >>> dem = topotoolbox.load_dem('kunashiri')
-    >>> dem = dem.reproject(CRS.from_epsg(32655), resolution=30)
+    >>> dem = topotoolbox.load_opentopography(south=50, north=50.1, west=14.35,
+    ...     east=14.6, dem_type="SRTMGL3")
+    >>> dem = dem.reproject(CRS.from_epsg(32633), resolution=90)
     >>> _= dem.plot(cmap="terrain")
     >>> plt.show()
     """
