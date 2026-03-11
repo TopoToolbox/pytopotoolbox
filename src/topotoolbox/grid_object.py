@@ -962,9 +962,9 @@ class GridObject():
         >>> from matplotlib.colors import ListedColormap
         >>> dem = topotoolbox.load_dem('bigtujunga')
         >>> prom, (x, y) = dem.prominence(tolerance=90)
-        >>> plt.subplot()
-        >>> dem.plot_hs(cmap=ListedColormap([0.9, 0.9, 0.9]), exaggerate=3)
-        >>> plt.scatter(x, y, prom, alpha=0.6, edgecolor='black')
+        >>> _ = plt.subplot()
+        >>> _ = dem.plot_hs(cmap=ListedColormap([0.9, 0.9, 0.9]), exaggerate=3)
+        >>> _ = plt.scatter(x, y, prom, alpha=0.6, edgecolor='black')
         >>> plt.show()
         """
         dem = np.nan_to_num(self.z)

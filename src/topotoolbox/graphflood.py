@@ -89,7 +89,7 @@ def run_graphflood(
     >>> import matplotlib.pyplot as plt
     >>> import matplotlib.colors as colors
     >>> flood = topotoolbox.run_graphflood(topotoolbox.load_dem('perfectworld'))
-    >>> im = flood.plot(norm=colors.SymLogNorm(linthresh=1e-3, linscale=1))
+    >>> im = flood['hw'].plot(norm=colors.SymLogNorm(linthresh=1e-3, linscale=1))
     >>> plt.show()
     """
 

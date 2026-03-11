@@ -286,17 +286,24 @@ class FlowObject():
 
         Returns
         -------
-        GridObject
-            A logical GridObject that is True for each node that is
-            considered an outlet. False otherwise.
+        ndarray
+            A list of linear indices of outlets. Use
+            `FlowObject.unravel_index` to convert to multidimensional
+            indices to index into a `GridObject`.
 
         Example
         -------
+        >>> import topotoolbox
+        >>> import matplotlib.pyplot as plt
+        >>> from matplotlib.colors import ListedColormap
         >>> dem = topotoolbox.load_dem("bigtujunga")
         >>> fd = topotoolbox.FlowObject(dem)
         >>> outlets = fd.getoutlets()
-        >>> outlets.plot()
-
+        >>> j, i = fd.unravel_index(outlets)
+        >>> x, y = fd.transform * (i, j)
+        >>> _ = dem.plot_hs(cmap=ListedColormap([0.9, 0.9, 0.9]), exaggerate=3)
+        >>> _ = plt.scatter(x, y)
+        >>> plt.show()
         """
         indegree = np.zeros(self.shape, order=self.order, dtype=np.uint8)
         outdegree = np.zeros(self.shape, order=self.order, dtype=np.uint8)
