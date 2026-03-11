@@ -46,6 +46,7 @@ class FlowObject():
 
         Example
         -------
+        >>> import topotoolbox
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> flow = topotoolbox.FlowObject(dem)
         """
@@ -208,9 +209,12 @@ class FlowObject():
 
         Example
         -------
-        >>> dem = topotoolbox.load_dem('bigtujunga)
-        >>> fd = tt3.FlowObject(dem)
-        >>> fd.ezgetnal(dem).plot()
+        >>> import topotoolbox
+        >>> import matplotlib.pyplot as plt
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> _= fd.ezgetnal(dem).plot()
+        >>> plt.show()
         """
         if np.isscalar(k):
             return np.full(self.shape, k, dtype=dtype)
@@ -246,10 +250,13 @@ class FlowObject():
 
         Example
         -------
+        >>> import topotoolbox
+        >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> acc = fd.flow_accumulation()
-        >>> acc.plot(cmap='Blues',norm="log")
+        >>> _= acc.plot(cmap='Blues',norm="log")
+        >>> plt.show()
         """
         acc = np.array(self.ezgetnal(weights, dtype=np.float32), copy=True, order=self.order)
 
@@ -314,10 +321,13 @@ class FlowObject():
 
         Example
         -------
+        >>> import topotoolbox
+        >>> import matplotlib.pyplot as plt
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> basins = fd.drainagebasins()
-        >>> basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
+        >>> _= basins.shufflelabel().plot(cmap="Pastel1",interpolation="nearest")
+        >>> plt.show()
 
         """
         if outlets is None:
@@ -362,9 +372,10 @@ class FlowObject():
 
         Example
         -------
-        >>> dem = tt3.load_dem('bigtujunga')
-        >>> fd = tt3.FlowObject(dem)
-        >>> print(fd.flowpathextract(12345))
+        >>> import topotoolbox
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> print(fd.flowpathextract(12345)) # doctest: +SKIP
         """
         ch = np.zeros(self.shape, dtype=np.uint32, order=self.order)
         ch[self.unravel_index(idx)] = 1
@@ -384,9 +395,10 @@ class FlowObject():
 
         Example
         -------
-        >>> dem = tt3.load_dem('bigtujunga')
-        >>> fd = tt3.FlowObject(dem)
-        >>> print(fd.distance())
+        >>> import topotoolbox
+        >>> dem = topotoolbox.load_dem('bigtujunga')
+        >>> fd = topotoolbox.FlowObject(dem)
+        >>> print(fd.distance()) # doctest: +SKIP
         """
         d = np.abs(self.source - self.target)
         dist = self.cellsize * np.where(
