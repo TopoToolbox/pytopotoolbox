@@ -395,6 +395,48 @@ class StreamObject():
 
         return dds
 
+    def distance(self, kind='from_outlet'):
+        """Compute distances along the stream network
+
+        Parameters
+        ----------
+        kind: string
+           The kind of distance to return. One of
+
+           - 'from_outlet' (default): distance in upstream direction
+           - 'min_from_ch': shortest from channelhead
+           - 'max_from_ch': longest from channelhead
+           - 'node_to_node': distance between each node and its downstream neighbor
+
+        Returns
+        -------
+        np.ndarray
+           A node attribute list with the requested distances.
+
+        Raises
+        ------
+        ValueError
+            If method is currently unsupported
+        """
+        match kind:
+            case 'from_outlet':
+                return self.upstream_distance()
+            case 'max_from_ch':
+                return self.downstream_distance()
+            case 'min_from_ch':
+                d = self.node_to_node_distance()  # Edge attribute list
+                dds = np.full_like(self.stream, np.inf, dtype=np.float32)
+                dds[self.streampoi('channelheads')] = 0
+                _stream.traverse_down_f32_min_add(dds, d, self.source, self.target)
+                return dds
+            case 'node_to_node':
+                dds = np.zeros_like(self.stream, dtype=np.float32)
+                dds[self.source] = self.node_to_node_distance()
+                return dds
+            case _:
+                raise ValueError(f"""{kind} not supported. method should be one of
+                'from_outlet', 'max_from_ch', 'min_from_ch', 'node_to_node'""")
+
     def ezgetnal(self, k, dtype=None):
         """Retrieve a node attribute list from k
 

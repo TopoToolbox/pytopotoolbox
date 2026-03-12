@@ -944,3 +944,17 @@ def test_togeodataframe(wide_stream):
 
 def test_gridmask_order(cs, fs):
     assert np.array_equal(cs.gridmask, fs.gridmask)
+
+def test_distance(cs):
+    # We need to clean because one pixel streams will have zero
+    # max_from_ch distance but infinite min_from_ch (because they are
+    # not considered channelheads).
+    cs = cs.clean()
+
+    assert np.array_equal(cs.distance('from_outlet'), cs.upstream_distance())
+    assert np.array_equal(cs.distance('max_from_ch'), cs.downstream_distance())
+
+    assert np.all(cs.distance('min_from_ch') <= cs.distance('max_from_ch'))
+
+    d = cs.distance('node_to_node')
+    assert np.array_equal(d[cs.source], cs.node_to_node_distance())
