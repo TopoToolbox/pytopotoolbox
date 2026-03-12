@@ -19,6 +19,16 @@ __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "transform_coords"]
 
 
+
+DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
+DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
+OPEN_TOPO_SOURCE = "https://portal.opentopography.org/API/globaldem"
+OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E',
+                      'SRTM15Plus', 'NASADEM', 'COP30', 'COP90', 'EU_DTM',
+                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo',
+                      'CA_MRDEM_DTM', 'CA_MRDEM_DSM')
+
+
 def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D",
                      output_mode="coordinates", center=True):
     """
@@ -44,9 +54,15 @@ def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D"
     if input_mode == "indices2D":
         r, c = np.asarray(data1), np.asarray(data2)
     elif input_mode == "indices1D":
-        # Node indices (Fortran order: idx = row + col * nrows)
-        r = np.asarray(data1) % grid.rows
-        c = np.asarray(data1) // grid.rows
+        idx = np.asarray(data1)
+        if grid.z.flags.f_contiguous:
+            # F-order: idx = row + col * nrows
+            r = idx % grid.rows
+            c = idx // grid.rows
+        else:
+            # C-order: idx = row * ncols + col
+            r = idx // grid.columns
+            c = idx % grid.columns
     elif input_mode == "coordinates":
         inv_transform = ~grid.transform
         c, r = inv_transform * (np.asarray(data1), np.asarray(data2))
@@ -57,7 +73,10 @@ def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D"
     if output_mode == "indices2D":
         return r, c
     if output_mode == "indices1D":
-        return r.astype(np.intp) + c.astype(np.intp) * grid.rows
+        if grid.z.flags.f_contiguous:
+            return r.astype(np.intp) + c.astype(np.intp) * grid.rows
+        else:
+            return r.astype(np.intp) * grid.z.shape[1] + c.astype(np.intp)
     if output_mode == "coordinates":
         if center:
             # Shift by 0.5 pixel to move from corner to center
@@ -67,16 +86,6 @@ def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D"
         return np.array(x), np.array(y)
 
     raise ValueError(f"Invalid output_mode: {output_mode}")
-
-
-DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
-DEM_NAMES = f"{DEM_SOURCE}/dem_names.txt"
-OPEN_TOPO_SOURCE = "https://portal.opentopography.org/API/globaldem"
-OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E',
-                      'SRTM15Plus', 'NASADEM', 'COP30', 'COP90', 'EU_DTM',
-                      'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo',
-                      'CA_MRDEM_DTM', 'CA_MRDEM_DSM')
-
 
 def write_tif(dem: GridObject, path: str) -> None:
     """

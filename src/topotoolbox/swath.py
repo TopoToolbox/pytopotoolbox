@@ -34,7 +34,10 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, List, Tuple, Union
 import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import depth_first_order
 from .grid_object import GridObject
+from .utils import transform_coords
 # pylint: disable=no-name-in-module
 from . import _swaths  # type: ignore
 
@@ -368,6 +371,99 @@ class LongitudinalSwath:
         return fig, ax
 
 
+def _order_d8_path(rows, cols):
+    """Return an index array that sorts D8-connected pixels into path order.
+
+    Builds a sparse D8 adjacency graph over the pixel set, finds an endpoint
+    (a pixel with exactly one D8 neighbour), then traverses the path via DFS.
+    Falls back to index 0 if no endpoint exists (closed loop).
+    """
+    n = len(rows)
+    if n <= 1:
+        return np.arange(n, dtype=np.intp)
+
+    rows = np.asarray(rows, dtype=np.intp)
+    cols = np.asarray(cols, dtype=np.intp)
+
+    # Build a lookup grid: (row, col) → index in the array.
+    r_min, r_max = int(rows.min()), int(rows.max())
+    c_min, c_max = int(cols.min()), int(cols.max())
+    nr = r_max - r_min + 3
+    nc = c_max - c_min + 3
+    lookup = np.full((nr, nc), -1, dtype=np.intp)
+    lookup[rows - r_min + 1, cols - c_min + 1] = np.arange(n)
+
+    # D8 offsets — 8 vectorised passes instead of a loop over n points.
+    d8 = [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
+    src_parts, dst_parts = [], []
+    for di, dj in d8:
+        nb = lookup[rows - r_min + 1 + di, cols - c_min + 1 + dj]
+        mask = nb >= 0
+        src_parts.append(np.where(mask)[0])
+        dst_parts.append(nb[mask])
+
+    src = np.concatenate(src_parts)
+    dst = np.concatenate(dst_parts)
+    graph = csr_matrix((np.ones(len(src), dtype=np.float32), (src, dst)),
+                       shape=(n, n))
+
+    # Endpoint = pixel with exactly one D8 neighbour.
+    degrees = np.asarray(graph.sum(axis=1)).ravel()
+    endpoints = np.where(degrees == 1)[0]
+    start = int(endpoints[0]) if len(endpoints) > 0 else 0
+
+    return depth_first_order(graph, start, directed=False,
+                             return_predecessors=False)
+
+
+def _swap_if_c_order(grid, a, b):
+    """For C-contiguous grids swap (a, b) → (b, a); for F-contiguous return as-is.
+
+    Used to convert between (row, col) and the C library's (fast, slow) convention:
+    - F-contiguous: fast=row, slow=col  → no swap needed
+    - C-contiguous: fast=col, slow=row  → swap needed
+    Applying this function twice is a no-op (it is its own inverse).
+    """
+    if grid.z.flags.c_contiguous:
+        return b, a
+    return a, b
+
+
+def _unwrap_z(x):
+    """Return x.z if x is a GridObject, else x as-is."""
+    return x.z if isinstance(x, GridObject) else x
+
+
+def _cum_dist(ti, tj, cellsize):
+    """Cumulative along-track distance array (float32, starts at 0)."""
+    steps = np.sqrt(np.diff(ti)**2 + np.diff(tj)**2) * cellsize
+    return np.concatenate(([0.0], np.cumsum(steps))).astype(np.float32)
+
+
+def _pca_tangent(ti, tj, pt, half_n):
+    """Dominant PCA direction at track point ``pt`` using ±half_n neighbours."""
+    n = len(ti)
+    lo = max(0, pt - half_n)
+    hi = min(n - 1, pt + half_n)
+    if hi - lo < 1:
+        lo, hi = (pt, pt + 1) if pt < n - 1 else (pt - 1, pt)
+    seg_i, seg_j = ti[lo:hi + 1], tj[lo:hi + 1]
+    mi, mj = seg_i.mean(), seg_j.mean()
+    di, dj = seg_i - mi, seg_j - mj
+    cii = float(np.dot(di, di))
+    cij = float(np.dot(di, dj))
+    cjj = float(np.dot(dj, dj))
+    diff = cii - cjj
+    D = np.sqrt(diff * diff + 4.0 * cij * cij)
+    vi, vj = (diff + D, 2.0 * cij) if cii >= cjj else (2.0 * cij, -diff + D)
+    vlen = np.sqrt(vi * vi + vj * vj)
+    if vlen > 1e-10:
+        return vi / vlen, vj / vlen
+    d_i, d_j = ti[hi] - ti[lo], tj[hi] - tj[lo]
+    length = np.sqrt(d_i * d_i + d_j * d_j)
+    return (d_i / length, d_j / length) if length > 0 else (1.0, 0.0)
+
+
 def _prepare_track(grid, track_x, track_y, input_mode):
     """Convert track inputs to float32 (row, col) pixel index arrays.
 
@@ -379,19 +475,20 @@ def _prepare_track(grid, track_x, track_y, input_mode):
         ti = np.array(track_x, dtype=np.float32)
         tj = np.array(track_y, dtype=np.float32)
     elif input_mode == "indices1D":
-        ti = (np.asarray(track_x) % grid.rows).astype(np.float32)
-        tj = (np.asarray(track_x) // grid.rows).astype(np.float32)
+        idx = np.asarray(track_x)
+        if grid.z.flags.f_contiguous:
+            # F-order: idx = row + col * nrows
+            ti = (idx % grid.rows).astype(np.float32)
+            tj = (idx // grid.rows).astype(np.float32)
+        else:
+            # C-order: idx = row * ncols + col
+            ti = (idx // grid.z.shape[1]).astype(np.float32)
+            tj = (idx % grid.z.shape[1]).astype(np.float32)
     elif input_mode == "coordinates":
         inv_transform = ~grid.transform
-        tx = np.asarray(track_x)
-        ty = np.asarray(track_y)
-        if grid.bounds is None:
-            tj = (tx / grid.cellsize).astype(np.float32)
-            ti = (ty / grid.cellsize).astype(np.float32)
-        else:
-            cols, rows = inv_transform * (tx, ty)
-            tj = np.array(cols, dtype=np.float32)
-            ti = np.array(rows, dtype=np.float32)
+        cols, rows = inv_transform * (np.asarray(track_x), np.asarray(track_y))
+        tj = np.array(cols, dtype=np.float32)
+        ti = np.array(rows, dtype=np.float32)
     else:
         raise ValueError(f"Invalid input_mode: {input_mode}")
     return ti, tj
@@ -452,18 +549,13 @@ def prepare_track(grid: GridObject, track_x, track_y=None, input_mode="indices2D
         max_size = int(np.sum(np.maximum(di, dj)) + len(ti_int))
         out_i = np.zeros(max_size, dtype=np.intp)
         out_j = np.zeros(max_size, dtype=np.intp)
-        count = _swaths.rasterize_path(out_i, out_j, ti_int, tj_int, 0, 0)
-        oi = out_i[:count].astype(np.float32)
-        oj = out_j[:count].astype(np.float32)
+        ci, cj = _swap_if_c_order(grid, ti_int, tj_int)
+        count = _swaths.rasterize_path(out_i, out_j, ci, cj, 0, 0)
+        raw_i, raw_j = _swap_if_c_order(grid, out_i[:count], out_j[:count])
+        oi = raw_i.astype(np.float32)
+        oj = raw_j.astype(np.float32)
 
-    if input_mode == "indices2D":
-        return oi, oj
-    if input_mode == "indices1D":
-        return (oi.astype(np.intp) + oj.astype(np.intp) * grid.rows).astype(np.intp)
-    if input_mode == "coordinates":
-        xs, ys = grid.transform * (oj, oi)
-        return np.array(xs), np.array(ys)
-    return oi, oj
+    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def compute_swath_distance_map(
@@ -528,9 +620,9 @@ def compute_swath_distance_map(
     hw_px = half_width / grid.cellsize if half_width is not None else float('inf')
     need_signed = compute_signed or return_centre_line
 
-    near_pt_z = np.full(grid.z.shape, -1, dtype=np.intp, order='F')
-    best_abs = np.empty(grid.z.shape, dtype=np.float32, order='F')
-    signed_dist_px = np.empty(grid.z.shape, dtype=np.float32, order='F') if need_signed else None
+    near_pt_z = np.full(grid.z.shape, -1, dtype=np.intp)
+    best_abs = np.empty(grid.z.shape, dtype=np.float32)
+    signed_dist_px = np.empty(grid.z.shape, dtype=np.float32) if need_signed else None
 
     # Combine the caller mask with a NaN mask derived from the DEM so that
     # no-data pixels are never claimed by the frontier Dijkstra.
@@ -540,8 +632,9 @@ def compute_swath_distance_map(
     else:
         combined_mask = nan_mask
 
+    ci, cj = _swap_if_c_order(grid, ti, tj)
     _swaths.swath_frontier_distance_map(
-        best_abs, signed_dist_px, near_pt_z, ti, tj, grid.dims, hw_px,
+        best_abs, signed_dist_px, near_pt_z, ci, cj, grid.dims, hw_px,
         combined_mask
     )
 
@@ -577,13 +670,13 @@ def compute_swath_distance_map(
     # 2. Split the outer boundary by the sign of signed_dist, giving seeds for
     #    the two competing Dijkstra waves (positive half = left edge,
     #    negative half = right edge).
-    pos_seeds = np.flatnonzero((boundary & (signed_dist_px >= 0)).ravel(order='F')).astype(np.intp)
-    neg_seeds = np.flatnonzero((boundary & (signed_dist_px <= 0)).ravel(order='F')).astype(np.intp)
+    pos_seeds = np.flatnonzero((boundary & (signed_dist_px >= 0)).ravel()).astype(np.intp)
+    neg_seeds = np.flatnonzero((boundary & (signed_dist_px <= 0)).ravel()).astype(np.intp)
 
     # 3. Run boundary Dijkstra from each outer edge inward.
     swath_mask = inside.astype(np.int8)
-    dist_pos = np.empty(grid.z.shape, dtype=np.float32, order='F')
-    dist_neg = np.empty(grid.z.shape, dtype=np.float32, order='F')
+    dist_pos = np.empty(grid.z.shape, dtype=np.float32)
+    dist_neg = np.empty(grid.z.shape, dtype=np.float32)
     _swaths.swath_boundary_dijkstra(dist_pos, swath_mask, pos_seeds, grid.dims)
     _swaths.swath_boundary_dijkstra(dist_neg, swath_mask, neg_seeds, grid.dims)
 
@@ -596,21 +689,21 @@ def compute_swath_distance_map(
     cw_arr = np.empty(grid.z.size, dtype=np.float32)
     count = _swaths.voronoi_ridge_to_centreline(
         cli_arr, clj_arr, cw_arr, dist_pos, dist_neg, best_abs, hw_px,
-        near_pt_z, ti, tj, grid.dims, grid.cellsize
+        near_pt_z, ci, cj, grid.dims, grid.cellsize
     )
     count = _swaths.thin_rasterised_line_to_D8(cli_arr, clj_arr, cw_arr, count, grid.dims)
 
     res = SwathCentreLine(distance_map=dist_grid, nearest_point=near_pt_grid)
     res.dist_from_boundary = _grid_from_z(grid, dfb_z, "swath_dist_from_boundary")
-    oi, oj = cli_arr[:count], clj_arr[:count]
-    if input_mode == "indices2D":
-        res.centre_line_x, res.centre_line_y = oi, oj
-    elif input_mode == "indices1D":
-        res.centre_line_x = (oi + oj * grid.rows).astype(np.intp)
-    elif input_mode == "coordinates":
-        xs, ys = grid.transform * (oj, oi)
-        res.centre_line_x, res.centre_line_y = np.array(xs), np.array(ys)
-    res.centre_width = cw_arr[:count]
+    raw_i, raw_j = _swap_if_c_order(grid, cli_arr[:count], clj_arr[:count])
+    order = _order_d8_path(raw_i.astype(np.intp), raw_j.astype(np.intp))
+    oi, oj = raw_i[order], raw_j[order]
+    out = transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
+    if input_mode == "indices1D":
+        res.centre_line_x = out
+    else:
+        res.centre_line_x, res.centre_line_y = out
+    res.centre_width = cw_arr[:count][order]
     return res
 
 
@@ -655,7 +748,7 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
     TransverseSwath
         Per-bin statistics over the cross-track direction.
     """
-    dist_arr = (distance_map.z if isinstance(distance_map, GridObject) else distance_map).ravel()
+    dist_arr = _unwrap_z(distance_map).ravel()
     dem = grid.z.ravel()
 
     if np.nanmin(dist_arr) >= 0 and np.nanmax(dist_arr) > 0:
@@ -808,22 +901,21 @@ def longitudinal_swath(grid: GridObject, track_x, track_y,
     res_i = np.zeros(n_out, dtype=np.float32)
     res_j = np.zeros(n_out, dtype=np.float32)
 
-    dist_arr = distance_map.z if isinstance(distance_map, GridObject) else distance_map
-    npt_arr = nearest_point.z if isinstance(nearest_point, GridObject) else nearest_point
+    dist_arr = _unwrap_z(distance_map)
+    npt_arr = _unwrap_z(nearest_point)
 
-    full_dist_steps = np.sqrt(np.diff(ti)**2 + np.diff(tj)**2) * grid.cellsize
-    full_along_track = np.concatenate(([0.0], np.cumsum(full_dist_steps))).astype(np.float32)
+    full_along_track = _cum_dist(ti, tj, grid.cellsize)
 
+    ci, cj = _swap_if_c_order(grid, ti, tj)
     written = _swaths.swath_longitudinal(
         pt_means, pt_std, pt_min, pt_max, pt_counts,
         pt_medians, pt_q1, pt_q3, perc_list, pt_percs,
-        grid.z, ti, tj,
+        grid.z, ci, cj,
         dist_arr, grid.dims, grid.cellsize, half_width, binning_distance,
         npt_arr, full_along_track, int(skip), res_i, res_j
     )
 
-    res_i = res_i[:written]
-    res_j = res_j[:written]
+    res_i, res_j = _swap_if_c_order(grid, res_i[:written], res_j[:written])
     along_track = full_along_track[::skip][:written]
 
     perc_dict = None
@@ -831,16 +923,11 @@ def longitudinal_swath(grid: GridObject, track_x, track_y,
         assert pt_percs is not None
         perc_dict = {p: pt_percs[:written, i] for i, p in enumerate(percentiles)}
 
-    if input_mode == "indices2D":
-        track_x_out, track_y_out = res_i, res_j
-    elif input_mode == "indices1D":
-        track_x_out = res_i.astype(np.intp) + res_j.astype(np.intp) * grid.rows
-        track_y_out = None
-    elif input_mode == "coordinates":
-        xs, ys = grid.transform * (res_j, res_i)
-        track_x_out, track_y_out = np.array(xs), np.array(ys)
+    out = transform_coords(grid, res_i, res_j, input_mode="indices2D", output_mode=input_mode, center=False)
+    if input_mode == "indices1D":
+        track_x_out, track_y_out = out, None
     else:
-        track_x_out, track_y_out = res_i, res_j
+        track_x_out, track_y_out = out
 
     return LongitudinalSwath(pt_means[:written], pt_std[:written], pt_min[:written],
                              pt_max[:written], pt_counts[:written], pt_medians[:written],
@@ -909,49 +996,17 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     dem = np.asarray(grid.z, dtype=np.float32)
-    nrows, ncols = grid.dims
+    nrows, ncols = grid.z.shape[0], grid.z.shape[1]
     cellsize = grid.cellsize
     hw_px = half_width / cellsize
     bd_px = binning_distance / cellsize
 
-    # Precompute local PCA tangents for all track points.
-    # For each point, build the 2×2 covariance matrix of the surrounding
-    # n_points_regression track coordinates and take its dominant eigenvector.
     n_pts = len(ti)
     half_n = max(1, n_points_regression // 2)
     tang_i = np.empty(n_pts, dtype=np.float32)
     tang_j = np.empty(n_pts, dtype=np.float32)
     for pt in range(n_pts):
-        lo = max(0, pt - half_n)
-        hi = min(n_pts - 1, pt + half_n)
-        if hi - lo < 1:
-            lo, hi = (pt, pt + 1) if pt < n_pts - 1 else (pt - 1, pt)
-        seg_i = ti[lo:hi + 1]
-        seg_j = tj[lo:hi + 1]
-        mi, mj = seg_i.mean(), seg_j.mean()
-        di, dj = seg_i - mi, seg_j - mj
-        # 2×2 covariance matrix elements.
-        cii = float(np.dot(di, di))
-        cij = float(np.dot(di, dj))
-        cjj = float(np.dot(dj, dj))
-        # Analytic dominant eigenvector of [[cii,cij],[cij,cjj]].
-        diff = cii - cjj
-        D = np.sqrt(diff * diff + 4.0 * cij * cij)
-        if cii >= cjj:
-            vi, vj = diff + D, 2.0 * cij
-        else:
-            vi, vj = 2.0 * cij, -diff + D
-        vlen = np.sqrt(vi * vi + vj * vj)
-        if vlen > 1e-10:
-            tang_i[pt] = vi / vlen
-            tang_j[pt] = vj / vlen
-        else:
-            # Degenerate case (e.g. single point): fall back to finite difference.
-            d_i = ti[hi] - ti[lo]
-            d_j = tj[hi] - tj[lo]
-            length = np.sqrt(d_i * d_i + d_j * d_j)
-            tang_i[pt] = d_i / length if length > 0 else 1.0
-            tang_j[pt] = d_j / length if length > 0 else 0.0
+        tang_i[pt], tang_j[pt] = _pca_tangent(ti, tj, pt, half_n)
 
     pts = range(0, n_pts, skip)
     n_out = len(pts)
@@ -1022,10 +1077,7 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
             for p_idx, p in enumerate(percentiles):
                 pt_percs[out_idx, p_idx] = _pct(p)
 
-    # Along-track distance
-    full_dist_steps = np.sqrt(np.diff(ti)**2 + np.diff(tj)**2) * cellsize
-    full_along_track = np.concatenate(([0.0], np.cumsum(full_dist_steps)))
-    along_track = full_along_track[::skip][:n_out]
+    along_track = _cum_dist(ti, tj, cellsize)[::skip][:n_out]
 
     perc_dict = None
     if percentiles is not None and pt_percs is not None:
@@ -1034,17 +1086,12 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     track_i_out = ti[::skip][:n_out]
     track_j_out = tj[::skip][:n_out]
 
-    if input_mode == "indices2D":
-        track_x_out, track_y_out = track_i_out, track_j_out
-    elif input_mode == "indices1D":
-        track_x_out = (track_i_out.astype(np.intp) +
-                       track_j_out.astype(np.intp) * grid.rows)
-        track_y_out = None
-    elif input_mode == "coordinates":
-        xs, ys = grid.transform * (track_j_out, track_i_out)
-        track_x_out, track_y_out = np.array(xs), np.array(ys)
+    out = transform_coords(grid, track_i_out, track_j_out, input_mode="indices2D",
+                           output_mode=input_mode, center=False)
+    if input_mode == "indices1D":
+        track_x_out, track_y_out = out, None
     else:
-        track_x_out, track_y_out = track_i_out, track_j_out
+        track_x_out, track_y_out = out
 
     return LongitudinalSwath(pt_means, pt_std, pt_min, pt_max, pt_counts,
                              pt_medians, pt_q1, pt_q3, perc_dict, along_track,
@@ -1092,33 +1139,22 @@ def get_point_pixels(grid: GridObject, track_x, track_y,
         ``(rows, cols)`` for ``"indices2D"``, flat indices for
         ``"indices1D"``, or ``(xs, ys)`` for ``"coordinates"``.
     """
-    dist_arr = distance_map.z if isinstance(distance_map, GridObject) else distance_map
+    dist_arr = _unwrap_z(distance_map)
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
-    npt_arr = nearest_point.z if isinstance(nearest_point, GridObject) else nearest_point
-
-    cum_dist = np.concatenate(([0.0], np.cumsum(
-        np.sqrt(np.diff(ti)**2 + np.diff(tj)**2) * grid.cellsize
-    ))).astype(np.float32)
+    npt_arr = _unwrap_z(nearest_point)
 
     pi = np.zeros(grid.z.size, dtype=np.intp)
     pj = np.zeros(grid.z.size, dtype=np.intp)
 
+    ci, cj = _swap_if_c_order(grid, ti, tj)
     count = _swaths.swath_get_point_pixels(
-        pi, pj, ti, tj, point_index, dist_arr, grid.dims,
-        grid.cellsize, half_width, binning_distance, npt_arr, cum_dist
+        pi, pj, ci, cj, point_index, dist_arr, grid.dims,
+        grid.cellsize, half_width, binning_distance, npt_arr,
+        _cum_dist(ti, tj, grid.cellsize)
     )
 
-    oi = pi[:count]
-    oj = pj[:count]
-
-    if input_mode == "indices2D":
-        return oi, oj
-    if input_mode == "indices1D":
-        return (oi + oj * grid.rows).astype(np.intp)
-    if input_mode == "coordinates":
-        xs, ys = grid.transform * (oj, oi)
-        return np.array(xs), np.array(ys)
-    return oi, oj
+    oi, oj = _swap_if_c_order(grid, pi[:count], pj[:count])
+    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def get_windowed_point_samples(grid: GridObject, track_x, track_y,
@@ -1163,28 +1199,10 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
     n_pts = len(ti)
     hw_px = half_width / grid.cellsize
     bd_px = binning_distance / grid.cellsize
-    nrows, ncols = grid.dims
+    nrows, ncols = grid.z.shape[0], grid.z.shape[1]
 
-    # PCA tangent at point_index
     half_n = max(1, n_points_regression // 2)
-    lo = max(0, point_index - half_n)
-    hi = min(n_pts - 1, point_index + half_n)
-    if hi - lo < 1:
-        lo, hi = (point_index, point_index + 1) if point_index < n_pts - 1 else (point_index - 1, point_index)
-    seg_i, seg_j = ti[lo:hi + 1], tj[lo:hi + 1]
-    mi, mj = seg_i.mean(), seg_j.mean()
-    di, dj = seg_i - mi, seg_j - mj
-    cii, cij, cjj = float(np.dot(di, di)), float(np.dot(di, dj)), float(np.dot(dj, dj))
-    diff = cii - cjj
-    D = np.sqrt(diff * diff + 4.0 * cij * cij)
-    vi, vj = (diff + D, 2.0 * cij) if cii >= cjj else (2.0 * cij, -diff + D)
-    vlen = np.sqrt(vi * vi + vj * vj)
-    if vlen > 1e-10:
-        t_i, t_j = vi / vlen, vj / vlen
-    else:
-        d_i, d_j = ti[hi] - ti[lo], tj[hi] - tj[lo]
-        length = np.sqrt(d_i * d_i + d_j * d_j)
-        t_i, t_j = (d_i / length, d_j / length) if length > 0 else (1.0, 0.0)
+    t_i, t_j = _pca_tangent(ti, tj, point_index, half_n)
     o_i, o_j = -t_j, t_i  # orthogonal
 
     ci, cj = ti[point_index], tj[point_index]
@@ -1205,15 +1223,7 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
     )
     oi = (pi_lo + np.where(mask)[0]).astype(np.intp)
     oj = (pj_lo + np.where(mask)[1]).astype(np.intp)
-
-    if input_mode == "indices2D":
-        return oi, oj
-    if input_mode == "indices1D":
-        return (oi + oj * grid.rows).astype(np.intp)
-    if input_mode == "coordinates":
-        xs, ys = grid.transform * (oj, oi)
-        return np.array(xs), np.array(ys)
-    return oi, oj
+    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def rasterize_path(grid: GridObject, track_x, track_y=None,
@@ -1269,20 +1279,12 @@ def rasterize_path(grid: GridObject, track_x, track_y=None,
     out_i = np.zeros(max_size, dtype=np.intp)
     out_j = np.zeros(max_size, dtype=np.intp)
 
-    count = _swaths.rasterize_path(out_i, out_j, ti_int, tj_int,
+    ci, cj = _swap_if_c_order(grid, ti_int, tj_int)
+    count = _swaths.rasterize_path(out_i, out_j, ci, cj,
                                                int(close_loop), int(use_d4))
 
-    oi = out_i[:count]
-    oj = out_j[:count]
-
-    if input_mode == "indices2D":
-        return oi, oj
-    if input_mode == "indices1D":
-        return (oi + oj * grid.rows).astype(np.intp)
-    if input_mode == "coordinates":
-        xs, ys = grid.transform * (oj, oi)
-        return np.array(xs), np.array(ys)
-    return oi, oj
+    oi, oj = _swap_if_c_order(grid, out_i[:count], out_j[:count])
+    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.0,
@@ -1328,16 +1330,8 @@ def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.
     out_i = np.zeros(n_points, dtype=np.float32)
     out_j = np.zeros(n_points, dtype=np.float32)
 
-    count = _swaths.simplify_line(out_i, out_j, ti, tj, tolerance, method)
+    ci, cj = _swap_if_c_order(grid, ti, tj)
+    count = _swaths.simplify_line(out_i, out_j, ci, cj, tolerance, method)
 
-    oi = out_i[:count]
-    oj = out_j[:count]
-
-    if input_mode == "indices2D":
-        return oi, oj
-    if input_mode == "indices1D":
-        return (oi + oj * grid.rows).astype(np.intp)
-    if input_mode == "coordinates":
-        xs, ys = grid.transform * (oj, oi)
-        return np.array(xs), np.array(ys)
-    return oi, oj
+    oi, oj = _swap_if_c_order(grid, out_i[:count], out_j[:count])
+    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
