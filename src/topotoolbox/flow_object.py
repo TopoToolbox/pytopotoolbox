@@ -400,7 +400,7 @@ class FlowObject():
 
         return self.stream[ch[self.unravel_index(self.stream)] > 0]
 
-    def distance(self):
+    def node_to_node_distance(self):
         """Compute the distance between each node in the flow network
 
         Returns
@@ -416,7 +416,7 @@ class FlowObject():
            >>> import topotoolbox
            >>> dem = topotoolbox.load_dem('bigtujunga')
            >>> fd = topotoolbox.FlowObject(dem)
-           >>> print(fd.distance()) # doctest: +SKIP
+           >>> print(fd.node_to_node_distance()) # doctest: +SKIP
         """
         d = np.abs(self.source - self.target)
         dist = self.cellsize * np.where(
@@ -435,7 +435,7 @@ class FlowObject():
             A new GridObject containing the distance grid
         """
         # Edge attribute list
-        dist = self.distance()
+        dist = self.node_to_node_distance()
 
         down_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
         _stream.traverse_down_f32_max_add(down_d, dist, self.source, self.target)
@@ -463,7 +463,7 @@ class FlowObject():
             A new GridObject containing the distance grid
         """
         # Edge attribute list
-        dist = self.distance()
+        dist = self.node_to_node_distance()
 
         up_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
         _stream.traverse_up_f32_max_add(up_d, dist, self.source, self.target)

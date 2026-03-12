@@ -340,7 +340,7 @@ class StreamObject():
         return self.coordinates[1]
 
 
-    def distance(self) -> np.ndarray:
+    def node_to_node_distance(self) -> np.ndarray:
         """
         Compute the pixel-to-pixel distance for each edge.
 
@@ -355,7 +355,7 @@ class StreamObject():
         >>> dem = topotoolbox.load_dem('perfectworld')
         >>> fd = topotoolbox.FlowObject(dem)
         >>> s = topotoolbox.StreamObject(fd,threshold=1000,units='pixels')
-        >>> print(s.distance()) # doctest: +SKIP
+        >>> print(s.node_to_node_distance()) # doctest: +SKIP
         """
         d = np.abs(self.stream[self.source] - self.stream[self.target])
 
@@ -375,7 +375,7 @@ class StreamObject():
         np.ndarray, float32
             A node attribute list with the downstream distances
         """
-        d = self.distance()  # Edge attribute list
+        d = self.node_to_node_distance()  # Edge attribute list
         dds = np.zeros_like(self.stream, dtype=np.float32)
         _stream.traverse_down_f32_max_add(dds, d, self.source, self.target)
 
@@ -389,7 +389,7 @@ class StreamObject():
         np.ndarray, float32
             A node attribute list with the upstream distances
         """
-        d = self.distance()
+        d = self.node_to_node_distance()
         dds = np.zeros_like(self.stream, dtype=np.float32)
         _stream.traverse_up_f32_max_add(dds, d, self.source, self.target)
 
@@ -822,7 +822,7 @@ class StreamObject():
             a = (a0 / a)**mn
 
         # Cumulative trapezoidal integration
-        weight = self.distance()
+        weight = self.node_to_node_distance()
         c = np.zeros_like(a)
         if a.dtype == np.float32:
             _stream.streamquad_trapz_f32(c,
@@ -1186,7 +1186,7 @@ class StreamObject():
             z = imposemin(self, z)
 
         # inter-node distance
-        d = self.distance()
+        d = self.node_to_node_distance()
 
         # forward case
         s = np.zeros(self.stream.size)
