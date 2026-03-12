@@ -9,11 +9,13 @@ import topotoolbox
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.doctest',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'nbsphinx',
-    'myst_parser'
+    'myst_parser',
+    'matplotlib.sphinxext.plot_directive'
 ]
 
 project = 'TopoToolbox'
@@ -64,3 +66,7 @@ nbsphinx_thumbnails = {
     'examples/flowobject': '_static/thumbnails/placeholder.png',
     'examples/streamobject': '_static/thumbnails/placeholder.png',
 }
+
+# -- Options for plot_directive
+
+plot_include_source = True

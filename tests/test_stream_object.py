@@ -181,8 +181,8 @@ def test_streamobject_sizes(tall_dem, tall_flow, tall_stream,
 
 
 def test_distance_order(cfd, ffd, cs, fs):
-    cd = cs.distance()
-    fd = fs.distance()
+    cd = cs.node_to_node_distance()
+    fd = fs.node_to_node_distance()
 
     cdg = np.zeros(cfd.shape)
     fdg = np.zeros(ffd.shape)
@@ -566,7 +566,7 @@ def test_stream_imposemin(tall_dem, tall_stream, wide_dem, wide_stream):
         # The gradient along the flow network should be greater than or
         # equal to the defined slope within some numerical error
         g = (minz[tall_stream.source] - minz[tall_stream.target]) / \
-            tall_stream.distance()
+            tall_stream.node_to_node_distance()
         assert np.all(g >= minimum_slope - 1e-6)
 
     # Wide DEM
@@ -584,7 +584,7 @@ def test_stream_imposemin(tall_dem, tall_stream, wide_dem, wide_stream):
         # The gradient along the flow network should be greater than or
         # equal to the defined slope within some numerical error
         g = (minz[wide_stream.source] - minz[wide_stream.target]) / \
-            wide_stream.distance()
+            wide_stream.node_to_node_distance()
         assert np.all(g >= minimum_slope - 1e-6)
 
 
@@ -677,7 +677,7 @@ def test_crslin(wide_dem, wide_stream):
     assert np.allclose(zs[channelheads], z[channelheads])
 
     # gradient: gradient > mingradient
-    gradient = (zs[s.source] - zs[s.target]) / s.distance()
+    gradient = (zs[s.source] - zs[s.target]) / s.node_to_node_distance()
     mingradient = 0.01
 
     assert np.all((gradient - mingradient) >= -1e-6)
@@ -692,7 +692,7 @@ def test_crslin_noattachheads(wide_dem, wide_stream):
 
     # gradient: gradient > mingradient
     gradient = (zs[wide_stream.source] -
-                zs[wide_stream.target]) / wide_stream.distance()
+                zs[wide_stream.target]) / wide_stream.node_to_node_distance()
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
@@ -724,7 +724,7 @@ def test_quantcarve(wide_dem, wide_stream):
     assert np.all(zs[outlets] == z[outlets])
 
     # gradient: gradient > mingradient
-    gradient = (zs[s.source] - zs[s.target]) / s.distance()
+    gradient = (zs[s.source] - zs[s.target]) / s.node_to_node_distance()
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
@@ -754,7 +754,7 @@ def test_crs(wide_dem, wide_stream):
     assert np.allclose(zs[outlets], z[outlets])
 
     # gradient: gradient > mingradient
-    gradient = (zs[s.source] - zs[s.target]) / s.distance()
+    gradient = (zs[s.source] - zs[s.target]) / s.node_to_node_distance()
     mingradient = 0.01
     assert np.all((gradient - mingradient) >= -1e-6)
 
@@ -783,7 +783,7 @@ def test_lowerenv_convex(wide_dem, wide_stream):
     ze = s.lowerenv(z, kn)
 
     g = np.zeros(len(z))
-    g[s.source] = (ze[s.source] - ze[s.target]) / s.distance()
+    g[s.source] = (ze[s.source] - ze[s.target]) / s.node_to_node_distance()
 
     # The gradient of any incoming edge to a node should be greater
     # than the gradient of its outgoing edge, with some room for
@@ -802,7 +802,7 @@ def test_lowerenv_order(order_dems, cs, fs):
     cze = cs.lowerenv(cz, ckn)
 
     cg = np.zeros(len(cz))
-    cg[cs.source] = (cze[cs.source] - cze[cs.target]) / cs.distance()
+    cg[cs.source] = (cze[cs.source] - cze[cs.target]) / cs.node_to_node_distance()
 
     # The gradient of any incoming edge to a node should be greater
     # than the gradient of its outgoing edge, with some room for
@@ -822,7 +822,7 @@ def test_lowerenv_order(order_dems, cs, fs):
     fze = fs.lowerenv(fz, fkn)
 
     fg = np.zeros(len(fz))
-    fg[fs.source] = (fze[fs.source] - fze[fs.target]) / fs.distance()
+    fg[fs.source] = (fze[fs.source] - fze[fs.target]) / fs.node_to_node_distance()
 
     assert np.all((fg[fs.source] >= fg[fs.target] - 1e-5) + fkn[fs.target])
 
@@ -944,3 +944,17 @@ def test_togeodataframe(wide_stream):
 
 def test_gridmask_order(cs, fs):
     assert np.array_equal(cs.gridmask, fs.gridmask)
+
+def test_distance(cs):
+    # We need to clean because one pixel streams will have zero
+    # max_from_ch distance but infinite min_from_ch (because they are
+    # not considered channelheads).
+    cs = cs.clean()
+
+    assert np.array_equal(cs.distance('from_outlet'), cs.upstream_distance())
+    assert np.array_equal(cs.distance('max_from_ch'), cs.downstream_distance())
+
+    assert np.all(cs.distance('min_from_ch') <= cs.distance('max_from_ch'))
+
+    d = cs.distance('node_to_node')
+    assert np.array_equal(d[cs.source], cs.node_to_node_distance())

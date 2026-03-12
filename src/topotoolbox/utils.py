@@ -105,6 +105,7 @@ def write_tif(dem: GridObject, path: str) -> None:
 
     Example
     -------
+    >>> import topotoolbox
     >>> dem = topotoolbox.load_dem('perfectworld')
     >>> topotoolbox.write_tif(dem, 'dem.tif')
     """
@@ -201,7 +202,8 @@ def read_tif(path: str) -> GridObject:
 
     Example
     -------
-    >>> dem = topotoolbox.read_tif('dem.tif')
+    >>> import topotoolbox
+    >>> dem = topotoolbox.read_tif('dem.tif') # doctest: +SKIP
     """
 
     grid = GridObject()
@@ -260,8 +262,13 @@ def gen_random(hillsize: int = 24, rows: int = 128, columns: int = 128,
 
     Example
     -------
-    >>> dem = topotoolbox.gen_random(seed=8192)
-    >>> dem.plot(cmap='terrain')
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.gen_random(seed=8192)
+       >>> _ = dem.plot(cmap='terrain')
+       >>> plt.show()
     """
     try:
         import opensimplex as simplex  # pylint: disable=C0415
@@ -310,8 +317,13 @@ def gen_random_bool(
 
     Example
     -------
-    >>> dem = topotoolbox.gen_random_bool()
-    >>> dem.plot(cmap='grey')
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.gen_random_bool()
+       >>> _= dem.plot(cmap='grey')
+       >>> plt.show()
     """
     bool_array = np.empty((rows, columns), dtype=np.float32)
 
@@ -340,7 +352,8 @@ def get_dem_names() -> list[str]:
 
     Example
     -------
-    >>> print(topotoolbox.get_dem_names())
+    >>> import topotoolbox
+    >>> print(topotoolbox.get_dem_names()) # doctest: +SKIP
     """
     with urlopen(DEM_NAMES) as dem_names:
         dem_names = dem_names.read().decode()
@@ -366,8 +379,13 @@ def load_dem(dem: str, cache: bool = True) -> GridObject:
 
     Example
     -------
-    >>> dem = topotoolbox.load_dem('taiwan')
-    >>> dem.plot(cmap='terrain')
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.load_dem('taiwan')
+       >>> _= dem.plot(cmap='terrain')
+       >>> plt.show()
     """
     if dem not in get_dem_names():
         err = ("Selected DEM has to be selected from the provided examples." +
@@ -401,7 +419,8 @@ def get_save_location() -> str:
 
     Example
     -------
-    >>> print(topotoolbox.get_save_location())
+    >>> import topotoolbox
+    >>> print(topotoolbox.utils.get_save_location()) # doctest: +ELLIPSIS
     """
     system = sys.platform
 
@@ -440,6 +459,7 @@ def clear_cache(filename: str | None = None) -> None:
 
     Example
     -------
+    >>> import topotoolbox
     >>> topotoolbox.clear_cache()
     """
     path = get_save_location()
@@ -468,7 +488,8 @@ def get_cache_contents() -> (list[str] | None):
 
     Example
     -------
-    >>> print(topotoolbox.get_cache_contents())
+    >>> import topotoolbox
+    >>> print(topotoolbox.get_cache_contents()) # doctest: +SKIP
     """
     path = get_save_location()
 
@@ -497,9 +518,14 @@ def read_from_cache(filename: str) -> GridObject:
 
     Example
     -------
-    >>> topotoolbox.load_dem('bigtujunga')
-    >>> dem = topotoolbox.read_from_cache('bigtujunga.tif')
-    >>> dem.plot()
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> dem = topotoolbox.load_dem('bigtujunga')
+       >>> dem = topotoolbox.read_from_cache('bigtujunga.tif')
+       >>> _= dem.plot()
+       >>> plt.show()
     """
     cache_path = os.path.join(get_save_location(), f"{filename}")
     grid_object = read_tif(cache_path)
@@ -580,11 +606,16 @@ def load_opentopography(south: float, north: float, west: float, east: float,
 
     Example
     -------
-    >>> dem = topotoolbox.load_open_topography(south=50, north=50.1, west=14.35,
-                    east=14.6, dem_type="SRTMGL3", api_key="demoapikeyot2022")
-    >>> dem = dem.reproject(rasterio.CRS.from_epsg(32633), resolution=90)
-    >>> im = dem.plot(cmap="terrain")
-    >>> plt.show()
+    .. plot::
+
+       >>> import topotoolbox
+       >>> import matplotlib.pyplot as plt
+       >>> from rasterio import CRS
+       >>> dem = topotoolbox.load_opentopography(south=50, north=50.1, west=14.35,
+       ...     east=14.6, dem_type="SRTMGL3")
+       >>> dem = dem.reproject(CRS.from_epsg(32633), resolution=90)
+       >>> _= dem.plot(cmap="terrain")
+       >>> plt.show()
     """
 
     # Check if an API key is provided
