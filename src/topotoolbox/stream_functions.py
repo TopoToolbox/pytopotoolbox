@@ -44,7 +44,7 @@ def imposemin(s, dem, minimum_slope=0.0):
     """
     result = s.ezgetnal(dem, dtype=np.float32) # This returns a copy
 
-    d = -s.distance() * minimum_slope
+    d = -s.node_to_node_distance() * minimum_slope
     _stream.traverse_down_f32_min_add(result, d, s.source, s.target)
 
     return result
