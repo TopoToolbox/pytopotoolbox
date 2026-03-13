@@ -8,3 +8,4 @@ from .graphflood_object import GFObject
 from .graphflood import *
 from .utils import *
 from .stream_functions import *
+from .swath import *
