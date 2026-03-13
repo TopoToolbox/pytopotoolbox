@@ -163,64 +163,6 @@ class TransverseSwath:
             d['percentiles'] = {p: arr[idx] for p, arr in self.percentiles.items()}
         return d
 
-    def plot(self, fig=None, ax=None, show_minmax=True, show_std=False,
-             show_quartiles=False, show_median=False, **kwargs):
-        """Plot the transverse swath profile.
-
-        The mean elevation is always drawn as a line.  Optional shaded bands
-        and additional lines can be toggled with the keyword arguments below.
-
-        Parameters
-        ----------
-        fig : matplotlib.figure.Figure, optional
-            Existing figure to plot into.  Created if not supplied.
-        ax : matplotlib.axes.Axes, optional
-            Existing axes to plot into.  Created if not supplied.
-        show_minmax : bool, default True
-            Shade the region between ``mins`` and ``maxs``.
-        show_std : bool, default False
-            Shade the region ``mean ± stddev``.
-        show_quartiles : bool, default False
-            Shade the interquartile range (Q1–Q3).  Requires that
-            ``percentiles`` was passed when calling ``transverse_swath``.
-        show_median : bool, default False
-            Draw the median as a dashed line.  Requires ``percentiles``.
-        **kwargs
-            Forwarded to ``ax.plot`` for the mean line (e.g. ``color``,
-            ``linewidth``, ``label``).
-
-        Returns
-        -------
-        fig : matplotlib.figure.Figure
-        ax : matplotlib.axes.Axes
-        """
-        # pylint: disable=import-outside-toplevel
-        import matplotlib.pyplot as plt
-        if ax is None:
-            fig, ax = plt.subplots()
-
-        label = kwargs.pop('label', 'Mean')
-        line = ax.plot(self.distances, self.means, label=label, **kwargs)
-        color = line[0].get_color()
-
-        if show_minmax:
-            ax.fill_between(self.distances, self.mins, self.maxs,
-                            alpha=0.1, color=color, label='Min-Max')
-        if show_std:
-            ax.fill_between(self.distances, self.means - self.stddevs,
-                            self.means + self.stddevs,
-                            alpha=0.2, color=color, label='Std Dev')
-        if show_quartiles and self.q1 is not None and self.q3 is not None:
-            ax.fill_between(self.distances, self.q1, self.q3,
-                            alpha=0.3, color=color, label='Q1-Q3')
-        if show_median and self.medians is not None:
-            ax.plot(self.distances, self.medians, '--', color=color, label='Median')
-
-        ax.set_xlabel('Distance from track (m)')
-        ax.set_ylabel('Elevation (m)')
-        ax.legend()
-        return fig, ax
-
 
 class LongitudinalSwath:
     """Along-track statistics from ``longitudinal_swath`` or
@@ -311,64 +253,6 @@ class LongitudinalSwath:
         if self.percentiles is not None:
             d['percentiles'] = {p: arr[idx] for p, arr in self.percentiles.items()}
         return d
-
-    def plot(self, fig=None, ax=None, show_minmax=True, show_std=False,
-             show_quartiles=False, show_median=False, **kwargs):
-        """Plot the longitudinal swath profile.
-
-        The X axis is cumulative along-track distance when
-        ``along_track_distances`` is set, otherwise the output point index.
-
-        Parameters
-        ----------
-        fig : matplotlib.figure.Figure, optional
-            Existing figure to plot into.  Created if not supplied.
-        ax : matplotlib.axes.Axes, optional
-            Existing axes to plot into.  Created if not supplied.
-        show_minmax : bool, default True
-            Shade the region between ``mins`` and ``maxs``.
-        show_std : bool, default False
-            Shade the region ``mean ± stddev``.
-        show_quartiles : bool, default False
-            Shade the interquartile range (Q1–Q3).  Requires ``percentiles``.
-        show_median : bool, default False
-            Draw the median as a dashed line.  Requires ``percentiles``.
-        **kwargs
-            Forwarded to ``ax.plot`` for the mean line.
-
-        Returns
-        -------
-        fig : matplotlib.figure.Figure
-        ax : matplotlib.axes.Axes
-        """
-        # pylint: disable=import-outside-toplevel
-        import matplotlib.pyplot as plt
-        if ax is None:
-            fig, ax = plt.subplots()
-
-        x = (self.along_track_distances if self.along_track_distances is not None
-             else np.arange(len(self.means)))
-        label = kwargs.pop('label', 'Mean')
-        line = ax.plot(x, self.means, label=label, **kwargs)
-        color = line[0].get_color()
-
-        if show_minmax:
-            ax.fill_between(x, self.mins, self.maxs,
-                            alpha=0.1, color=color, label='Min-Max')
-        if show_std:
-            ax.fill_between(x, self.means - self.stddevs,
-                            self.means + self.stddevs, alpha=0.2,
-                            color=color, label='Std Dev')
-        if show_quartiles and self.q1 is not None and self.q3 is not None:
-            ax.fill_between(x, self.q1, self.q3,
-                            alpha=0.3, color=color, label='Q1-Q3')
-        if show_median and self.medians is not None:
-            ax.plot(x, self.medians, '--', color=color, label='Median')
-
-        ax.set_xlabel('Distance along track (m)')
-        ax.set_ylabel('Elevation (m)')
-        ax.legend()
-        return fig, ax
 
 
 def _order_d8_path(rows, cols):
