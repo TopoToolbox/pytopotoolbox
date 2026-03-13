@@ -126,6 +126,7 @@ def write_tif(dem: GridObject, path: str) -> None:
             transform=dem.transform
     ) as dataset:
         dataset.write(dem.z, 1)
+        dataset.write_mask(~np.isnan(dem.z))
 
 def write_shapefile(streamobject: StreamObject, path: str) -> None:
     """
@@ -220,7 +221,7 @@ def read_tif(path: str) -> GridObject:
         grid.path = path
         grid.name = os.path.splitext(os.path.basename(grid.path))[0]
 
-        grid.z = dataset.read(1).astype(np.float32)
+        grid.z = dataset.read(1, masked=True, out_dtype=np.float32).filled(np.nan)
 
         grid.cellsize = dataset.res[0]
         grid.bounds = dataset.bounds
