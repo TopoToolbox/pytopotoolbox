@@ -340,8 +340,9 @@ def _pca_tangent(ti, tj, pt, half_n):
     cij = float(np.dot(di, dj))
     cjj = float(np.dot(dj, dj))
     diff = cii - cjj
-    D = np.sqrt(diff * diff + 4.0 * cij * cij)
-    vi, vj = (diff + D, 2.0 * cij) if cii >= cjj else (2.0 * cij, -diff + D)
+    discriminant = np.sqrt(diff * diff + 4.0 * cij * cij)
+    vi, vj = ((diff + discriminant, 2.0 * cij) if cii >= cjj
+              else (2.0 * cij, -diff + discriminant))
     vlen = np.sqrt(vi * vi + vj * vj)
     if vlen > 1e-10:
         return vi / vlen, vj / vlen
@@ -441,7 +442,8 @@ def prepare_track(grid: GridObject, track_x, track_y=None, input_mode="indices2D
         oi = raw_i.astype(np.float32)
         oj = raw_j.astype(np.float32)
 
-    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
+    return transform_coords(grid, oi, oj,
+                            input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def compute_swath_distance_map(
@@ -556,6 +558,7 @@ def compute_swath_distance_map(
     # 2. Split the outer boundary by the sign of signed_dist, giving seeds for
     #    the two competing Dijkstra waves (positive half = left edge,
     #    negative half = right edge).
+    assert signed_dist_px is not None  # guaranteed: return_centre_line implies need_signed
     pos_seeds = np.flatnonzero((boundary & (signed_dist_px >= 0)).ravel()).astype(np.intp)
     neg_seeds = np.flatnonzero((boundary & (signed_dist_px <= 0)).ravel()).astype(np.intp)
 
@@ -582,9 +585,11 @@ def compute_swath_distance_map(
     res = SwathCentreLine(distance_map=dist_grid, nearest_point=near_pt_grid)
     res.dist_from_boundary = _grid_from_z(grid, dfb_z, "swath_dist_from_boundary")
     raw_i, raw_j = _swap_if_c_order(grid, cli_arr[:count], clj_arr[:count])
-    order = _order_d8_path(raw_i.astype(np.intp), raw_j.astype(np.intp))
+    order = _order_d8_path(raw_i.astype(np.intp),
+                           raw_j.astype(np.intp))
     oi, oj = raw_i[order], raw_j[order]
-    out = transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
+    out = transform_coords(grid, oi, oj, input_mode="indices2D",
+        output_mode=input_mode, center=False)
     if input_mode == "indices1D":
         res.centre_line_x = out
     else:
@@ -707,12 +712,17 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
         for idx, b in enumerate(unique_bins):
             vals = sorted_vals[starts[idx]:ends[idx]]
             if percentiles is not None:
+                assert bin_medians is not None
+                assert bin_q1 is not None
+                assert bin_q3 is not None
+                assert perc_dict is not None
                 bin_medians[b] = np.percentile(vals, 50) + ref_elev
                 bin_q1[b]      = np.percentile(vals, 25) + ref_elev
                 bin_q3[b]      = np.percentile(vals, 75) + ref_elev
                 for p in percentiles:
                     perc_dict[p][b] = np.percentile(vals, p) + ref_elev
             if custom_stat_fn is not None:
+                assert custom is not None
                 custom[b] = custom_stat_fn(vals)
 
     return TransverseSwath(bin_distances, bin_means, bin_stds, bin_min, bin_max,
@@ -806,9 +816,11 @@ def longitudinal_swath(grid: GridObject, track_x, track_y,
 
     perc_dict = None
     if percentiles is not None:
+        assert pt_percs is not None
         perc_dict = {p: pt_percs[:written, i] for i, p in enumerate(percentiles)}
 
-    out = transform_coords(grid, res_i, res_j, input_mode="indices2D", output_mode=input_mode, center=False)
+    out = transform_coords(grid, res_i, res_j,
+                           input_mode="indices2D", output_mode=input_mode, center=False)
     if input_mode == "indices1D":
         track_x_out, track_y_out = out, None
     else:
@@ -908,8 +920,8 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     if percentiles is not None:
         pt_percs = np.full((n_out, len(percentiles)), np.nan, dtype=np.float32)
 
-    # Row/col index grids (reused each iteration via slicing)
-    R = hw_px + bd_px
+    # Bounding-box half-radius in pixels (reused each iteration)
+    bbox_r = hw_px + bd_px
 
     for out_idx, pt in enumerate(pts):
         ci, cj = ti[pt], tj[pt]
@@ -917,10 +929,10 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
         o_i, o_j = -t_j, t_i  # orthogonal
 
         # Bounding box
-        pi_lo = max(0,        int(ci - R))
-        pi_hi = min(nrows - 1, int(ci + R) + 1)
-        pj_lo = max(0,        int(cj - R))
-        pj_hi = min(ncols - 1, int(cj + R) + 1)
+        pi_lo = max(0,        int(ci - bbox_r))
+        pi_hi = min(nrows - 1, int(ci + bbox_r) + 1)
+        pj_lo = max(0,        int(cj - bbox_r))
+        pj_hi = min(ncols - 1, int(cj + bbox_r) + 1)
 
         # Sub-array pixel coordinates
         pi_idx = np.arange(pi_lo, pi_hi + 1, dtype=np.float32)
@@ -955,6 +967,7 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
         pt_q1[out_idx]      = np.percentile(vals, 25)
         pt_q3[out_idx]      = np.percentile(vals, 75)
         if percentiles is not None:
+            assert pt_percs is not None
             for p_idx, p in enumerate(percentiles):
                 pt_percs[out_idx, p_idx] = np.percentile(vals, p)
 
@@ -962,6 +975,7 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
 
     perc_dict = None
     if percentiles is not None:
+        assert pt_percs is not None
         perc_dict = {p: pt_percs[:, i] for i, p in enumerate(percentiles)}
 
     track_i_out = ti[::skip][:n_out]
@@ -1035,7 +1049,8 @@ def get_point_pixels(grid: GridObject, track_x, track_y,
     )
 
     oi, oj = _swap_if_c_order(grid, pi[:count], pj[:count])
-    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
+    return transform_coords(grid, oi, oj,
+                            input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def get_windowed_point_samples(grid: GridObject, track_x, track_y,
@@ -1077,7 +1092,6 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
         ``"indices1D"``, or ``(xs, ys)`` for ``"coordinates"``.
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
-    n_pts = len(ti)
     hw_px = half_width / grid.cellsize
     bd_px = binning_distance / grid.cellsize
     nrows, ncols = grid.z.shape
@@ -1087,11 +1101,11 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
     o_i, o_j = -t_j, t_i  # orthogonal
 
     ci, cj = ti[point_index], tj[point_index]
-    R = hw_px + bd_px
-    pi_lo = max(0,        int(ci - R))
-    pi_hi = min(nrows - 1, int(ci + R) + 1)
-    pj_lo = max(0,        int(cj - R))
-    pj_hi = min(ncols - 1, int(cj + R) + 1)
+    bbox_r = hw_px + bd_px
+    pi_lo = max(0,        int(ci - bbox_r))
+    pi_hi = min(nrows - 1, int(ci + bbox_r) + 1)
+    pj_lo = max(0,        int(cj - bbox_r))
+    pj_hi = min(ncols - 1, int(cj + bbox_r) + 1)
 
     pi_idx = np.arange(pi_lo, pi_hi + 1, dtype=np.float32)
     pj_idx = np.arange(pj_lo, pj_hi + 1, dtype=np.float32)
@@ -1104,7 +1118,8 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
     )
     oi = (pi_lo + np.where(mask)[0]).astype(np.intp)
     oj = (pj_lo + np.where(mask)[1]).astype(np.intp)
-    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
+    return transform_coords(grid, oi, oj,
+                            input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def rasterize_path(grid: GridObject, track_x, track_y=None,
@@ -1165,7 +1180,8 @@ def rasterize_path(grid: GridObject, track_x, track_y=None,
                                                int(close_loop), int(use_d4))
 
     oi, oj = _swap_if_c_order(grid, out_i[:count], out_j[:count])
-    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
+    return transform_coords(grid, oi, oj,
+                            input_mode="indices2D", output_mode=input_mode, center=False)
 
 
 def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.0,
@@ -1215,4 +1231,5 @@ def simplify_line(grid: GridObject, track_x, track_y=None, tolerance: float = 1.
     count = _swaths.simplify_line(out_i, out_j, ci, cj, tolerance, method)
 
     oi, oj = _swap_if_c_order(grid, out_i[:count], out_j[:count])
-    return transform_coords(grid, oi, oj, input_mode="indices2D", output_mode=input_mode, center=False)
+    return transform_coords(grid, oi, oj,
+                            input_mode="indices2D", output_mode=input_mode, center=False)

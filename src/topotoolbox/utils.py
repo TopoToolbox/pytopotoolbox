@@ -75,8 +75,7 @@ def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D"
     if output_mode == "indices1D":
         if grid.z.flags.f_contiguous:
             return r.astype(np.intp) + c.astype(np.intp) * grid.rows
-        else:
-            return r.astype(np.intp) * grid.z.shape[1] + c.astype(np.intp)
+        return r.astype(np.intp) * grid.z.shape[1] + c.astype(np.intp)
     if output_mode == "coordinates":
         if center:
             # Shift by 0.5 pixel to move from corner to center
