@@ -55,8 +55,9 @@ class SwathCentreLine:
         track**, negative = right.  Pixels outside ``half_width`` are NaN.
     nearest_point : GridObject, optional
         Integer index (0-based) of the nearest track point for each pixel.
-        Always populated when returned as a ``SwathCentreLine``; required as
-        input to ``longitudinal_swath`` and ``get_point_pixels``.
+        Always set when a ``SwathCentreLine`` is returned by
+        ``compute_swath_distance_map``; required as input to
+        ``longitudinal_swath`` and ``get_point_pixels``.
 
     Populated only when ``return_centre_line=True``
     ------------------------------------------------
@@ -124,8 +125,8 @@ class TransverseSwath:
         self.medians = medians
         self.q1 = q1
         self.q3 = q3
-        self.percentiles = percentiles  # Dict mapping percentile value to array
-        self.custom = custom            # Array of custom_stat_fn results per bin
+        self.percentiles = percentiles
+        self.custom = custom
 
     def __len__(self):
         return len(self.distances)
@@ -258,6 +259,9 @@ class LongitudinalSwath:
 def _order_d8_path(rows, cols):
     """Return an index array that sorts D8-connected pixels into path order.
 
+    The goal in this swath context is to order newly generated centerline in
+    an contiguous line.
+
     Builds a sparse D8 adjacency graph over the pixel set, finds an endpoint
     (a pixel with exactly one D8 neighbour), then traverses the path via DFS.
     Falls back to index 0 if no endpoint exists (closed loop).
@@ -306,12 +310,10 @@ def _swap_if_c_order(grid, a, b):
     Used to convert between (row, col) and the C library's (fast, slow) convention:
     - F-contiguous: fast=row, slow=col  → no swap needed
     - C-contiguous: fast=col, slow=row  → swap needed
-    Applying this function twice is a no-op (it is its own inverse).
     """
     if grid.z.flags.c_contiguous:
         return b, a
     return a, b
-
 
 def _unwrap_z(x):
     """Return x.z if x is a GridObject, else x as-is."""
@@ -606,7 +608,7 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
     Parameters
     ----------
     grid : GridObject
-        Elevation DEM.
+        Elevation DEM.  
     distance_map : GridObject or np.ndarray
         Signed distance map in **metres** from ``compute_swath_distance_map``
         (``compute_signed=True``).  Positive values are to the left of the
@@ -635,7 +637,7 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
     dist_arr = _unwrap_z(distance_map).ravel()
     dem = grid.z.ravel()
 
-    if np.nanmin(dist_arr) >= 0 and np.nanmax(dist_arr) > 0:
+    if np.nanmin(dist_arr) >= 0:
         warnings.warn("Distance map appears to be absolute. Results will only cover positive side.")
 
     n_bins = int(2.0 * half_width / bin_resolution) + 1
@@ -777,7 +779,7 @@ def longitudinal_swath(grid: GridObject, track_x, track_y,
     pt_q3 = np.zeros(n_out, dtype=np.float32)
 
     perc_list = None
-    pt_percs: Optional[np.ndarray] = None
+    pt_percs = None
     if percentiles is not None:
         perc_list = np.array(percentiles, dtype=np.int32)
         pt_percs = np.zeros((n_out, len(percentiles)), dtype=np.float32)
@@ -804,7 +806,6 @@ def longitudinal_swath(grid: GridObject, track_x, track_y,
 
     perc_dict = None
     if percentiles is not None:
-        assert pt_percs is not None
         perc_dict = {p: pt_percs[:written, i] for i, p in enumerate(percentiles)}
 
     out = transform_coords(grid, res_i, res_j, input_mode="indices2D", output_mode=input_mode, center=False)
@@ -880,7 +881,7 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
     """
     ti, tj = _prepare_track(grid, track_x, track_y, input_mode)
     dem = np.asarray(grid.z, dtype=np.float32)
-    nrows, ncols = grid.z.shape[0], grid.z.shape[1]
+    nrows, ncols = grid.z.shape
     cellsize = grid.cellsize
     hw_px = half_width / cellsize
     bd_px = binning_distance / cellsize
@@ -950,21 +951,17 @@ def longitudinal_swath_windowed(grid: GridObject, track_x, track_y,
         pt_min[out_idx]    = vals.min()
         pt_max[out_idx]    = vals.max()
 
-        sv = np.sort(vals)
-        def _pct(p):
-            idx = max(0, min(count - 1, int(np.ceil(p / 100.0 * count)) - 1))
-            return sv[idx]
-        pt_medians[out_idx] = _pct(50)
-        pt_q1[out_idx]      = _pct(25)
-        pt_q3[out_idx]      = _pct(75)
-        if percentiles is not None and pt_percs is not None:
+        pt_medians[out_idx] = np.percentile(vals, 50)
+        pt_q1[out_idx]      = np.percentile(vals, 25)
+        pt_q3[out_idx]      = np.percentile(vals, 75)
+        if percentiles is not None:
             for p_idx, p in enumerate(percentiles):
-                pt_percs[out_idx, p_idx] = _pct(p)
+                pt_percs[out_idx, p_idx] = np.percentile(vals, p)
 
     along_track = _cum_dist(ti, tj, cellsize)[::skip][:n_out]
 
     perc_dict = None
-    if percentiles is not None and pt_percs is not None:
+    if percentiles is not None:
         perc_dict = {p: pt_percs[:, i] for i, p in enumerate(percentiles)}
 
     track_i_out = ti[::skip][:n_out]
@@ -1083,7 +1080,7 @@ def get_windowed_point_samples(grid: GridObject, track_x, track_y,
     n_pts = len(ti)
     hw_px = half_width / grid.cellsize
     bd_px = binning_distance / grid.cellsize
-    nrows, ncols = grid.z.shape[0], grid.z.shape[1]
+    nrows, ncols = grid.z.shape
 
     half_n = max(1, n_points_regression // 2)
     t_i, t_j = _pca_tangent(ti, tj, point_index, half_n)
