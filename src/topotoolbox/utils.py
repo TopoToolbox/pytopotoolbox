@@ -15,7 +15,9 @@ from .stream_object import StreamObject
 
 __all__ = ["load_dem", "get_dem_names", "read_tif", "gen_random", "write_tif",
            "gen_random_bool", "get_cache_contents", "clear_cache",
-           "read_from_cache", "load_opentopography", "write_shapefile", "get_dtype"]
+           "read_from_cache", "load_opentopography", "write_shapefile", "get_dtype",
+           "transform_coords"]
+
 
 
 DEM_SOURCE = "https://raw.githubusercontent.com/TopoToolbox/DEMs/master"
@@ -26,6 +28,63 @@ OPEN_TOPO_DATASETS = ('SRTMGL3', 'SRTMGL1', 'SRTMGL1_E', 'AW3D30', 'AW3D30_E',
                       'GEDI_L3', 'GEBCOIceTopo', 'GEBCOSubIceTopo',
                       'CA_MRDEM_DTM', 'CA_MRDEM_DSM')
 
+
+def transform_coords(grid: GridObject, data1, data2=None, input_mode="indices2D",
+                     output_mode="coordinates", center=True):
+    """
+    Helper function to convert between coordinates, indices2D, and indices1D.
+
+    Parameters
+    ----------
+    grid : GridObject
+        The reference grid containing transform and shape.
+    data1 : array-like
+        First coordinate/index component (e.g., Row indices, Node indices, or X coordinates).
+    data2 : array-like, optional
+        Second coordinate/index component (e.g., Col indices, or Y coordinates).
+    input_mode : str
+        "indices2D", "indices1D", or "coordinates".
+    output_mode : str
+        "indices2D", "indices1D", or "coordinates".
+    center : bool, optional
+        If True (default) and output_mode is "coordinates", returns coordinates at pixel centers.
+        If False, returns coordinates at pixel corners.
+    """
+    # 1. Standardize input to indices2D (rows, cols)
+    if input_mode == "indices2D":
+        r, c = np.asarray(data1), np.asarray(data2)
+    elif input_mode == "indices1D":
+        idx = np.asarray(data1)
+        if grid.z.flags.f_contiguous:
+            # F-order: idx = row + col * nrows
+            r = idx % grid.rows
+            c = idx // grid.rows
+        else:
+            # C-order: idx = row * ncols + col
+            r = idx // grid.columns
+            c = idx % grid.columns
+    elif input_mode == "coordinates":
+        inv_transform = ~grid.transform
+        c, r = inv_transform * (np.asarray(data1), np.asarray(data2))
+    else:
+        raise ValueError(f"Invalid input_mode: {input_mode}")
+
+    # 2. Convert to requested output
+    if output_mode == "indices2D":
+        return r, c
+    if output_mode == "indices1D":
+        if grid.z.flags.f_contiguous:
+            return r.astype(np.intp) + c.astype(np.intp) * grid.rows
+        return r.astype(np.intp) * grid.z.shape[1] + c.astype(np.intp)
+    if output_mode == "coordinates":
+        if center:
+            # Shift by 0.5 pixel to move from corner to center
+            x, y = grid.transform * (c + 0.5, r + 0.5)
+        else:
+            x, y = grid.transform * (c, r)
+        return np.array(x), np.array(y)
+
+    raise ValueError(f"Invalid output_mode: {output_mode}")
 
 def write_tif(dem: GridObject, path: str) -> None:
     """

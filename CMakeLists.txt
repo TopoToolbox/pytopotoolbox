@@ -11,7 +11,7 @@ include(FetchContent)
 FetchContent_Declare(
   topotoolbox
   GIT_REPOSITORY https://github.com/TopoToolbox/libtopotoolbox.git
-  GIT_TAG 749191f180cd2d29b8062b7a376fba4250824952
+  GIT_TAG 2f7f08b7f7768736ad0235545b9f8a401259395c
 )
 FetchContent_MakeAvailable(topotoolbox)
 
@@ -31,4 +31,7 @@ target_link_libraries(_graphflood PRIVATE topotoolbox)
 pybind11_add_module(_morphology src/lib/morphology.cpp)
 target_link_libraries(_morphology PRIVATE topotoolbox)
 
-install(TARGETS _grid _stream _graphflood _morphology LIBRARY DESTINATION topotoolbox)
+pybind11_add_module(_swaths src/lib/swaths.cpp)
+target_link_libraries(_swaths PRIVATE topotoolbox)
+
+install(TARGETS _grid _stream _graphflood _morphology _swaths LIBRARY DESTINATION topotoolbox)
