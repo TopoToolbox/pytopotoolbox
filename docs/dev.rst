@@ -100,11 +100,6 @@ To release a new version of pytopotoolbox:
 3. Publish the release. This will trigger our release workflow, which
    will build and upload binary wheels to the GitHub release and to
    PyPi. It will also automatically be archived on Zenodo.
-4. Update the CITATION.cff file with the new version number and DOI
-   from Zenodo. Because the DOI will not be issued until after the
-   release is made, this change must be made AFTER the release is
-   issued. Any additional changes to the CITATION.cff file can be made
-   at this time.
 
 Pre-Commit Hooks
 ----------------
