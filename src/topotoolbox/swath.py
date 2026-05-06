@@ -534,7 +534,8 @@ def compute_swath_distance_map(
     if half_width is not None:
         outside = best_abs > hw_px
     else:
-        outside = best_abs >= np.finfo(np.float32).max
+        outside = best_abs >= np.finfo(np.float32).max # pylint: disable=no-member
+
 
     # Convert pixel-unit distances to metres and mask outside pixels as NaN.
     dist_src = signed_dist_px if (compute_signed and signed_dist_px is not None) else best_abs
@@ -571,6 +572,7 @@ def compute_swath_distance_map(
 
     # 4. Inward distance from the boundary = min of both wave-front distances.
     mn = np.minimum(dist_pos, dist_neg)
+    # pylint: disable=no-member
     dfb_z = np.where(mn >= np.finfo(np.float32).max, np.nan, mn * grid.cellsize).astype(np.float32)
 
     cli_arr = np.empty(grid.z.size, dtype=np.float32)
@@ -613,7 +615,7 @@ def transverse_swath(grid: GridObject, distance_map: Union[GridObject, np.ndarra
     Parameters
     ----------
     grid : GridObject
-        Elevation DEM.  
+        Elevation DEM.
     distance_map : GridObject or np.ndarray
         Signed distance map in **metres** from ``compute_swath_distance_map``
         (``compute_signed=True``).  Positive values are to the left of the

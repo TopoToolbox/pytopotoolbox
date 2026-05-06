@@ -7,6 +7,9 @@ import numpy as np
 # pylint: disable=no-name-in-module
 from . import _grid  # type: ignore
 from . import _stream  # type: ignore
+
+# pylint: disable=unused-import
+from . import _flow # type: ignore
 from .grid_object import GridObject
 from .interface import validate_alignment
 

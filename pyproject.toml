@@ -56,7 +56,6 @@ disable = [
     "too-many-locals",
     "duplicate-code",
     "cyclic-import",
-    "too-many-positional-arguments",
     "too-many-lines",
     "too-many-public-methods",
 ]
