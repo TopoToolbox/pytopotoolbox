@@ -54,9 +54,9 @@ disable = [
     "too-many-branches",
     "too-many-statements",
     "too-many-locals",
+    "too-many-positional-arguments",
     "duplicate-code",
     "cyclic-import",
-    "too-many-positional-arguments",
     "too-many-lines",
     "too-many-public-methods",
 ]
