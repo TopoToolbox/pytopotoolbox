@@ -33,12 +33,6 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest
-
-      - name: Downgrade numpy
-        if: ${{ matrix.python-version <= '3.11' }}
-        run: |
-          pip install matplotlib scipy rasterio pandas geopandas "numpy==1.23.5" --upgrade --upgrade-strategy eager
-          pytest
   lint:
     runs-on: ubuntu-latest
     strategy:

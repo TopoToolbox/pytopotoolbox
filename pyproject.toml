@@ -20,7 +20,7 @@ description = "Python interface to TopoToolbox."
 readme = "README.md"
 license = { file = "LICENSE" }
 dependencies = [
-    "numpy>=1.23.5",
+    "numpy>=2.0.0",
     "matplotlib",
     "scipy",
     "rasterio",
