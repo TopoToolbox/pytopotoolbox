@@ -301,6 +301,32 @@ def test_upstream_distance_order(order_dems):
 
     assert np.array_equal(cd, fd)
 
+# Issue #424: make sure that indexing with the return value of
+# dependencemap and influencemap returns a subset of the given
+# array. Also check to make sure that dependencemap and influencemap
+# actually propagate values up and downstream by making sure there are
+# active pixels that are not part of the original mask
+def test_dependence_map_indexing(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+
+    mask = wide_dem.z == np.min(wide_dem)
+
+    l = wide_dem.duplicate_with_new_data(mask)
+    d = fd.dependencemap(l)
+    assert np.any(d.z & np.invert(mask))
+    assert wide_dem.z[d.z].size < wide_dem.z.size
+
+def test_influence_map_indexing(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+
+    mask = wide_dem.z == np.max(wide_dem)
+
+    l = wide_dem.duplicate_with_new_data(mask)
+    i = fd.influencemap(l)
+
+    assert np.any(i.z & np.invert(mask))
+    assert wide_dem.z[i.z].size < wide_dem.z.size
+
 def test_dependence_map_order(order_dems):
     cdem, fdem = order_dems
     l_c = cdem.duplicate_with_new_data(np.zeros(cdem.shape, dtype = bool, order = 'C'))

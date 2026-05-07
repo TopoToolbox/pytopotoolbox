@@ -540,13 +540,13 @@ class FlowObject():
         """
 
         # convert input argument to correct units
-        seed = self.ezgetnal(l, dtype = np.uint32)
+        seed = self.ezgetnal(l, dtype = np.uint8)
 
         # graph traversal algorithm
-        i = np.ones(self.source.shape, dtype = np.uint32, order=self.order) # turns on all edges
-        _stream.traverse_up_u32_or_and(seed, i, self.source, self.target)
+        i = np.ones(self.source.shape, dtype = np.uint8, order=self.order) # turns on all edges
+        _stream.traverse_up_u8_or_and(seed, i, self.source, self.target)
 
-        return l.duplicate_with_new_data(np.asarray(seed))
+        return l.duplicate_with_new_data(np.asarray(seed, dtype=np.bool))
 
     def influencemap(self, l) -> GridObject:
         """Delineate downslope area for specific locations in a DEM.
@@ -564,13 +564,13 @@ class FlowObject():
         """
 
         # convert input argument to correct units
-        seed = self.ezgetnal(l, dtype = np.uint32)
+        seed = self.ezgetnal(l, dtype = np.uint8)
 
         # graph traversal algorithm
-        i = np.ones(self.source.shape, dtype = np.uint32, order=self.order) # turns on all edges
-        _stream.traverse_down_u32_or_and(seed, i, self.source, self.target)
+        i = np.ones(self.source.shape, dtype = np.uint8, order=self.order) # turns on all edges
+        _stream.traverse_down_u8_or_and(seed, i, self.source, self.target)
 
-        return l.duplicate_with_new_data(np.asarray(seed))
+        return l.duplicate_with_new_data(np.asarray(seed, dtype=np.bool))
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
