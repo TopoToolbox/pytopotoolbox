@@ -83,6 +83,38 @@ void wrap_traverse_down_u32_or_and(py::array_t<uint32_t> output,
                            target_ptr, edge_count);
 }
 
+void wrap_traverse_up_u8_or_and(py::array_t<uint8_t> output,
+                                py::array_t<uint8_t> input,
+                                py::array_t<ptrdiff_t> source,
+                                py::array_t<ptrdiff_t> target) {
+
+  uint8_t *output_ptr = output.mutable_data();
+  uint8_t *input_ptr = input.mutable_data();
+  ptrdiff_t *source_ptr = source.mutable_data();
+  ptrdiff_t *target_ptr = target.mutable_data();
+
+  ptrdiff_t edge_count = source.size();
+
+  traverse_up_u8_or_and(output_ptr, input_ptr, source_ptr,
+                        target_ptr, edge_count);
+}
+
+void wrap_traverse_down_u8_or_and(py::array_t<uint8_t> output,
+                                   py::array_t<uint8_t> input,
+                                   py::array_t<ptrdiff_t> source,
+                                   py::array_t<ptrdiff_t> target) {
+
+  uint8_t *output_ptr = output.mutable_data();
+  uint8_t *input_ptr = input.mutable_data();
+  ptrdiff_t *source_ptr = source.mutable_data();
+  ptrdiff_t *target_ptr = target.mutable_data();
+
+  ptrdiff_t edge_count = source.size();
+
+  traverse_down_u8_or_and(output_ptr, input_ptr, source_ptr,
+                          target_ptr, edge_count);
+}
+
 void wrap_traverse_down_f32_max_add(py::array_t<float> output,
                                     py::array_t<float> input,
                                     py::array_t<ptrdiff_t> source,
@@ -319,6 +351,8 @@ PYBIND11_MODULE(_stream, m) {
   m.def("streamquad_trapz_f64", &wrap_streamquad_trapz_f64);
   m.def("traverse_up_u32_or_and", &wrap_traverse_up_u32_or_and);
   m.def("traverse_down_u32_or_and", &wrap_traverse_down_u32_or_and);
+  m.def("traverse_up_u8_or_and", &wrap_traverse_up_u8_or_and);
+  m.def("traverse_down_u8_or_and", &wrap_traverse_down_u8_or_and);
   m.def("traverse_down_f32_max_add", &wrap_traverse_down_f32_max_add);
   m.def("traverse_up_f32_max_add", &wrap_traverse_up_f32_max_add);
   m.def("traverse_down_f32_max_mul", &wrap_traverse_down_f32_max_mul);
