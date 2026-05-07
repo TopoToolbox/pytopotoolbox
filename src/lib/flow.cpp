@@ -64,10 +64,32 @@ void wrap_flow_routing_tsort(
                      edge_count, dims, order);
 }
 
+void wrap_flow_routing_d8_directions(py::array_t<uint8_t> direction,
+                                     py::array_t<float> dem) {
+
+  int order = direction.flags() & py::array::c_style ? 1 : 0;
+  ptrdiff_t dims[2] = {dem.shape(0), dem.shape(1)};
+  // Reverse the dimensions if in row-major order
+  if (order) {
+    dims[0] = dem.shape(1);
+    dims[1] = dem.shape(0);
+  }
+
+  flow_routing_d8_directions(direction.mutable_data(), dem.mutable_data(),
+                             dims, order);
+}
+
+void wrap_flow_routing_d8_weights(py::array_t<float> weight) {
+  ptrdiff_t count = weight.size();
+  flow_routing_d8_weights(weight.mutable_data(), count);
+}
+
 PYBIND11_MODULE(_flow, m) {
   m.def("edgeset_count", &wrap_edgeset_count);
   m.def("edgeset_scan", &wrap_edgeset_scan);
   m.def("edgeset_count_merged", &wrap_edgeset_count_merged);
   m.def("edgeset_merge", &wrap_edgeset_merge);
   m.def("flow_routing_tsort", &wrap_flow_routing_tsort);
+  m.def("flow_routing_d8_directions", &wrap_flow_routing_d8_directions);
+  m.def("flow_routing_d8_weights", &wrap_flow_routing_d8_weights);
 }

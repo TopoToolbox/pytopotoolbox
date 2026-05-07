@@ -6,9 +6,13 @@ import topotoolbox as tt3
 
 rng = np.random.default_rng(210057042403268582692858923958297081890)
 
-def bitmap():
-    sz = (3, 5)
-    z = np.array(rng.random(sz))
+@pytest.fixture
+def dem():
+    sz = (11, 13)
+    return rng.random(sz)
+
+def bitmap(z):
+    sz = z.shape
     edges = np.zeros(sz, dtype=np.uint8)
 
     ei = np.array([0, -1, -1, -1, 0, 1, 1, 1])
@@ -25,12 +29,12 @@ def bitmap():
     return edges
 
 @pytest.fixture
-def bitmap1():
-    return bitmap()
+def bitmap1(dem):
+    return bitmap(dem)
 
 @pytest.fixture
-def bitmap2():
-    return bitmap()
+def bitmap2(dem):
+    return bitmap(dem)
 
 def uniform_weights(bitmap):
     np.seterr(divide='ignore')
@@ -107,3 +111,37 @@ def test_edgeset_tsort(bitmap1):
     # edge, but it should have the same weight.
     for (u, w) in zip(source, sweight):
         assert w == weights1[scan[np.unravel_index(u, scan.shape)]]
+
+def test_flow_routing_d8(dem):
+    directions = np.zeros(dem.shape, dtype=np.uint8)
+    tt3._flow.flow_routing_d8_directions(directions, dem)
+
+    assert np.all(np.bitwise_count(directions) < 2)
+
+    scan = np.zeros(dem.shape, dtype=np.int64)
+    c = tt3._flow.edgeset_scan(scan, directions)
+
+    assert c > 0
+
+    weights = np.zeros(c, dtype=np.float32)
+    tt3._flow.flow_routing_d8_weights(weights)
+
+    stream = np.zeros(dem.shape, dtype=np.int64)
+    source = np.zeros(c, dtype=np.int64)
+    target = np.zeros(c, dtype=np.int64)
+    sweight= np.zeros(c, dtype=np.float32)
+
+    stack = np.zeros(dem.shape, dtype=np.int64)
+    stackdir = np.zeros(dem.shape, dtype=np.uint8)
+    visited = np.zeros(dem.shape, dtype=np.uint8)
+
+    tt3._flow.flow_routing_tsort(stream, source, target, sweight,
+                                 stack, stackdir, directions, weights, scan, visited)
+
+    assert np.all(sweight == 1.0)
+
+    visited[:] = 0
+    for (u, v) in zip(source, target):
+        visited[np.unravel_index(u, dem.shape)] += 1
+
+        assert visited[np.unravel_index(v, dem.shape)] == 0
