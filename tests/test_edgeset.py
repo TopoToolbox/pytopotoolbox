@@ -6,19 +6,37 @@ import topotoolbox as tt3
 
 rng = np.random.default_rng(210057042403268582692858923958297081890)
 
+def bitmap():
+    sz = (3, 5)
+    z = np.array(rng.random(sz))
+    edges = np.zeros(sz, dtype=np.uint8)
+
+    ei = np.array([0, -1, -1, -1, 0, 1, 1, 1])
+    ej = np.array([1, 1, 0, -1, -1, -1, 0, 1])
+
+    for (index, x) in np.ndenumerate(z):
+        for (n, (ni, nj)) in enumerate(zip(index[0] + ei, index[1] + ej)):
+            if ((ni < 0) or (ni >= sz[0]) or (nj < 0) or (nj >= sz[1])):
+                continue
+
+            if z[ni, nj] < z[index]:
+                edges[index] ^= 1 << n
+
+    return edges
+
 @pytest.fixture
 def bitmap1():
-    return rng.integers(0, 255, size=(11, 13), dtype=np.uint8)
+    return bitmap()
 
 @pytest.fixture
 def bitmap2():
-    return rng.integers(0, 255, size=(11, 13), dtype=np.uint8)
+    return bitmap()
 
 def uniform_weights(bitmap):
     np.seterr(divide='ignore')
     c = np.bitwise_count(bitmap)
     w = 1 / c.flatten()
-    return np.repeat(w, c.flatten())
+    return np.asarray(np.repeat(w, c.flatten()), np.float32)
 
 # Numpy has a popcnt primitive that should be identical to
 # edgeset_count
@@ -54,5 +72,38 @@ def test_edgeset_merge(bitmap1, bitmap2):
     c1 = tt3._flow.edgeset_merge(weights, scan, bitmap1, weights1, bitmap2, weights2)
 
     assert c == c1
-    assert np.array_equal(scan.flatten()[1:], np.cumsum(np.bitwise_count(bitmap1))[0:-1])
+    assert np.array_equal(scan.flatten()[1:], np.cumsum(np.bitwise_count(bitmap1).flatten())[0:-1])
     assert np.array_equal(np.bitwise_or(bitmap1, bitmap2), bitmap1)
+
+def test_edgeset_tsort(bitmap1):
+    weights1 = uniform_weights(bitmap1)
+    scan = np.zeros(bitmap1.shape, dtype=np.int64)
+    c = tt3._flow.edgeset_scan(scan, bitmap1)
+
+    stream = np.zeros(bitmap1.shape, dtype=np.int64)
+    source = np.zeros(c, dtype=np.int64)
+    target = np.zeros(c, dtype=np.int64)
+    sweight= np.zeros(c, dtype=np.float32)
+
+    stack = np.zeros(bitmap1.shape, dtype=np.int64)
+    stackdir = np.zeros(bitmap1.shape, dtype=np.uint8)
+    visited = np.zeros(bitmap1.shape, dtype=np.uint8)
+
+    tt3._flow.flow_routing_tsort(stream, source, target, sweight,
+                                 stack, stackdir, bitmap1, weights1, scan, visited)
+
+    # If the edge lists are topologically sorted, no pixel will be
+    # visited before all of its upstream neighbors are visited
+    visited[:] = 0
+    for (u, v) in zip(source, target):
+        visited[np.unravel_index(u, bitmap1.shape)] += 1
+
+        assert visited[np.unravel_index(v, bitmap1.shape)] == 0
+
+    # Make sure that the weight for each edge is the same as that
+    # given by the initial weights array. Because each outgoing edge
+    # from a pixel has the same weight, we check the weight of the
+    # first outgoing edge of each source. This may not be the same
+    # edge, but it should have the same weight.
+    for (u, w) in zip(source, sweight):
+        assert w == weights1[scan[np.unravel_index(u, scan.shape)]]
