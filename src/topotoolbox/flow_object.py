@@ -1,6 +1,7 @@
 """This module contains the FlowObject class.
 """
 from typing import Literal
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -13,8 +14,66 @@ from . import _flow # type: ignore
 from .grid_object import GridObject
 from .interface import validate_alignment
 
-__all__ = ['FlowObject']
+__all__ = ['EdgeSet', 'FlowObject']
 
+@dataclass
+class EdgeSet:
+    """An unordered collection of weighted, directed edges within a raster"""
+    directions: np.ndarray
+    scan: np.ndarray
+    weights: np.ndarray
+
+    @property
+    def count(self):
+        """The number of edges in the edgeset"""
+        return _flow.edgeset_count(self.directions)
+
+    @property
+    def shape(self):
+        """The shape of the raster underlying the edgeset"""
+        return self.directions.shape
+
+    def merge(self, other):
+        """Merge two edgesets"""
+        c2 = _flow.edgeset_count_merged(self.directions, other.directions)
+
+        directions = self.directions.copy(order='K')
+        scan = np.zeros_like(directions, dtype=np.int64)
+        weights = np.zeros(c2, dtype=np.float32)
+
+        _flow.edgeset_merge(weights, scan,
+                            directions, self.weights,
+                            other.directions, other.weights)
+
+        return EdgeSet(directions, scan, weights)
+
+    def tsort(self):
+        """Topologically sort the edges
+
+        Returns
+        -------
+        (node, source, target, weight)
+            - node: The topologically sorted list of pixel indices
+            - source: the topologically sorted list of sources of each edge
+            - target: the topologically sorted list of targets of each edge
+            - weight: the topologically sorted list of weights of each edge
+        """
+        c = self.count
+
+        stream = np.zeros(self.shape, dtype=np.int64)
+        source = np.zeros(c, dtype=np.int64)
+        target = np.zeros(c, dtype=np.int64)
+        sweight = np.zeros(c, dtype=np.float32)
+
+        stack = np.zeros(self.shape, dtype=np.int64)
+        stackdir = np.zeros(self.shape, dtype=np.uint8)
+        visited = np.zeros(self.shape, dtype=np.uint8)
+
+        _flow.flow_routing_tsort(stream, source, target,
+                                 sweight, stack, stackdir,
+                                 self.directions, self.weights, self.scan, visited)
+
+        return (stream, source, target, sweight)
 
 class FlowObject():
     """A class containing containing (water-) flow information about a given

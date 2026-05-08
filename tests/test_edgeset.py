@@ -29,12 +29,22 @@ def bitmap(z):
     return edges
 
 @pytest.fixture
-def bitmap1(dem):
-    return bitmap(dem)
+def edgeset1(dem):
+    directions = bitmap(dem)
+    scan = np.zeros_like(directions, dtype=np.int64)
+    tt3._flow.edgeset_scan(scan, directions)
+    weights = uniform_weights(directions)
+
+    return tt3.EdgeSet(directions, scan, weights)
 
 @pytest.fixture
-def bitmap2(dem):
-    return bitmap(dem)
+def edgeset2(dem):
+    directions = bitmap(dem)
+    scan = np.zeros_like(directions, dtype=np.int64)
+    tt3._flow.edgeset_scan(scan, directions)
+    weights = uniform_weights(directions)
+
+    return tt3.EdgeSet(directions, scan, weights)
 
 def uniform_weights(bitmap):
     np.seterr(divide='ignore')
@@ -44,73 +54,41 @@ def uniform_weights(bitmap):
 
 # Numpy has a popcnt primitive that should be identical to
 # edgeset_count
-def test_edgeset_count(bitmap1):
-    c1 = tt3._flow.edgeset_count(bitmap1)
-    c2 = np.sum(np.bitwise_count(bitmap1))
+def test_edgeset_count(edgeset1):
+    c1 = edgeset1.count
+    c2 = np.sum(np.bitwise_count(edgeset1.directions))
     assert c1 == c2
 
 # The bitmap scan should be identical to the cumsum of the popcnt
 # array
-def test_edgeset_scan(bitmap1):
-    scan1 = np.zeros(bitmap1.shape, dtype=np.int64)
-    c1 = tt3._flow.edgeset_scan(scan1, bitmap1)
+def test_edgeset_scan(edgeset1):
+    assert np.array_equal(np.cumsum(np.bitwise_count(edgeset1.directions))[0:-1], edgeset1.scan.flatten()[1:])
 
-    assert c1 == tt3._flow.edgeset_count(bitmap1)
-    assert np.array_equal(np.cumsum(np.bitwise_count(bitmap1))[0:-1], scan1.flatten()[1:])
+def test_edgeset_merge(edgeset1, edgeset2):
+    merged_edges = edgeset1.merge(edgeset2)
 
-def test_edgeset_count_merged(bitmap1, bitmap2):
-    c1 = tt3._flow.edgeset_count_merged(bitmap1, bitmap2)
+    assert np.array_equal(merged_edges.scan.flatten()[1:], np.cumsum(np.bitwise_count(merged_edges.directions).flatten())[0:-1])
+    assert np.array_equal(np.bitwise_or(edgeset1.directions, edgeset2.directions), merged_edges.directions)
 
-    assert c1 == np.sum(np.bitwise_count(np.bitwise_or(bitmap1, bitmap2)))
+def test_edgeset_tsort(edgeset1):
+    (stream, source, target, sweight) = edgeset1.tsort()
 
-def test_edgeset_merge(bitmap1, bitmap2):
-
-    weights1 = uniform_weights(bitmap1)
-    weights2 = uniform_weights(bitmap2)
-
-    scan = np.zeros(bitmap1.shape, dtype=np.int64)
-
-    c = tt3._flow.edgeset_count_merged(bitmap1, bitmap2)
-    weights = np.zeros(c, dtype=float)
-
-    c1 = tt3._flow.edgeset_merge(weights, scan, bitmap1, weights1, bitmap2, weights2)
-
-    assert c == c1
-    assert np.array_equal(scan.flatten()[1:], np.cumsum(np.bitwise_count(bitmap1).flatten())[0:-1])
-    assert np.array_equal(np.bitwise_or(bitmap1, bitmap2), bitmap1)
-
-def test_edgeset_tsort(bitmap1):
-    weights1 = uniform_weights(bitmap1)
-    scan = np.zeros(bitmap1.shape, dtype=np.int64)
-    c = tt3._flow.edgeset_scan(scan, bitmap1)
-
-    stream = np.zeros(bitmap1.shape, dtype=np.int64)
-    source = np.zeros(c, dtype=np.int64)
-    target = np.zeros(c, dtype=np.int64)
-    sweight= np.zeros(c, dtype=np.float32)
-
-    stack = np.zeros(bitmap1.shape, dtype=np.int64)
-    stackdir = np.zeros(bitmap1.shape, dtype=np.uint8)
-    visited = np.zeros(bitmap1.shape, dtype=np.uint8)
-
-    tt3._flow.flow_routing_tsort(stream, source, target, sweight,
-                                 stack, stackdir, bitmap1, weights1, scan, visited)
+    visited = np.zeros_like(edgeset1.directions)
 
     # If the edge lists are topologically sorted, no pixel will be
     # visited before all of its upstream neighbors are visited
     visited[:] = 0
     for (u, v) in zip(source, target):
-        visited[np.unravel_index(u, bitmap1.shape)] += 1
+        visited[np.unravel_index(u, edgeset1.shape)] += 1
 
-        assert visited[np.unravel_index(v, bitmap1.shape)] == 0
+        assert visited[np.unravel_index(v, edgeset1.shape)] == 0
 
     # Make sure that the weight for each edge is the same as that
     # given by the initial weights array. Because each outgoing edge
     # from a pixel has the same weight, we check the weight of the
     # first outgoing edge of each source. This may not be the same
     # edge, but it should have the same weight.
-    for (u, w) in zip(source, sweight):
-        assert w == weights1[scan[np.unravel_index(u, scan.shape)]]
+    assert np.array_equal(sweight, edgeset1.weights[edgeset1.scan[np.unravel_index(source, edgeset1.shape)]])
 
 def test_flow_routing_d8(dem):
     directions = np.zeros(dem.shape, dtype=np.uint8)
@@ -126,21 +104,13 @@ def test_flow_routing_d8(dem):
     weights = np.zeros(c, dtype=np.float32)
     tt3._flow.flow_routing_d8_weights(weights)
 
-    stream = np.zeros(dem.shape, dtype=np.int64)
-    source = np.zeros(c, dtype=np.int64)
-    target = np.zeros(c, dtype=np.int64)
-    sweight= np.zeros(c, dtype=np.float32)
+    edges = tt3.EdgeSet(directions, scan, weights)
 
-    stack = np.zeros(dem.shape, dtype=np.int64)
-    stackdir = np.zeros(dem.shape, dtype=np.uint8)
-    visited = np.zeros(dem.shape, dtype=np.uint8)
-
-    tt3._flow.flow_routing_tsort(stream, source, target, sweight,
-                                 stack, stackdir, directions, weights, scan, visited)
+    (stream, source, target, sweight) = edges.tsort()
 
     assert np.all(sweight == 1.0)
 
-    visited[:] = 0
+    visited = np.zeros_like(directions)
     for (u, v) in zip(source, target):
         visited[np.unravel_index(u, dem.shape)] += 1
 
@@ -176,6 +146,8 @@ def test_resolve_flats_lcat(dem):
     weights = np.zeros(c, dtype=np.float32)
     tt3._flow.flow_routing_d8_weights(weights)
 
+    e1 = tt3.EdgeSet(direction, scan, weights)
+
     rdirection = np.zeros(dem.shape, dtype=np.uint8)
     resolved = flats & 1 == 0
 
@@ -183,33 +155,21 @@ def test_resolve_flats_lcat(dem):
 
     tt3._flow.resolve_flats_lcat(rdirection, resolved, aux, demf)
 
-    cr = tt3._flow.edgeset_count(rdirection)
+    rscan = np.zeros(dem.shape, dtype=np.int64)
+    cr = tt3._flow.edgeset_scan(rscan, rdirection)
 
     rweights = np.zeros(cr, dtype=np.float32)
     tt3._flow.resolve_flats_lcat_weights(rweights)
 
-    c2 = tt3._flow.edgeset_count_merged(rdirection, direction)
+    e2 = tt3.EdgeSet(rdirection, rscan, rweights)
 
-    mweights = np.zeros(c2, dtype=np.float32)
-    mscan = np.zeros(dem.shape, dtype=np.int64)
-    tt3._flow.edgeset_merge(mweights, mscan, direction, weights, rdirection, rweights)
+    em = e1.merge(e2)
 
-    stream = np.zeros(dem.shape, dtype=np.int64)
-    source = np.zeros(c2, dtype=np.int64)
-    target = np.zeros(c2, dtype=np.int64)
-    sweight = np.zeros(c2, dtype=np.float32)
-
-    stack = np.zeros(dem.shape, dtype=np.int64)
-    stackdir = np.zeros(dem.shape, dtype=np.uint8)
-    visited = np.zeros(dem.shape, dtype=np.uint8)
-
-    tt3._flow.flow_routing_tsort(stream, source, target,
-                                 sweight, stack, stackdir,
-                                 direction, mweights, mscan, visited)
+    (stream, source, target, sweight) = em.tsort()
 
     assert np.all(sweight == 1.0)
 
-    visited[:] = 0
+    visited = np.zeros_like(direction)
     for (u, v) in zip(source, target):
         visited[np.unravel_index(u, dem.shape)] += 1
 
