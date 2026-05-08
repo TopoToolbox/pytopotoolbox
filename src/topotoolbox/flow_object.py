@@ -23,9 +23,45 @@ class FlowObject():
 
     def __init__(self, grid: GridObject,
                  bc: np.ndarray | GridObject | None = None,
-                 hybrid: bool = True):
+                 method: str = "d8", **kwargs):
         """The constructor for the FlowObject. Takes a GridObject as input,
         computes flow direction information and saves them as an FlowObject.
+
+        Parameters
+        ----------
+        grid : GridObject
+            The GridObject that will be the basis of the computation.
+        bc : ndarray or GridObject, optional
+            Boundary conditions for sink filling. `bc` should be an array
+            of np.uint8 that matches the shape of the DEM. Values of 1
+            indicate pixels that should be fixed to their values in the
+            original DEM and values of 0 indicate pixels that should be
+            filled.
+        method : str, optional
+            The flow routing method to use. Currently supported methods include "d8".
+
+        Raises
+        ------
+        ValueError
+            The supplied method is not supported.
+
+        Example
+        -------
+        >>> import topotoolbox
+        >>> dem = topotoolbox.load_dem('perfectworld')
+        >>> flow = topotoolbox.FlowObject(dem)
+        """
+        if method == "d8":
+            self._d8_carve(grid, bc, **kwargs)
+        else:
+            raise ValueError(f"Flow routing {method} is not supported")
+
+    def _d8_carve(self,
+                 grid: GridObject,
+                 bc: np.ndarray | GridObject | None = None,
+                 hybrid: bool = True):
+        """Construct a FlowObject using D8 flow routing with least
+        cost auxiliary topography carving.
 
         Parameters
         ----------
@@ -46,12 +82,6 @@ class FlowObject():
         -----
         Large intermediate arrays are created during the initialization
         process, which could lead to issues when using very large DEMs.
-
-        Example
-        -------
-        >>> import topotoolbox
-        >>> dem = topotoolbox.load_dem('perfectworld')
-        >>> flow = topotoolbox.FlowObject(dem)
         """
         dims = grid.dims
         dem = np.asarray(grid, dtype=np.float32)
@@ -112,7 +142,6 @@ class FlowObject():
         self.path = grid.path
         self.name = grid.name
 
-        # raster metadata
         self.direction = direction  # dtype=np.unit8
 
         self.stream = node
@@ -123,9 +152,8 @@ class FlowObject():
         self.cellsize = grid.cellsize
         self.strides = tuple(s // grid.z.itemsize for s in grid.z.strides)
         self.order: Literal['F', 'C'] = ('F' if grid.z.flags.f_contiguous
-                                         else 'C')
+                                       else 'C')
 
-        # georeference
         self.bounds = grid.bounds
         self.transform = grid.transform
         self.georef = grid.georef
