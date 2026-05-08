@@ -84,6 +84,29 @@ void wrap_flow_routing_d8_weights(py::array_t<float> weight) {
   flow_routing_d8_weights(weight.mutable_data(), count);
 }
 
+void wrap_resolve_flats_lcat(py::array_t<uint8_t> direction,
+                             py::array_t<uint8_t> resolved,
+                             py::array_t<float> aux,
+                             py::array_t<float> dem) {
+
+  int order = direction.flags() & py::array::c_style ? 1 : 0;
+  ptrdiff_t dims[2] = {dem.shape(0), dem.shape(1)};
+  // Reverse the dimensions if in row-major order
+  if (order) {
+    dims[0] = dem.shape(1);
+    dims[1] = dem.shape(0);
+  }
+
+  resolve_flats_lcat(direction.mutable_data(), resolved.mutable_data(),
+                     aux.mutable_data(), dem.mutable_data(), dims, order);
+}
+
+void wrap_resolve_flats_lcat_weights(py::array_t<float> weight) {
+  ptrdiff_t count = weight.size();
+
+  resolve_flats_lcat_weights(weight.mutable_data(), count);
+}
+
 PYBIND11_MODULE(_flow, m) {
   m.def("edgeset_count", &wrap_edgeset_count);
   m.def("edgeset_scan", &wrap_edgeset_scan);
@@ -92,4 +115,6 @@ PYBIND11_MODULE(_flow, m) {
   m.def("flow_routing_tsort", &wrap_flow_routing_tsort);
   m.def("flow_routing_d8_directions", &wrap_flow_routing_d8_directions);
   m.def("flow_routing_d8_weights", &wrap_flow_routing_d8_weights);
+  m.def("resolve_flats_lcat", &wrap_resolve_flats_lcat);
+  m.def("resolve_flats_lcat_weights", &wrap_resolve_flats_lcat_weights);
 }
