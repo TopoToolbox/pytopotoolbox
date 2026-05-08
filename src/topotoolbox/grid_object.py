@@ -311,6 +311,58 @@ class GridObject():
 
         return result
 
+    def auxiliary_topography(self, bc=None, hybrid=True):
+        """Compute auxiliary topography
+
+        This is used for least-cost auxiliary topography flow routing.
+
+        Returns
+        -------
+        (aux: np.ndarray, filled_dem: np.ndarray, flats: np.ndarray)
+            The auxiliary topography, sink-filled DEM and an array
+            identifying flats in the sink-filled DEM.
+        """
+        dims = self.dims
+        dem = np.asarray(self, dtype=np.float32)
+        filled_dem = np.zeros_like(dem)
+
+        restore_nans = False
+        if bc is None:
+            bc = np.ones_like(dem, dtype=np.uint8)
+            bc[1:-1, 1:-1] = 0  # Set interior pixels to 0
+
+            nans = np.isnan(dem)
+            dem[nans] = -np.inf
+            bc[nans] = 1
+            restore_nans = True
+
+        bc = np.asarray(bc, dtype=np.uint8)
+
+        queue = np.zeros(np.prod(dem.shape), dtype=np.int64)
+        if hybrid:
+            _grid.fillsinks_hybrid(filled_dem, queue, dem, bc, dims)
+        else:
+            _grid.fillsinks(filled_dem, dem, bc, dims)
+
+        if restore_nans:
+            dem[nans] = np.nan
+            filled_dem[nans] = np.nan
+
+        flats = np.zeros_like(dem, dtype=np.int32)
+        _grid.identifyflats(flats, filled_dem, dims)
+
+        costs = np.zeros_like(dem, dtype=np.float32)
+        conncomps = np.zeros_like(dem, dtype=np.int64)
+        _grid.gwdt_computecosts(costs, conncomps, flats, dem, filled_dem, dims)
+
+        aux = np.zeros_like(flats, dtype=np.float32)
+        prev = conncomps  # prev: dtype=np.int64
+        heap = queue      # heap: dtype=np.int64
+        back = np.zeros_like(flats, dtype=np.int64)
+        _grid.gwdt(aux, prev, costs, flats, heap, back, dims)
+
+        return (aux, filled_dem, flats)
+
     def identifyflats(
             self, raw: bool = False, output: list[str] | None = None) -> tuple:
         """Identifies flats and sills in a digital elevation model (DEM).
