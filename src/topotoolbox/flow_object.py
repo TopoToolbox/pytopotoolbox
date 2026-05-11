@@ -75,6 +75,84 @@ class EdgeSet:
 
         return (stream, source, target, sweight)
 
+def _d8(dem: np.ndarray) -> EdgeSet:
+    """Route flow over the provided DEM with D8
+    """
+    z = np.asarray(dem, dtype=np.float32)
+    directions = np.zeros_like(z, dtype=np.uint8)
+    _flow.flow_routing_d8_directions(directions, z)
+
+    scan = np.zeros_like(z, dtype=np.int64)
+    c = _flow.edgeset_scan(scan, directions)
+
+    weights = np.zeros(c, dtype=np.float32)
+    _flow.flow_routing_d8_weights(weights)
+
+    return EdgeSet(directions, scan, weights)
+
+def _lcat(aux: np.ndarray, demf: np.ndarray, flats: np.ndarray) -> EdgeSet:
+    """Route flow over the provided DEM and auxiliary topography using
+    least cost auxiliary topography carving
+    """
+    directions = np.zeros_like(demf, dtype=np.uint8)
+    resolved = flats & 1 == 0
+
+    _flow.resolve_flats_lcat(directions, resolved, aux, demf)
+
+    scan = np.zeros_like(demf, dtype=np.int64)
+    cr = _flow.edgeset_scan(scan, directions)
+
+    weights = np.zeros(cr, dtype=np.float32)
+    _flow.resolve_flats_lcat_weights(weights)
+
+    return EdgeSet(directions, scan, weights)
+
+def _d8_carve(grid: GridObject,
+             bc: np.ndarray | GridObject | None = None,
+             hybrid: bool = True):
+    """Construct a FlowObject using D8 flow routing with least
+        cost auxiliary topography carving.
+
+    Parameters
+    ----------
+    grid : GridObject
+        The GridObject that will be the basis of the computation.
+    bc : ndarray or GridObject, optional
+        Boundary conditions for sink filling. `bc` should be an array
+        of np.uint8 that matches the shape of the DEM. Values of 1
+        indicate pixels that should be fixed to their values in the
+        original DEM and values of 0 indicate pixels that should be
+        filled.
+    hybrid: bool, optional
+        Should hybrid reconstruction algorithm be used to fill
+        sinks? Defaults to True. Hybrid reconstruction is faster
+        but requires additional memory be allocated for a queue.
+
+    Notes
+    -----
+    Large intermediate arrays are created during the initialization
+    process, which could lead to issues when using very large DEMs.
+    """
+    dims = grid.dims
+
+    (aux, filled_dem, flats) = grid.auxiliary_topography(bc, hybrid)
+
+    node = np.zeros_like(aux, dtype=np.int64)  # node: dtype=np.int64
+    direction = np.zeros_like(aux, dtype=np.uint8)
+    _grid.flow_routing_d8_carve(node, direction, filled_dem, aux, flats, dims)
+
+    # ravel is used here to flatten the arrays. The memory order should not matter
+    # because we only need a block of contiguous memory interpreted as a 1D array.
+    source = np.zeros(aux.size, dtype=np.int64)  # source: dtype=int64
+    target = np.zeros(aux.size, dtype=np.int64)       # target: dtype=int64
+    edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims)
+
+    return (direction,
+            node,
+            source[0:edge_count],
+            target[0:edge_count],
+            np.ones(edge_count, dtype=np.float32))
+
 class FlowObject():
     """A class containing containing (water-) flow information about a given
     digital elevation model (DEM).
@@ -82,7 +160,9 @@ class FlowObject():
 
     def __init__(self, grid: GridObject,
                  bc: np.ndarray | GridObject | None = None,
-                 method: str = "d8", **kwargs):
+                 method: str = "d8",
+                 sink_resolution: str = "carve",
+                 **kwargs):
         """The constructor for the FlowObject. Takes a GridObject as input,
         computes flow direction information and saves them as an FlowObject.
 
@@ -98,6 +178,9 @@ class FlowObject():
             filled.
         method : str, optional
             The flow routing method to use. Currently supported methods include "d8".
+        sink_resolution: str, optional
+            The sink resolution method to use. Currently supported
+            methods are "carve" and "lcat". The default is "carve".
 
         Raises
         ------
@@ -111,61 +194,24 @@ class FlowObject():
         >>> flow = topotoolbox.FlowObject(dem)
         """
         if method == "d8":
-            self._d8_carve(grid, bc, **kwargs)
+            if sink_resolution == "carve":
+                (direction, stream, source, target, sweight) = _d8_carve(grid, bc, **kwargs)
+            elif sink_resolution == "lcat":
+                aux, demf, flats = grid.auxiliary_topography(bc)
+                e1 = _d8(demf)
+                e2 = _lcat(aux, demf, flats)
+
+                em = e1.merge(e2)
+                direction = em.directions
+
+                (stream, source, target, sweight) = em.tsort()
+            else:
+                raise ValueError(f" Sink resolution {method} is not supported")
         else:
             raise ValueError(f"Flow routing {method} is not supported")
 
-    def _d8_carve(self,
-                 grid: GridObject,
-                 bc: np.ndarray | GridObject | None = None,
-                 hybrid: bool = True):
-        """Construct a FlowObject using D8 flow routing with least
-        cost auxiliary topography carving.
-
-        Parameters
-        ----------
-        grid : GridObject
-            The GridObject that will be the basis of the computation.
-        bc : ndarray or GridObject, optional
-            Boundary conditions for sink filling. `bc` should be an array
-            of np.uint8 that matches the shape of the DEM. Values of 1
-            indicate pixels that should be fixed to their values in the
-            original DEM and values of 0 indicate pixels that should be
-            filled.
-        hybrid: bool, optional
-            Should hybrid reconstruction algorithm be used to fill
-            sinks? Defaults to True. Hybrid reconstruction is faster
-            but requires additional memory be allocated for a queue.
-
-        Notes
-        -----
-        Large intermediate arrays are created during the initialization
-        process, which could lead to issues when using very large DEMs.
-        """
-        dims = grid.dims
-
-        (aux, filled_dem, flats) = grid.auxiliary_topography(bc, hybrid)
-
-        node = np.zeros_like(aux, dtype=np.int64)  # node: dtype=np.int64
-        direction = np.zeros_like(aux, dtype=np.uint8)
-        _grid.flow_routing_d8_carve(
-            node, direction, filled_dem, aux, flats, dims)
-
-        # ravel is used here to flatten the arrays. The memory order should not matter
-        # because we only need a block of contiguous memory interpreted as a 1D array.
-        source = np.zeros(aux.size, dtype=np.int64)  # source: dtype=int64
-        target = np.zeros(aux.size, dtype=np.int64)       # target: dtype=int64
-        edge_count = _grid.flow_routing_d8_edgelist(
-            source, target, node, direction, dims)
-
         self.path = grid.path
         self.name = grid.name
-
-        self.direction = direction  # dtype=np.unit8
-
-        self.stream = node
-        self.source = source[0:edge_count]  # dtype=np.int64
-        self.target = target[0:edge_count]  # dtype=np.int64
 
         self.shape = grid.shape
         self.cellsize = grid.cellsize
@@ -176,6 +222,12 @@ class FlowObject():
         self.bounds = grid.bounds
         self.transform = grid.transform
         self.georef = grid.georef
+
+        self.direction = direction
+        self.stream = stream
+        self.source = source
+        self.target = target
+        self.fraction = sweight
 
     @property
     def dims(self):

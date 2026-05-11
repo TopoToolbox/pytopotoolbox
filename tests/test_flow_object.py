@@ -37,11 +37,12 @@ def order_dems():
 
     return [cdem, fdem]
 
-
-def test_flowobject(wide_dem):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_flowobject(wide_dem, method, sink_resolution):
     dem = wide_dem
     original_dem = dem.z.copy()
-    fd = topo.FlowObject(dem)
+    fd = topo.FlowObject(dem, method=method, sink_resolution=sink_resolution)
 
     assert topo.validate_alignment(dem, fd)
 
@@ -57,21 +58,34 @@ def test_flowobject(wide_dem):
     # Ensure that FlowObject does not modify the original DEM
     assert np.all(dem.z == original_dem)
 
+    visited = np.zeros_like(dem, dtype=np.uint8)
+    for (u, v) in zip(fd.source, fd.target):
+        visited[np.unravel_index(u, dem.shape)] += 1
 
-def test_flowobject_order(order_dems):
+        assert visited[np.unravel_index(v, dem.shape)] == 0
+
+    # All pixels with no outgoing edges should be on the boundary
+    bc = np.ones_like(dem, dtype=np.uint8)
+    bc[1:-1, 1:-1] = 0
+    assert np.all(bc[visited == 0] == 1)
+
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_flowobject_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     assert isequivalent(cfd, ffd)
 
-
-def test_flow_accumulation_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_flow_accumulation_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     ca = cfd.flow_accumulation()
     fa = ffd.flow_accumulation()
@@ -79,11 +93,13 @@ def test_flow_accumulation_order(order_dems):
     assert np.array_equal(ca, fa)
 
 
-def test_drainagebasins_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_drainagebasins_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cdb = cfd.drainagebasins()
     fdb = ffd.drainagebasins()
@@ -132,8 +148,10 @@ def test_drainagebasins_order(order_dems):
     assert np.array_equal(crec.flatten(), cdb.z.flatten())
 
 
-def test_ezgetnal(wide_dem):
-    fd = topo.FlowObject(wide_dem)
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_ezgetnal(wide_dem, method, sink_resolution):
+    fd = topo.FlowObject(wide_dem, method=method, sink_resolution=sink_resolution)
 
     z = fd.ezgetnal(wide_dem)
     z2 = fd.ezgetnal(z.z)
@@ -156,9 +174,10 @@ def test_ezgetnal(wide_dem):
     # ezgetnal with dtype should return array of that dtype
     assert z3.z.dtype is np.dtype(np.float64)
 
-
-def test_flowpathextract(wide_dem):
-    fd = topo.FlowObject(wide_dem)
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_flowpathextract(wide_dem, method, sink_resolution):
+    fd = topo.FlowObject(wide_dem, method=method, sink_resolution=sink_resolution)
     s = topo.StreamObject(fd)
 
     assert topo.validate_alignment(wide_dem, fd)
@@ -188,11 +207,13 @@ def test_flowpathextract(wide_dem):
             assert idxs[e] == u
             assert idxs[e + 1] == v
 
-def test_flowpathextract_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_flowpathextract_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     # Convert the row-major linear index to column-major
     ci = np.ravel_multi_index((37, 109), cfd.shape, order=cfd.order)
@@ -207,11 +228,13 @@ def test_flowpathextract_order(order_dems):
 
     assert np.array_equal(cp, fpc)
 
-def test_distance_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_distance_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cd = cfd.node_to_node_distance()
     fd = ffd.node_to_node_distance()
@@ -224,9 +247,11 @@ def test_distance_order(order_dems):
 
     assert np.array_equal(cdg, fdg)
 
-def test_imposemin(wide_dem):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_imposemin(wide_dem, method, sink_resolution):
     original_dem = wide_dem.z.copy()
-    fd = topo.FlowObject(wide_dem)
+    fd = topo.FlowObject(wide_dem, method=method, sink_resolution=sink_resolution)
 
     g0 = (wide_dem.z[fd.source_indices] -
           wide_dem.z[fd.target_indices])/fd.node_to_node_distance()
@@ -249,11 +274,12 @@ def test_imposemin(wide_dem):
         # imposemin should not modify the original array
         assert np.array_equal(original_dem, wide_dem.z)
 
-
-def test_imposemin_f64(wide_dem):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_imposemin_f64(wide_dem, method, sink_resolution):
     original_dem = np.array(wide_dem, dtype=np.float64)
 
-    fd = topo.FlowObject(wide_dem)
+    fd = topo.FlowObject(wide_dem, method=method, sink_resolution=sink_resolution)
 
     z = np.array(wide_dem.z, dtype=np.float64)
 
@@ -268,33 +294,39 @@ def test_imposemin_f64(wide_dem):
     # imposemin should not modify the original array
     assert np.array_equal(original_dem, z)
 
-def test_imposemin_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_imposemin_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cminslope = topo.imposemin(cfd, cdem, minimum_slope=0.001)
     fminslope = topo.imposemin(ffd, fdem, minimum_slope=0.001)
 
     assert np.array_equal(cminslope, fminslope)
 
-def test_downstream_distance_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_downstream_distance_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cd = cfd.downstream_distance()
     fd = ffd.downstream_distance()
 
     assert np.array_equal(cd, fd)
 
-def test_upstream_distance_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_upstream_distance_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cd = cfd.upstream_distance()
     fd = ffd.upstream_distance()
@@ -306,8 +338,10 @@ def test_upstream_distance_order(order_dems):
 # array. Also check to make sure that dependencemap and influencemap
 # actually propagate values up and downstream by making sure there are
 # active pixels that are not part of the original mask
-def test_dependence_map_indexing(wide_dem):
-    fd = topo.FlowObject(wide_dem)
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_dependence_map_indexing(wide_dem, method, sink_resolution):
+    fd = topo.FlowObject(wide_dem, method=method, sink_resolution=sink_resolution)
 
     mask = wide_dem.z == np.min(wide_dem)
 
@@ -316,8 +350,10 @@ def test_dependence_map_indexing(wide_dem):
     assert np.any(d.z & np.invert(mask))
     assert wide_dem.z[d.z].size < wide_dem.z.size
 
-def test_influence_map_indexing(wide_dem):
-    fd = topo.FlowObject(wide_dem)
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_influence_map_indexing(wide_dem, method, sink_resolution):
+    fd = topo.FlowObject(wide_dem, method=method, sink_resolution=sink_resolution)
 
     mask = wide_dem.z == np.max(wide_dem)
 
@@ -327,41 +363,47 @@ def test_influence_map_indexing(wide_dem):
     assert np.any(i.z & np.invert(mask))
     assert wide_dem.z[i.z].size < wide_dem.z.size
 
-def test_dependence_map_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_dependence_map_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
     l_c = cdem.duplicate_with_new_data(np.zeros(cdem.shape, dtype = bool, order = 'C'))
     l_f = fdem.duplicate_with_new_data(np.zeros(fdem.shape, dtype = bool, order = 'F'))
     l_c.z[50:100,50:100] = True
     l_f.z[50:100,50:100] = True
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cd = cfd.dependencemap(l_c)
     fd = ffd.dependencemap(l_f)
 
     assert np.array_equal(cd, fd)
 
-def test_influence_map_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_influence_map_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
     l_c = cdem.duplicate_with_new_data(np.zeros(cdem.shape, dtype = bool, order = 'C'))
     l_f = fdem.duplicate_with_new_data(np.zeros(fdem.shape, dtype = bool, order = 'F'))
     l_c.z[50:100,50:100] = True
     l_f.z[50:100,50:100] = True
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cd = cfd.influencemap(l_c)
     fd = ffd.influencemap(l_f)
 
     assert np.array_equal(cd, fd)
 
-def test_getoutlets(wide_dem):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_getoutlets(wide_dem, method, sink_resolution):
     # The outlets determined by FlowObject.getoutlets should be a
     # superset of those determined by s.streampoi('outlets')
 
-    fd = topo.FlowObject(wide_dem)
+    fd = topo.FlowObject(wide_dem, method=method, sink_resolution=sink_resolution)
     s = topo.StreamObject(fd, threshold=1)
 
     soutlets = s.streampoi('outlets')
@@ -374,12 +416,14 @@ def test_getoutlets(wide_dem):
 
     assert np.all(fog[sog])
 
-def test_getoutlets_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_getoutlets_order(order_dems, method, sink_resolution):
     # Identified outlets should be invariant of the memory ordering.
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     coutlets = cfd.getoutlets()
     cog = np.zeros(cfd.shape, dtype=bool)
@@ -392,11 +436,13 @@ def test_getoutlets_order(order_dems):
     assert np.count_nonzero(cog) > 0
     assert np.array_equal(cog, fog)
 
-def test_vertdistance2stream_order(order_dems):
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_vertdistance2stream_order(order_dems, method, sink_resolution):
     cdem, fdem = order_dems
 
-    cfd = topo.FlowObject(cdem)
-    ffd = topo.FlowObject(fdem)
+    cfd = topo.FlowObject(cdem, method=method, sink_resolution=sink_resolution)
+    ffd = topo.FlowObject(fdem, method=method, sink_resolution=sink_resolution)
 
     cs = topo.StreamObject(cfd)
     fs = topo.StreamObject(ffd)
