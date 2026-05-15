@@ -950,8 +950,8 @@ class GridObject():
         if partial_derivatives:
             result_kx = cp.copy(self)
             result_ky = cp.copy(self)
-            result_kx.z = kx
-            result_ky.z = ky
+            result_kx.z = fx
+            result_ky.z = fy
             return result_kx, result_ky
 
         slope = np.sqrt(fx**2 + fy**2)

@@ -75,6 +75,8 @@ def types_dems():
 
     return [dem32, dem64]
 
+def rotGrid90(dem):
+    return dem.duplicate_with_new_data(np.rot90(dem))
 
 def test_fillsinks(square_dem, wide_dem, tall_dem):
     # TODO: add more tests
@@ -330,6 +332,18 @@ def test_erode_order(order_dems):
 
     assert np.array_equal(ceroded, feroded)
 
+@pytest.mark.parametrize("modified", [True, False])
+def test_evansslope_rotation(square_dem, modified):
+    g = square_dem.evansslope(modified=modified)
+    r = rotGrid90(square_dem).evansslope(modified=modified)
+
+    assert np.allclose(rotGrid90(g), r)
+
+    gx, gy = square_dem.evansslope(modified=modified, partial_derivatives=True)
+    rx, ry = rotGrid90(square_dem).evansslope(modified=modified, partial_derivatives=True)
+
+    assert np.allclose(rotGrid90(gx).z, ry.z)
+    assert np.allclose(rotGrid90(gy).z, -rx.z)
 
 @pytest.mark.parametrize("modified", [True, False])
 def test_evansslope_order(order_dems, modified):
