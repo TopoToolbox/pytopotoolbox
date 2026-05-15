@@ -186,7 +186,7 @@ void wrap_gwdt_computecosts(
 void wrap_flow_routing_d8_carve(
         py::array_t<ptrdiff_t> node, py::array_t<uint8_t> direction,
         py::array_t<float> dem, py::array_t<float> dist,
-        py::array_t<int32_t> flats, std::tuple<ptrdiff_t, ptrdiff_t> dims){
+        py::array_t<int32_t> flats, std::tuple<ptrdiff_t, ptrdiff_t> dims, int order){
 
     ptrdiff_t *node_ptr = node.mutable_data();
     uint8_t *direction_ptr = direction.mutable_data();
@@ -196,8 +196,6 @@ void wrap_flow_routing_d8_carve(
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-
-    unsigned int order = (direction.flags() & py::array::c_style) ? 1 : 0;
 
     flow_routing_d8_carve(node_ptr, direction_ptr, dem_ptr, dist_ptr, flats_ptr, dims_ptr, order);
 }
@@ -215,7 +213,7 @@ ptrdiff_t wrap_flow_routing_d8_edgelist(
         py::array_t<ptrdiff_t> target,
         py::array_t<ptrdiff_t> node,
         py::array_t<uint8_t> direction,
-        std::tuple<ptrdiff_t,ptrdiff_t> dims) {
+        std::tuple<ptrdiff_t,ptrdiff_t> dims, int order) {
 
     ptrdiff_t *source_ptr = source.mutable_data();
     ptrdiff_t *target_ptr = target.mutable_data();
@@ -225,8 +223,6 @@ ptrdiff_t wrap_flow_routing_d8_edgelist(
 
     std::array<ptrdiff_t, 2> dims_array = {std::get<0>(dims), std::get<1>(dims)};
     ptrdiff_t *dims_ptr = dims_array.data();
-
-    unsigned int order = (direction.flags() & py::array::c_style) ? 1 : 0;
 
     return flow_routing_d8_edgelist(source_ptr, target_ptr, node_ptr, direction_ptr, dims_ptr, order);
 }
