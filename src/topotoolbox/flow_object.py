@@ -134,18 +134,20 @@ def _d8_carve(grid: GridObject,
     process, which could lead to issues when using very large DEMs.
     """
     dims = grid.dims
+    order = (0 if grid.z.flags.f_contiguous else 1)
+
 
     (aux, filled_dem, flats) = grid.auxiliary_topography(bc, hybrid)
 
     node = np.zeros_like(aux, dtype=np.int64)  # node: dtype=np.int64
     direction = np.zeros_like(aux, dtype=np.uint8)
-    _grid.flow_routing_d8_carve(node, direction, filled_dem, aux, flats, dims)
+    _grid.flow_routing_d8_carve(node, direction, filled_dem, aux, flats, dims, order)
 
     # ravel is used here to flatten the arrays. The memory order should not matter
     # because we only need a block of contiguous memory interpreted as a 1D array.
     source = np.zeros(aux.size, dtype=np.int64)  # source: dtype=int64
     target = np.zeros(aux.size, dtype=np.int64)       # target: dtype=int64
-    edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims)
+    edge_count = _grid.flow_routing_d8_edgelist(source, target, node, direction, dims, order)
 
     return (direction,
             node,
