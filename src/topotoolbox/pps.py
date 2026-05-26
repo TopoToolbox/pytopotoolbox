@@ -35,7 +35,7 @@ class PPS:
         return self.pp.size
 
     @classmethod
-    def from_nal(cls, stream: StreamObject, nal: npt.NDArray[bool]):
+    def from_nal(cls, stream: StreamObject, nal: npt.NDArray[np.bool]):
         """Construct a PPS from a logical node attribute list
         """
         return cls(stream, np.flatnonzero(nal))
