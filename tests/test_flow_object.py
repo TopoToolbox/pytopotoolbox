@@ -79,6 +79,30 @@ def test_flowobject_order(order_dems, method, sink_resolution):
 
     assert isequivalent(cfd, ffd)
 
+def test_flowobject_grid(wide_dem):
+    fd = topo.FlowObject(wide_dem)
+
+    z = fd.grid(wide_dem)
+    assert np.array_equal(z, wide_dem)
+
+    assert z.georef == wide_dem.georef
+    assert z.bounds == wide_dem.bounds
+
+    z = fd.grid(wide_dem, dtype=np.int64)
+    assert z.z.dtype == np.int64
+
+    z = fd.grid(wide_dem, copy=True)
+    z[0, 0] = np.nan
+    assert not np.isnan(wide_dem.z[0, 0])
+
+    assert np.array_equal(fd.grid(wide_dem), fd.grid(wide_dem, copy=True))
+
+    a = np.zeros(fd.shape, dtype=np.float32)
+
+    z = fd.grid(a, dtype=np.float32, copy=False)
+    a[0, 0] = 1.0
+    assert z[0, 0] == 1.0
+
 @pytest.mark.parametrize("method", ["d8"])
 @pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
 def test_flow_accumulation_order(order_dems, method, sink_resolution):
@@ -345,8 +369,7 @@ def test_dependence_map_indexing(wide_dem, method, sink_resolution):
 
     mask = wide_dem.z == np.min(wide_dem)
 
-    l = wide_dem.duplicate_with_new_data(mask)
-    d = fd.dependencemap(l)
+    d = fd.dependencemap(mask)
     assert np.any(d.z & np.invert(mask))
     assert wide_dem.z[d.z].size < wide_dem.z.size
 
@@ -357,8 +380,7 @@ def test_influence_map_indexing(wide_dem, method, sink_resolution):
 
     mask = wide_dem.z == np.max(wide_dem)
 
-    l = wide_dem.duplicate_with_new_data(mask)
-    i = fd.influencemap(l)
+    i = fd.influencemap(mask)
 
     assert np.any(i.z & np.invert(mask))
     assert wide_dem.z[i.z].size < wide_dem.z.size
