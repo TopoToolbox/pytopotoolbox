@@ -40,6 +40,13 @@ class PPS:
         """
         return np.sum(self.s.node_to_node_distance())
 
+    def intensity(self) -> float:
+        """Estimate the intensity of points on the stream network
+
+        The intensity is the expected number of points per unit length.
+        """
+        return self.npoints / self.tlength
+
     @classmethod
     def from_nal(cls, stream: StreamObject, nal: npt.NDArray[np.bool]):
         """Construct a PPS from a logical node attribute list
