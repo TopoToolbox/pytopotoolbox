@@ -6,6 +6,7 @@ from .flow_object import FlowObject, EdgeSet
 from .stream_object import StreamObject
 from .graphflood_object import GFObject
 from .graphflood import *
+from .pps import PPS
 from .utils import *
 from .stream_functions import *
 from .swath import *
