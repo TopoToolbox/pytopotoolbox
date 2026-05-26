@@ -329,6 +329,43 @@ class FlowObject():
 
         return k.astype(dtype)
 
+    def grid(self, z, **kwargs):
+        """Construct a GridObject aligned with the FlowObject from an array of data.
+
+        Keyword arguments are forwarded to a call to
+        `numpy.asarray`. Use these keyword arguments to specify the
+        data type (`dtype`) or whether to make a copy (`copy: bool`),
+        for example.
+
+        Parameters
+        ----------
+
+        z: array_like
+           An array or other object that exposes the Numpy array
+           interface (e.g. a `GridObject`).
+
+        Raises
+        ------
+        ValueError
+            The input array is not appropriated shaped for the `FlowObject`
+
+        """
+        if not validate_alignment(self, z):
+            raise ValueError("Input is not properly aligned to the FlowObject")
+
+        result = GridObject()
+        result.path = self.path
+        result.name = self.name
+
+        result.z = np.asarray(z, **kwargs)
+        result.cellsize = self.cellsize
+
+        result.bounds = self.bounds
+        result.transform = self.transform
+        result.georef = self.georef
+
+        return result
+
     def flow_accumulation(self, weights: np.ndarray | float = 1.0):
         """Computes the flow accumulation for a given flow network using
         optional weights. The flow accumulation represents the amount of flow
@@ -372,18 +409,7 @@ class FlowObject():
 
         _stream.traverse_down_f32_add_mul(acc, fraction, self.source, self.target)
 
-        result = GridObject()
-        result.path = self.path
-        result.name = self.name
-
-        result.z = acc
-        result.cellsize = self.cellsize
-
-        result.bounds = self.bounds
-        result.transform = self.transform
-        result.georef = self.georef
-
-        return result
+        return self.grid(acc)
 
     def getoutlets(self):
         """Extract outlets from a flow network.
@@ -458,18 +484,7 @@ class FlowObject():
         _stream.traverse_up_u32_or_and(
             basins, weights, self.source, self.target)
 
-        result = GridObject()
-        result.path = self.path
-        result.name = self.name
-
-        result.z = np.array(basins, dtype=np.int64)
-        result.cellsize = self.cellsize
-
-        result.bounds = self.bounds
-        result.transform = self.transform
-        result.georef = self.georef
-
-        return result
+        return self.grid(basins, dtype=np.int64)
 
     def flowpathextract(self, idx: int):
         """Extract linear indices of a single flowpath in a DEM
@@ -544,18 +559,7 @@ class FlowObject():
         down_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
         _stream.traverse_down_f32_max_add(down_d, dist, self.source, self.target)
 
-        result = GridObject()
-        result.path = self.path
-        result.name = self.name
-
-        result.z = down_d
-        result.cellsize = self.cellsize
-
-        result.bounds = self.bounds
-        result.transform = self.transform
-        result.georef = self.georef
-
-        return result
+        return self.grid(down_d)
 
     def upstream_distance(self) -> GridObject:
         """Calculates the horizontal distance from outlets and ridges
@@ -572,18 +576,7 @@ class FlowObject():
         up_d = np.zeros(self.shape, dtype = np.float32, order=self.order)
         _stream.traverse_up_f32_max_add(up_d, dist, self.source, self.target)
 
-        result = GridObject()
-        result.path = self.path
-        result.name = self.name
-
-        result.z = up_d
-        result.cellsize = self.cellsize
-
-        result.bounds = self.bounds
-        result.transform = self.transform
-        result.georef = self.georef
-
-        return result
+        return self.grid(up_d)
 
     def vertdistance2stream(self, stream,
                                       grid: GridObject) -> GridObject:
@@ -647,7 +640,7 @@ class FlowObject():
         i = np.ones(self.source.shape, dtype = np.uint8, order=self.order) # turns on all edges
         _stream.traverse_up_u8_or_and(seed, i, self.source, self.target)
 
-        return l.duplicate_with_new_data(np.asarray(seed, dtype=np.bool))
+        return self.grid(seed, dtype=np.bool)
 
     def influencemap(self, l) -> GridObject:
         """Delineate downslope area for specific locations in a DEM.
@@ -671,7 +664,7 @@ class FlowObject():
         i = np.ones(self.source.shape, dtype = np.uint8, order=self.order) # turns on all edges
         _stream.traverse_down_u8_or_and(seed, i, self.source, self.target)
 
-        return l.duplicate_with_new_data(np.asarray(seed, dtype=np.bool))
+        return self.grid(seed, dtype=np.bool)
 
     # 'Magic' functions:
     # ------------------------------------------------------------------------
