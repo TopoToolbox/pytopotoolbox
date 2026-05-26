@@ -34,6 +34,12 @@ class PPS:
         """
         return self.pp.size
 
+    @property
+    def tlength(self) -> float:
+        """The total length of the stream network
+        """
+        return np.sum(self.s.node_to_node_distance())
+
     @classmethod
     def from_nal(cls, stream: StreamObject, nal: npt.NDArray[np.bool]):
         """Construct a PPS from a logical node attribute list

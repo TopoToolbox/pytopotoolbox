@@ -15,3 +15,9 @@ def test_pps(stream):
     pps = tt3.PPS.from_nal(stream, nal)
 
     assert pps.npoints == np.count_nonzero(nal)
+
+def test_tlength(stream):
+    nal = stream.downstream_distance() > 10
+    pps = tt3.PPS.from_nal(stream, nal)
+
+    assert pps.tlength > np.max(stream.downstream_distance())
