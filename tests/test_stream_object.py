@@ -958,3 +958,37 @@ def test_distance(cs):
 
     d = cs.distance('node_to_node')
     assert np.array_equal(d[cs.source], cs.node_to_node_distance())
+
+
+def test_removeedgeeffects(cs, cfd):
+    cs2 = cs.removeedgeeffects(cfd)
+
+    mask = np.ones(cfd.shape, dtype=bool)
+    mask[1:-1, 1:-1] = False
+
+    cz = cfd.influencemap(mask)
+    assert np.any(cz[cs.node_indices])
+    assert not np.any(cz[cs2.node_indices])
+
+
+def test_removeedgeeffects_order(cs, cfd, fs, ffd):
+    cs2 = cs.removeedgeeffects(cfd)
+    fs2 = fs.removeedgeeffects(ffd)
+
+    assert isequivalent(cs2, fs2)
+
+def test_removeedgeeffects_nans(wide_dem):
+    dem = wide_dem.duplicate_with_new_data(np.array(wide_dem, copy=True))
+
+    dem.z[dem.z == np.max(dem)] = np.nan
+
+    fd = topo.FlowObject(dem)
+    s  = topo.StreamObject(fd, threshold=1)
+    s2 = s.removeedgeeffects(fd, dem)
+
+    mask = np.isnan(dem)
+    i = fd.influencemap(mask)
+
+    assert np.any(i)
+    assert np.any(i[s.node_indices])
+    assert not np.any(i[s2.node_indices])

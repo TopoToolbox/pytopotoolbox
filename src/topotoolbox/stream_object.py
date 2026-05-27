@@ -1204,6 +1204,44 @@ class StreamObject():
 
         return self.subgraph(nal)
 
+    def removeedgeeffects(self, fd, dem=None):
+        """Remove segments of the stream network downstream of DEM boundaries
+
+        Parameters
+        ----------
+        fd: FlowObject
+
+        dem: GridObject
+           If a GridObject is supplied, NaNs in the GridObject are
+           additionally considered as boundary pixels.
+
+        Raises
+        ------
+        ValueError
+            The supplied FlowObject is not aligned to the StreamObject.
+
+        """
+
+        if not validate_alignment(self, fd):
+            err = "The provided StreamObject and FlowObject are not aligned"
+            raise ValueError(err)
+
+        # Create a mask of the boundary pixels
+        mask = np.ones(self.shape, dtype=bool, order=fd.order)
+        mask[1:-1, 1:-1] = False
+
+        # Add NaNs to the mask. We have to dilate to find pixels that
+        # border NaNs.
+        if dem is not None:
+            nans = dem.duplicate_with_new_data(np.isnan(dem))
+            nans = nans.dilate(size=(3, 3))
+            mask = np.logical_or(mask, nans)
+
+        # Propagate the mask downstream
+        i = fd.influencemap(mask)
+
+        return self.upstreamto(np.logical_not(i))
+
     def gradient(self, dem, impose=False) -> 'np.ndarray':
         """Calculates the stream slope for each node in the stream
         network S based on the associated digital elevation model DEM.
