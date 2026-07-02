@@ -14,10 +14,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
+        uses: TopoToolbox/actions/checkout@main
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: TopoToolbox/actions/setup-python@main
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -40,10 +39,10 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: TopoToolbox/actions/checkout@main
 
       - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: TopoToolbox/actions/setup-python@main
 
       - name: Install tools
         run: pip install -r requirements.txt
@@ -57,9 +56,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: TopoToolbox/actions/checkout@main
       - name: Restore data cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: TopoToolbox/actions/cache@main
         with:
           path: ~/.cache/topotoolbox
           key: tt3-docs-data
@@ -81,7 +80,7 @@ jobs:
           make clean
           make html
       - name: Upload documentation as a build artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: TopoToolbox/actions/upload-artifact@main
         with:
           name: docs
           path: ${{ github.workspace }}/docs/_build/html
