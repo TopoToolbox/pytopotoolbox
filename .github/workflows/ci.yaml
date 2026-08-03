@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: TopoToolbox/actions/checkout@main
       - name: Set up Python
-        uses: TopoToolbox/actions/setup-python@main
+        uses: TopoToolbox/actions/setup-python@setup-python-7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -42,7 +42,7 @@ jobs:
         uses: TopoToolbox/actions/checkout@main
 
       - name: Setup Python
-        uses: TopoToolbox/actions/setup-python@main
+        uses: TopoToolbox/actions/setup-python@setup-python-7.0.0
 
       - name: Install tools
         run: pip install -r requirements.txt
