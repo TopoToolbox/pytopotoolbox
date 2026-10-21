@@ -14,6 +14,9 @@ from . import _flow # type: ignore
 from .grid_object import GridObject
 from .interface import validate_alignment
 
+#: edges per chunk when vertdistance2stream takes elevation differences
+_VERTDISTANCE_CHUNK = 1 << 24
+
 __all__ = ['EdgeSet', 'FlowObject']
 
 @dataclass
@@ -597,20 +600,28 @@ class FlowObject():
         if not isinstance(stream, StreamObject):
             raise TypeError('stream must be a StreamObject')
 
-        # Getting hte river location as 2D mask
+        # Getting the river location as 2D mask
         mask = stream.gridmask
 
-        # Calculating the relative Z from nodes to their receivers
-
-        ## Elevation for every sources and targets
-        zsources = grid.z[self.source_indices]
-        ztarget = grid.z[self.target_indices]
-
-        ## dz host the local relief
-        dz = zsources - ztarget
-
-        # Masking my rivers (if the source node belongs to the river mask)
-        dz[mask[self.source_indices]] = 0.
+        # Calculating the relative Z from nodes to their receivers, edge
+        # by edge in chunks. The grid and the mask are read through flat
+        # indices in the memory order of the flow network (a view when
+        # the grid is stored in that order, one copy otherwise), instead
+        # of unravelling the source and target indices into row and
+        # column arrays, which built six arrays as long as the edge list
+        # before any difference was taken. The kernel takes float32, so
+        # dz is built as float32 directly.
+        zflat = np.ravel(grid.z, order=self.order)
+        mflat = np.ravel(mask, order=self.order)
+        n = self.source.size
+        dz = np.empty(n, dtype=np.float32)
+        step = max(int(_VERTDISTANCE_CHUNK), 1)
+        for a in range(0, n, step):
+            s = self.source[a:a + step]
+            d = zflat[s] - zflat[self.target[a:a + step]]
+            # Masking the rivers (if the source node belongs to the river mask)
+            d[mflat[s]] = 0.
+            dz[a:a + step] = d
 
         ## Summing the global relative elevation to rivers
         up_z = np.zeros(self.shape, dtype = np.float32, order=self.order)

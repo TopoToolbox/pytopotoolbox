@@ -478,3 +478,45 @@ def test_vertdistance2stream_order(order_dems, method, sink_resolution):
     fv2 = ffd.vertdistance2stream(fs, cdem)
 
     assert np.array_equal(cv2, fv2)
+
+
+def _hand_reference(fd, z, river):
+    # The kernel's own recursion: up[u] = max(up[u], up[v] + dz[e]) from
+    # zero, where dz is zero on an edge that leaves a river cell.
+    zf = np.ravel(z, order=fd.order).astype(np.float64)
+    rf = np.ravel(river, order=fd.order)
+    receiver = dict(zip(fd.source.tolist(), fd.target.tolist()))
+    memo = {}
+
+    def up(c):
+        if c not in receiver:
+            return 0.0
+        if c not in memo:
+            r = receiver[c]
+            dz = 0.0 if rf[c] else zf[c] - zf[r]
+            memo[c] = max(0.0, up(r) + dz)
+        return memo[c]
+
+    out = np.array([up(c) for c in range(zf.size)], dtype=np.float32)
+    return out.reshape(fd.shape, order=fd.order)
+
+
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_vertdistance2stream_matches_a_walk_down_the_flow_paths(order_dems, method, sink_resolution, monkeypatch):
+    import sys
+    sys.setrecursionlimit(max(sys.getrecursionlimit(), 100000))
+    cdem, fdem = order_dems
+    for dem, other in ((cdem, fdem), (fdem, cdem)):
+        fd = topo.FlowObject(dem, method=method, sink_resolution=sink_resolution)
+        s = topo.StreamObject(fd)
+        expect = _hand_reference(fd, dem.z, s.gridmask)
+        got = fd.vertdistance2stream(s, dem)
+        assert got.z.dtype == np.float32
+        assert np.allclose(got.z, expect, atol=1e-4)
+        # a grid stored in the other memory order gives the same result
+        assert np.allclose(fd.vertdistance2stream(s, other).z, expect, atol=1e-4)
+        # and so does taking the differences in small chunks
+        monkeypatch.setattr(topo.flow_object, "_VERTDISTANCE_CHUNK", 1000)
+        assert np.array_equal(fd.vertdistance2stream(s, dem).z, got.z)
+        monkeypatch.undo()
