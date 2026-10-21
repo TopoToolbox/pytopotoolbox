@@ -403,7 +403,20 @@ class FlowObject():
            >>> _= acc.plot(cmap='Blues',norm="log")
            >>> plt.show()
         """
-        acc = np.array(self.ezgetnal(weights, dtype=np.float32), copy=True, order=self.order)
+        # One float32 array in the memory order of the flow network, and
+        # no second copy of it. ezgetnal returns a copy of an array or
+        # GridObject (a fresh array for a scalar), so the caller's weights
+        # are never modified; np.require copies again only when that
+        # copy is not already float32 in self.order. On a grid of 1.2e10
+        # cells the earlier np.array(..., copy=True) held two 48.7 GB
+        # arrays at once.
+        if np.isscalar(weights):
+            acc = np.full(self.shape, weights, dtype=np.float32, order=self.order)
+        else:
+            acc = self.ezgetnal(weights, dtype=np.float32)
+            if isinstance(acc, GridObject):
+                acc = acc.z
+            acc = np.require(acc, dtype=np.float32, requirements=[self.order, 'W'])
 
         fraction = np.ones_like(self.source, dtype=np.float32)
 
