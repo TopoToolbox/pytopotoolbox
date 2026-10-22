@@ -323,7 +323,7 @@ class FlowObject():
            >>> plt.show()
         """
         if np.isscalar(k):
-            return np.full(self.shape, k, dtype=dtype)
+            return np.full(self.shape, k, dtype=dtype, order=self.order)
         if not validate_alignment(self, k):
             raise ValueError("Input is not properly aligned to the FlowObject")
 
@@ -403,20 +403,12 @@ class FlowObject():
            >>> _= acc.plot(cmap='Blues',norm="log")
            >>> plt.show()
         """
-        # One float32 array in the memory order of the flow network, and
-        # no second copy of it. ezgetnal returns a copy of an array or
-        # GridObject (a fresh array for a scalar), so the caller's weights
-        # are never modified; np.require copies again only when that
-        # copy is not already float32 in self.order. On a grid of 1.2e10
-        # cells the earlier np.array(..., copy=True) held two 48.7 GB
-        # arrays at once.
-        if np.isscalar(weights):
-            acc = np.full(self.shape, weights, dtype=np.float32, order=self.order)
-        else:
-            acc = self.ezgetnal(weights, dtype=np.float32)
-            if isinstance(acc, GridObject):
-                acc = acc.z
-            acc = np.require(acc, dtype=np.float32, requirements=[self.order, 'W'])
+        # ezgetnal already returns a copy (a fresh array for a scalar),
+        # so the caller's weights are never modified. With copy=None,
+        # np.array copies that copy again only when it is not in the
+        # memory order of the flow network. With copy=True, a grid of
+        # 1.2e10 cells held two 48.7 GB arrays at once.
+        acc = np.array(self.ezgetnal(weights, dtype=np.float32), copy=None, order=self.order)
 
         fraction = np.ones_like(self.source, dtype=np.float32)
 
