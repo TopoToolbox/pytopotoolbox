@@ -323,7 +323,7 @@ class FlowObject():
            >>> plt.show()
         """
         if np.isscalar(k):
-            return np.full(self.shape, k, dtype=dtype)
+            return np.full(self.shape, k, dtype=dtype, order=self.order)
         if not validate_alignment(self, k):
             raise ValueError("Input is not properly aligned to the FlowObject")
 
@@ -403,7 +403,12 @@ class FlowObject():
            >>> _= acc.plot(cmap='Blues',norm="log")
            >>> plt.show()
         """
-        acc = np.array(self.ezgetnal(weights, dtype=np.float32), copy=True, order=self.order)
+        # ezgetnal already returns a copy (a fresh array for a scalar),
+        # so the caller's weights are never modified. With copy=None,
+        # np.array copies that copy again only when it is not in the
+        # memory order of the flow network. With copy=True, a grid of
+        # 1.2e10 cells held two 48.7 GB arrays at once.
+        acc = np.array(self.ezgetnal(weights, dtype=np.float32), copy=None, order=self.order)
 
         fraction = np.ones_like(self.source, dtype=np.float32)
 

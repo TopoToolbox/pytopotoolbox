@@ -478,3 +478,33 @@ def test_vertdistance2stream_order(order_dems, method, sink_resolution):
     fv2 = ffd.vertdistance2stream(fs, cdem)
 
     assert np.array_equal(cv2, fv2)
+
+
+@pytest.mark.parametrize("method", ["d8"])
+@pytest.mark.parametrize("sink_resolution", ["carve", "lcat"])
+def test_flow_accumulation_leaves_the_weights_untouched(order_dems, method, sink_resolution):
+    # Weights of either memory order and dtype, as an array or a
+    # GridObject, give the expected accumulation in the FlowObject's
+    # own order, and are never modified.
+    for dem in order_dems:
+        fd = topo.FlowObject(dem, method=method, sink_resolution=sink_resolution)
+        unweighted = fd.flow_accumulation()
+        assert unweighted.z.dtype == np.float32
+        assert unweighted.z.flags[f"{fd.order}_CONTIGUOUS"]
+        for order in ("C", "F"):
+            for dtype in (np.float32, np.float64):
+                w = np.full(dem.shape, 2.0, dtype=dtype, order=order)
+                before = w.copy()
+                acc = fd.flow_accumulation(w)
+                assert np.array_equal(w, before)
+                assert np.allclose(acc.z, 2.0 * unweighted.z)
+                assert acc.z.dtype == np.float32
+                assert acc.z.flags[f"{fd.order}_CONTIGUOUS"]
+        g = fd.ezgetnal(dem, dtype=np.float32)
+        before = g.z.copy()
+        acc = fd.flow_accumulation(g)
+        assert np.array_equal(g.z, before)
+        assert np.allclose(acc.z, fd.flow_accumulation(dem.z.astype(np.float32)).z)
+        assert np.allclose(fd.flow_accumulation(3.0).z, 3.0 * unweighted.z)
+        ones = np.ones(dem.shape, dtype=np.float32, order=fd.order)
+        assert np.array_equal(fd.flow_accumulation(ones).z, unweighted.z)
